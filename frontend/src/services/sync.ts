@@ -6,16 +6,35 @@ import { PaymentModel } from '../models/Payment';
 
 const LAST_SYNC_KEY = 'last_sync_timestamp';
 
+export interface SyncConflict {
+  type: 'collection' | 'payment';
+  clientId: string;
+  message: string;
+  serverData?: any;
+}
+
+export interface SyncResult {
+  success: boolean;
+  error?: string;
+  conflicts?: SyncConflict[];
+  created?: number;
+  updated?: number;
+}
+
 class SyncService {
   private isSyncing = false;
 
   /**
    * Sync all pending data with server
    */
-  async syncAll(): Promise<{ success: boolean; error?: string }> {
+  async syncAll(): Promise<SyncResult> {
     if (this.isSyncing) {
       return { success: false, error: 'Sync already in progress' };
     }
+
+    const conflicts: SyncConflict[] = [];
+    let totalCreated = 0;
+    let totalUpdated = 0;
 
     try {
       this.isSyncing = true;
@@ -27,10 +46,16 @@ class SyncService {
       }
 
       // Sync collections
-      await this.syncCollections();
+      const collectionResult = await this.syncCollections();
+      conflicts.push(...collectionResult.conflicts);
+      totalCreated += collectionResult.created;
+      totalUpdated += collectionResult.updated;
 
       // Sync payments
-      await this.syncPayments();
+      const paymentResult = await this.syncPayments();
+      conflicts.push(...paymentResult.conflicts);
+      totalCreated += paymentResult.created;
+      totalUpdated += paymentResult.updated;
 
       // Pull updates from server
       await this.pullUpdates();
@@ -38,7 +63,12 @@ class SyncService {
       // Update last sync timestamp
       await AsyncStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
 
-      return { success: true };
+      return {
+        success: true,
+        conflicts: conflicts.length > 0 ? conflicts : undefined,
+        created: totalCreated,
+        updated: totalUpdated,
+      };
     } catch (error: any) {
       console.error('Sync error:', error);
       return { success: false, error: error.message };
@@ -50,7 +80,15 @@ class SyncService {
   /**
    * Sync collections to server
    */
-  private async syncCollections() {
+  private async syncCollections(): Promise<{
+    conflicts: SyncConflict[];
+    created: number;
+    updated: number;
+  }> {
+    const conflicts: SyncConflict[] = [];
+    let created = 0;
+    let updated = 0;
+
     const collectionsToSync = await database
       .get<CollectionModel>('collections')
       .query()
@@ -61,7 +99,7 @@ class SyncService {
     );
 
     if (unsyncedCollections.length === 0) {
-      return;
+      return { conflicts, created, updated };
     }
 
     const collectionsData = unsyncedCollections.map((c) => ({
@@ -88,25 +126,59 @@ class SyncService {
         );
         
         if (collection) {
-          if (result.status === 'created' || result.status === 'updated') {
+          if (result.status === 'created') {
+            created++;
+            await collection.update((c) => {
+              c.serverId = result.id;
+              c.syncedAt = new Date();
+            });
+          } else if (result.status === 'updated') {
+            updated++;
             await collection.update((c) => {
               c.serverId = result.id;
               c.syncedAt = new Date();
             });
           } else if (result.status === 'conflict') {
-            // Handle conflict - server version wins
-            console.warn('Collection conflict:', result);
-            // Could implement more sophisticated conflict resolution here
+            // Track conflict for user notification
+            conflicts.push({
+              type: 'collection',
+              clientId: result.client_id,
+              message: result.message || 'Server has a newer version',
+              serverData: result.server_data,
+            });
+            // Server version wins - update local with server data
+            if (result.server_data) {
+              await collection.update((c) => {
+                c.serverId = result.server_data.id;
+                c.quantity = result.server_data.quantity;
+                c.rate = result.server_data.rate;
+                c.amount = result.server_data.amount;
+                c.notes = result.server_data.notes;
+                c.metadata = result.server_data.metadata;
+                c.version = result.server_data.version;
+                c.syncedAt = new Date();
+              });
+            }
           }
         }
       }
     });
+
+    return { conflicts, created, updated };
   }
 
   /**
    * Sync payments to server
    */
-  private async syncPayments() {
+  private async syncPayments(): Promise<{
+    conflicts: SyncConflict[];
+    created: number;
+    updated: number;
+  }> {
+    const conflicts: SyncConflict[] = [];
+    let created = 0;
+    let updated = 0;
+
     const paymentsToSync = await database
       .get<PaymentModel>('payments')
       .query()
@@ -117,7 +189,7 @@ class SyncService {
     );
 
     if (unsyncedPayments.length === 0) {
-      return;
+      return { conflicts, created, updated };
     }
 
     const paymentsData = unsyncedPayments.map((p) => ({
@@ -144,18 +216,44 @@ class SyncService {
         );
         
         if (payment) {
-          if (result.status === 'created' || result.status === 'updated') {
+          if (result.status === 'created') {
+            created++;
+            await payment.update((p) => {
+              p.serverId = result.id;
+              p.syncedAt = new Date();
+            });
+          } else if (result.status === 'updated') {
+            updated++;
             await payment.update((p) => {
               p.serverId = result.id;
               p.syncedAt = new Date();
             });
           } else if (result.status === 'conflict') {
-            // Handle conflict - server version wins
-            console.warn('Payment conflict:', result);
+            // Track conflict for user notification
+            conflicts.push({
+              type: 'payment',
+              clientId: result.client_id,
+              message: result.message || 'Server has a newer version',
+              serverData: result.server_data,
+            });
+            // Server version wins - update local with server data
+            if (result.server_data) {
+              await payment.update((p) => {
+                p.serverId = result.server_data.id;
+                p.amount = result.server_data.amount;
+                p.paymentType = result.server_data.payment_type;
+                p.notes = result.server_data.notes;
+                p.metadata = result.server_data.metadata;
+                p.version = result.server_data.version;
+                p.syncedAt = new Date();
+              });
+            }
           }
         }
       }
     });
+
+    return { conflicts, created, updated };
   }
 
   /**
