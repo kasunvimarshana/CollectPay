@@ -1,51 +1,70 @@
-# PKVApp (Expo, Offline-First)
+# PKV Data Collection & Payment Management
 
-## Overview
+This repository contains a full-stack application with a Laravel backend and an Expo React Native frontend. It is designed with a clean, modular, and scalable architecture applying SOLID, DRY, and separation of concerns. It supports offline-first collection, robust payment management, RBAC/ABAC auth, and real-time updates via Socket.IO.
 
-This React Native Expo app implements an offline-first architecture for user CRUD with reliable local persistence (SQLite), transactional writes, a durable sync queue, and pluggable conflict resolution. It is designed with SOLID principles, strict separation of concerns, and minimal dependencies.
+## Structure
 
-## Architecture
+- backend/ — Laravel API (to be initialized)
+- mobile/ — Expo React Native app (initialized)
+- socket-server/ — Node Socket.IO server bridging Redis broadcast to clients
 
-- **Domain**: `src/domain` contains `User` model and repository interfaces.
-- **Persistence**: `src/infrastructure/persistence/sqlite` provides a lightweight SQLite client and a `SQLiteUserRepository` implementing atomic writes + enqueueing sync ops.
-- **Sync**: `src/infrastructure/sync` includes a `SyncService`, conflict resolution strategies (default Last-Write-Wins), background fetch task, and a `SyncProvider` interface.
-- **Application State**: `src/application/state/Store.tsx` houses a small React context store coordinating repository + sync.
-- **UI**: `src/application/ui/components` provides clean, modular components for listing and editing users.
+## Prerequisites
 
-## Offline-First Strategy
+- PHP 8.3+
+- Composer
+- Node.js 18+
+- Redis (for broadcast)
 
-- **Local DB (ACID)**: All CRUD operations execute inside transactions and persist to SQLite immediately.
-- **Outbox Queue**: Each write enqueues a `sync_operations` record for transmission when connectivity is available.
-- **Connectivity Check**: `expo-network` is used to opportunistically trigger sync when online; `expo-background-fetch` schedules periodic background sync.
-- **Conflict Resolution**: Default is Last-Write-Wins by `updatedAt`. Alternate strategies can be injected via the `ConflictResolver` interface.
+## Backend Setup (Laravel)
 
-## Direct MySQL Access — Important Constraints
+1. Install PHP 8.3 via winget:
+   ```powershell
+   winget install --id=PHP.PHP.8.3 -e --source winget
+   ```
+2. Install Composer:
+   ```powershell
+   cd C:\projects\PKV\backend
+   Invoke-WebRequest https://getcomposer.org/installer -OutFile composer-setup.php
+   php composer-setup.php --install-dir=. --filename=composer.phar
+   php composer.phar create-project laravel/laravel .
+   ```
+3. Install dependencies and packages:
+   ```powershell
+   php artisan key:generate
+   php artisan vendor:publish
+   ```
+4. Configure .env (database, Redis):
+   - QUEUE_CONNECTION=redis
+   - BROADCAST_DRIVER=redis
+   - REDIS_CLIENT=phpredis
+   - SANCTUM_STATEFUL_DOMAINS=localhost
 
-Connecting directly to a remote MySQL instance from an Expo/React Native app is both infeasible and **not** an industry best practice:
+## Socket Server
 
-- **Security**: Shipping DB credentials in mobile apps exposes your database; TLS client cert management on mobile is brittle; no server-side access controls or auditing.
-- **Network**: Managed Expo environments cannot open raw TCP sockets to MySQL reliably; drivers target Node.js, not RN.
-- **Best Practices**: Mobile clients should use a secure sync/API layer with authentication, authorization, validation, and rate limiting.
-
-This app includes a stub `MySQLSyncProvider` that intentionally throws to prevent unsafe usage. To enable multi-device sync while preserving best practices, implement a thin **Sync Endpoint** (serverless or microservice) that:
-
-- Accepts batched operations (`create|update|delete`) with idempotency keys.
-- Applies transactions to MySQL with optimistic concurrency (`updatedAt` checks).
-- Returns authoritative records changed since a timestamp.
-- Uses token-based auth (e.g., OAuth2/JWT), TLS, and least-privilege DB access.
-
-## Running
-
-```bash
-# From the workspace root
-cd PKVApp
-npx expo start
-# or to quickly verify compilation in web
-npx expo start --web
+```powershell
+cd C:\projects\PKV\socket-server
+npm start
 ```
+
+Set `REDIS_URL` env var if needed.
+
+## Mobile Setup (Expo)
+
+```powershell
+cd C:\projects\PKV\mobile
+npm run android # or npm run web
+```
+
+## Architecture Overview
+
+- Domain: suppliers, products, schedules, rates, collections, payments
+- Application Services: transaction management, totals calculation, sync orchestration
+- Infrastructure: Eloquent models, repositories, SQLite (mobile), Redis broadcast
+- Auth: Laravel Sanctum tokens + gates/policies for RBAC/ABAC
+- Real-time: Laravel events → Redis → Socket.IO → mobile
 
 ## Next Steps
 
-- Implement `SyncProvider` against a secure endpoint to enable multi-device sync.
-- Add unit tests for conflict resolution and repository transactions.
-- Consider EAS build for background fetch support on devices.
+- Initialize Laravel in `backend/` and implement migrations, policies, services, and REST API.
+- Wire mobile app to backend API base URL and Socket.IO server.
+- Add feature tests and end-to-end tests.

@@ -1,0 +1,14 @@
+{
+  "name": "pkv-socket-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1",
+    "ioredis": "^5.4.1"
+  }
+}
