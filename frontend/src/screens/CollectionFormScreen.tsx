@@ -12,7 +12,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { database } from '../services/database';
-import { CollectionModel, SupplierModel, ProductModel } from '../models/Collection';
+import { CollectionModel } from '../models/Collection';
+import { SupplierModel } from '../models/Supplier';
+import { ProductModel } from '../models/Product';
 import ApiService from '../services/api';
 import { Picker } from '@react-native-picker/picker';
 

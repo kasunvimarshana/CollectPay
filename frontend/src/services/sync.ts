@@ -1,7 +1,8 @@
 import { database } from './database';
 import ApiService from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CollectionModel, PaymentModel } from '../models/Collection';
+import { CollectionModel } from '../models/Collection';
+import { PaymentModel } from '../models/Payment';
 
 const LAST_SYNC_KEY = 'last_sync_timestamp';
 

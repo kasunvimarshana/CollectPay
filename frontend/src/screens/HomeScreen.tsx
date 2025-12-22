@@ -11,7 +11,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { database } from '../services/database';
-import { CollectionModel, PaymentModel } from '../models/Collection';
+import { CollectionModel } from '../models/Collection';
+import { PaymentModel } from '../models/Payment';
 import SyncService from '../services/sync';
 import { format } from 'date-fns';
 

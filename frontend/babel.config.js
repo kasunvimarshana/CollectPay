@@ -3,10 +3,7 @@ module.exports = function(api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      '@babel/plugin-proposal-decorators',
-      {
-        legacy: true
-      }
+      ['@babel/plugin-proposal-decorators', { version: '2023-05' }]
     ]
   };
 };

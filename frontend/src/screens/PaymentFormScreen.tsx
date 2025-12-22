@@ -12,7 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { database } from '../services/database';
-import { PaymentModel } from '../models/Collection';
+import { PaymentModel } from '../models/Payment';
 import ApiService from '../services/api';
 import { Picker } from '@react-native-picker/picker';
 

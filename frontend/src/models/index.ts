@@ -1,2 +1,5 @@
-export { SupplierModel, ProductModel, CollectionModel, PaymentModel } from './Collection';
+export { CollectionModel } from './Collection';
+export { PaymentModel } from './Payment';
+export { SupplierModel } from './Supplier';
+export { ProductModel } from './Product';
 export { schema } from './schema';
