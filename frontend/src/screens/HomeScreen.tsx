@@ -61,7 +61,17 @@ const HomeScreen = () => {
     try {
       const result = await SyncService.syncAll();
       if (result.success) {
-        Alert.alert('Success', 'Data synced successfully');
+        let message = 'Data synced successfully';
+        if (result.created || result.updated) {
+          message += `\n\nCreated: ${result.created || 0}\nUpdated: ${result.updated || 0}`;
+        }
+        
+        if (result.conflicts && result.conflicts.length > 0) {
+          message += `\n\nConflicts detected: ${result.conflicts.length}`;
+          message += '\nServer version was used for conflicting records.';
+        }
+        
+        Alert.alert('Sync Complete', message);
         await loadData();
         await loadLastSyncTime();
       } else {

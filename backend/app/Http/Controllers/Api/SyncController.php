@@ -43,11 +43,11 @@ class SyncController extends Controller
 
                 if ($existing) {
                     // Handle conflict resolution
-                    if ($existing->version >= $collectionData['version']) {
+                    if ($existing->version > $collectionData['version']) {
                         $results[] = [
                             'client_id' => $clientId,
                             'status' => 'conflict',
-                            'message' => 'Server version is newer or equal',
+                            'message' => 'Server version is newer',
                             'server_data' => $existing,
                         ];
                         continue;
@@ -128,11 +128,11 @@ class SyncController extends Controller
 
                 if ($existing) {
                     // Handle conflict resolution
-                    if ($existing->version >= $paymentData['version']) {
+                    if ($existing->version > $paymentData['version']) {
                         $results[] = [
                             'client_id' => $clientId,
                             'status' => 'conflict',
-                            'message' => 'Server version is newer or equal',
+                            'message' => 'Server version is newer',
                             'server_data' => $existing,
                         ];
                         continue;
