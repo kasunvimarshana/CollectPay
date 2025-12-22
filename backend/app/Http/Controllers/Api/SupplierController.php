@@ -9,87 +9,101 @@ use Illuminate\Http\Request;
 class SupplierController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Get all suppliers
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Supplier::query()
-            ->orderBy('name')
-            ->paginate(50);
+        $query = Supplier::query();
+
+        // Filter by active status if provided
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        // Search by name or code
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        $suppliers = $query->orderBy('name')->paginate(50);
+
+        return response()->json($suppliers);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a new supplier
      */
     public function store(Request $request)
     {
+        // Only admins and supervisors can create suppliers
+        if (!$request->user()->hasAnyRole(['admin', 'supervisor'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:64'],
-            'address' => ['nullable', 'string'],
-            'external_code' => ['nullable', 'string', 'max:255'],
-            'is_active' => ['nullable', 'boolean'],
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:50|unique:suppliers',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+            'area' => 'nullable|string|max:100',
+            'is_active' => 'sometimes|boolean',
+            'metadata' => 'nullable|array',
         ]);
 
-        $supplier = Supplier::query()->create([
-            ...$validated,
-            'created_by_user_id' => $request->user()?->id,
-            'version' => 1,
-        ]);
+        $supplier = Supplier::create($validated);
 
         return response()->json($supplier, 201);
     }
 
     /**
-     * Display the specified resource.
+     * Get a specific supplier
      */
-    public function show(string $id)
+    public function show(Supplier $supplier)
     {
-        return Supplier::query()->findOrFail($id);
+        return response()->json($supplier);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update a supplier
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Supplier $supplier)
     {
-        $supplier = Supplier::query()->findOrFail($id);
-
-        $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'max:255'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:64'],
-            'address' => ['sometimes', 'nullable', 'string'],
-            'external_code' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'is_active' => ['sometimes', 'boolean'],
-            'base_version' => ['sometimes', 'integer'],
-        ]);
-
-        if (array_key_exists('base_version', $validated) && (int) $validated['base_version'] !== (int) $supplier->version) {
-            return response()->json([
-                'message' => 'Version conflict.',
-                'server' => $supplier,
-            ], 409);
+        // Only admins and supervisors can update suppliers
+        if (!$request->user()->hasAnyRole(['admin', 'supervisor'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        unset($validated['base_version']);
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'code' => 'sometimes|string|max:50|unique:suppliers,code,' . $supplier->id,
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+            'area' => 'nullable|string|max:100',
+            'is_active' => 'sometimes|boolean',
+            'metadata' => 'nullable|array',
+        ]);
 
-        $supplier->fill($validated);
-        $supplier->version = ((int) $supplier->version) + 1;
-        $supplier->save();
+        $supplier->update($validated);
 
-        return $supplier;
+        return response()->json($supplier);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete a supplier
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, Supplier $supplier)
     {
-        $supplier = Supplier::query()->findOrFail($id);
-        $supplier->version = ((int) $supplier->version) + 1;
-        $supplier->save();
+        // Only admins can delete suppliers
+        if (!$request->user()->hasRole('admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $supplier->delete();
 
-        return response()->json(['ok' => true]);
+        return response()->json(['message' => 'Supplier deleted successfully']);
     }
 }

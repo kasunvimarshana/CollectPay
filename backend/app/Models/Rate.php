@@ -2,43 +2,64 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Rate extends Model
 {
-    use HasUuids;
-    use SoftDeletes;
-
-    public $incrementing = false;
-    protected $keyType = 'string';
+    use HasFactory;
 
     protected $fillable = [
-        'id',
         'product_id',
-        'rate_per_base',
+        'supplier_id',
+        'rate',
         'effective_from',
         'effective_to',
-        'set_by_user_id',
-        'version',
+        'is_active',
     ];
 
     protected $casts = [
-        'rate_per_base' => 'decimal:6',
+        'rate' => 'decimal:2',
         'effective_from' => 'date',
         'effective_to' => 'date',
-        'version' => 'integer',
-        'deleted_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
+    /**
+     * Get the product for this rate
+     */
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function setBy()
+    /**
+     * Get the supplier for this rate
+     */
+    public function supplier()
     {
-        return $this->belongsTo(User::class, 'set_by_user_id');
+        return $this->belongsTo(Supplier::class);
+    }
+
+    /**
+     * Check if rate is currently active
+     */
+    public function isCurrentlyActive(): bool
+    {
+        $now = now()->toDateString();
+        
+        if (!$this->is_active) {
+            return false;
+        }
+
+        if ($this->effective_from > $now) {
+            return false;
+        }
+
+        if ($this->effective_to && $this->effective_to < $now) {
+            return false;
+        }
+
+        return true;
     }
 }

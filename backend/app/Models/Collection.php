@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class Payment extends Model
+class Collection extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -15,12 +15,12 @@ class Payment extends Model
         'client_id',
         'user_id',
         'supplier_id',
-        'collection_id',
-        'payment_type',
+        'product_id',
+        'quantity',
+        'unit',
+        'rate',
         'amount',
-        'payment_date',
-        'payment_method',
-        'reference_number',
+        'collection_date',
         'notes',
         'metadata',
         'synced_at',
@@ -28,8 +28,10 @@ class Payment extends Model
     ];
 
     protected $casts = [
+        'quantity' => 'decimal:3',
+        'rate' => 'decimal:2',
         'amount' => 'decimal:2',
-        'payment_date' => 'datetime',
+        'collection_date' => 'datetime',
         'metadata' => 'array',
         'synced_at' => 'datetime',
     ];
@@ -38,15 +40,15 @@ class Payment extends Model
     {
         parent::boot();
 
-        static::creating(function ($payment) {
-            if (!$payment->client_id) {
-                $payment->client_id = (string) Str::uuid();
+        static::creating(function ($collection) {
+            if (!$collection->client_id) {
+                $collection->client_id = (string) Str::uuid();
             }
         });
     }
 
     /**
-     * Get the user who created this payment
+     * Get the user who created this collection
      */
     public function user()
     {
@@ -54,7 +56,7 @@ class Payment extends Model
     }
 
     /**
-     * Get the supplier for this payment
+     * Get the supplier for this collection
      */
     public function supplier()
     {
@@ -62,11 +64,27 @@ class Payment extends Model
     }
 
     /**
-     * Get the collection for this payment
+     * Get the product for this collection
      */
-    public function collection()
+    public function product()
     {
-        return $this->belongsTo(Collection::class);
+        return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Get payments for this collection
+     */
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Calculate the amount based on quantity and rate
+     */
+    public function calculateAmount(): float
+    {
+        return round($this->quantity * $this->rate, 2);
     }
 
     /**

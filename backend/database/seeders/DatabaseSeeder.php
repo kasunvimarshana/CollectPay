@@ -2,46 +2,135 @@
 
 namespace Database\Seeders;
 
-use App\Models\Product;
-use App\Models\Unit;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Supplier;
+use App\Models\Product;
+use App\Models\Rate;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        $user = User::query()->firstOrCreate(
-            ['email' => 'test@example.com'],
-            ['name' => 'Test User', 'password' => 'password']
-        );
+        // Create admin user
+        User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@collectpay.com',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
 
-        Unit::query()->firstOrCreate(
-            ['code' => 'g'],
-            ['name' => 'Gram', 'unit_type' => 'mass', 'to_base_multiplier' => 1, 'version' => 1]
-        );
-        Unit::query()->firstOrCreate(
-            ['code' => 'kg'],
-            ['name' => 'Kilogram', 'unit_type' => 'mass', 'to_base_multiplier' => 1000, 'version' => 1]
-        );
-        Unit::query()->firstOrCreate(
-            ['code' => 'ml'],
-            ['name' => 'Milliliter', 'unit_type' => 'volume', 'to_base_multiplier' => 1, 'version' => 1]
-        );
-        Unit::query()->firstOrCreate(
-            ['code' => 'l'],
-            ['name' => 'Liter', 'unit_type' => 'volume', 'to_base_multiplier' => 1000, 'version' => 1]
-        );
+        // Create supervisor user
+        User::create([
+            'name' => 'Supervisor User',
+            'email' => 'supervisor@collectpay.com',
+            'password' => Hash::make('password'),
+            'role' => 'supervisor',
+            'is_active' => true,
+        ]);
 
-        Product::query()->firstOrCreate(
-            ['name' => 'Tea Leaves'],
-            ['unit_type' => 'mass', 'is_active' => true, 'version' => 1]
-        );
+        // Create collector user
+        User::create([
+            'name' => 'Collector User',
+            'email' => 'collector@collectpay.com',
+            'password' => Hash::make('password'),
+            'role' => 'collector',
+            'is_active' => true,
+        ]);
+
+        // Create sample suppliers
+        $supplier1 = Supplier::create([
+            'name' => 'Green Valley Tea Estate',
+            'code' => 'SUP001',
+            'phone' => '+94771234567',
+            'address' => 'Hatton Road',
+            'area' => 'Nuwara Eliya',
+            'is_active' => true,
+        ]);
+
+        $supplier2 = Supplier::create([
+            'name' => 'Mountain View Plantation',
+            'code' => 'SUP002',
+            'phone' => '+94777654321',
+            'address' => 'Hill Street',
+            'area' => 'Kandy',
+            'is_active' => true,
+        ]);
+
+        $supplier3 = Supplier::create([
+            'name' => 'Sunrise Dairy Farm',
+            'code' => 'SUP003',
+            'phone' => '+94763456789',
+            'address' => 'Farm Road',
+            'area' => 'Kurunegala',
+            'is_active' => true,
+        ]);
+
+        // Create sample products
+        $teaLeaves = Product::create([
+            'name' => 'Tea Leaves',
+            'code' => 'PROD001',
+            'unit' => 'kilogram',
+            'description' => 'Fresh tea leaves',
+            'is_active' => true,
+        ]);
+
+        $greenTea = Product::create([
+            'name' => 'Green Tea',
+            'code' => 'PROD002',
+            'unit' => 'kilogram',
+            'description' => 'Premium green tea',
+            'is_active' => true,
+        ]);
+
+        $milk = Product::create([
+            'name' => 'Fresh Milk',
+            'code' => 'PROD003',
+            'unit' => 'liter',
+            'description' => 'Farm fresh milk',
+            'is_active' => true,
+        ]);
+
+        // Create sample rates
+        Rate::create([
+            'product_id' => $teaLeaves->id,
+            'supplier_id' => $supplier1->id,
+            'rate' => 150.00,
+            'effective_from' => '2024-01-01',
+            'effective_to' => '2024-12-31',
+            'is_active' => true,
+        ]);
+
+        Rate::create([
+            'product_id' => $teaLeaves->id,
+            'supplier_id' => $supplier2->id,
+            'rate' => 145.00,
+            'effective_from' => '2024-01-01',
+            'effective_to' => '2024-12-31',
+            'is_active' => true,
+        ]);
+
+        Rate::create([
+            'product_id' => $greenTea->id,
+            'supplier_id' => $supplier1->id,
+            'rate' => 200.00,
+            'effective_from' => '2024-01-01',
+            'effective_to' => '2024-12-31',
+            'is_active' => true,
+        ]);
+
+        Rate::create([
+            'product_id' => $milk->id,
+            'supplier_id' => $supplier3->id,
+            'rate' => 100.00,
+            'effective_from' => '2024-01-01',
+            'effective_to' => '2024-12-31',
+            'is_active' => true,
+        ]);
     }
 }

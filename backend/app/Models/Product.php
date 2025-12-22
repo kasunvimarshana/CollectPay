@@ -2,39 +2,41 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasUuids;
-    use SoftDeletes;
-
-    public $incrementing = false;
-    protected $keyType = 'string';
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'id',
         'name',
-        'unit_type',
+        'code',
+        'unit',
+        'description',
         'is_active',
-        'version',
+        'metadata',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'version' => 'integer',
-        'deleted_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
+    /**
+     * Get collections for this product
+     */
+    public function collections()
+    {
+        return $this->hasMany(Collection::class);
+    }
+
+    /**
+     * Get rates for this product
+     */
     public function rates()
     {
         return $this->hasMany(Rate::class);
-    }
-
-    public function collectionEntries()
-    {
-        return $this->hasMany(CollectionEntry::class);
     }
 }

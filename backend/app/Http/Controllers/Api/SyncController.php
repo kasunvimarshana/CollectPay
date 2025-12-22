@@ -3,117 +3,209 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ChangeLog;
-use App\Models\Device;
-use App\Services\Sync\SyncService;
+use App\Models\Collection;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class SyncController extends Controller
 {
-    public function sync(Request $request)
+    /**
+     * Sync collections from mobile device
+     */
+    public function syncCollections(Request $request)
     {
         $validated = $request->validate([
-            'device_id' => ['required', 'uuid'],
-            'cursor' => ['nullable', 'integer', 'min:0'],
-            'conflict_strategy' => ['nullable', 'in:server_wins,client_wins'],
-            'ops' => ['nullable', 'array'],
-            'ops.*.op_id' => ['required_with:ops', 'uuid'],
-            'ops.*.entity' => ['required_with:ops', 'string'],
-            'ops.*.type' => ['required_with:ops', 'in:upsert,delete'],
-            'ops.*.id' => ['required_with:ops', 'uuid'],
-            'ops.*.base_version' => ['nullable', 'integer'],
-            'ops.*.payload' => ['nullable', 'array'],
-            'ops.*.client_updated_at' => ['nullable', 'date'],
+            'collections' => 'required|array',
+            'collections.*.client_id' => 'required|string|uuid',
+            'collections.*.supplier_id' => 'required|exists:suppliers,id',
+            'collections.*.product_id' => 'required|exists:products,id',
+            'collections.*.quantity' => 'required|numeric|min:0.001',
+            'collections.*.unit' => 'required|string',
+            'collections.*.rate' => 'required|numeric|min:0',
+            'collections.*.amount' => 'required|numeric|min:0',
+            'collections.*.collection_date' => 'required|date',
+            'collections.*.notes' => 'nullable|string',
+            'collections.*.metadata' => 'nullable|array',
+            'collections.*.version' => 'required|integer',
         ]);
 
-        $user = $request->user();
-        $deviceId = $validated['device_id'];
-        $cursor = (int) ($validated['cursor'] ?? 0);
-        $conflictStrategy = $validated['conflict_strategy'] ?? 'server_wins';
+        $results = [];
+        $userId = $request->user()->id;
 
-        $device = Device::query()->whereKey($deviceId)->first();
-        if ($device !== null && $device->user_id !== $user->id) {
-            return response()->json(['message' => 'Device already registered to another user.'], 409);
+        DB::beginTransaction();
+        try {
+            foreach ($validated['collections'] as $collectionData) {
+                $clientId = $collectionData['client_id'];
+                
+                // Check if collection already exists
+                $existing = Collection::where('client_id', $clientId)->first();
+
+                if ($existing) {
+                    // Handle conflict resolution
+                    if ($existing->version >= $collectionData['version']) {
+                        $results[] = [
+                            'client_id' => $clientId,
+                            'status' => 'conflict',
+                            'message' => 'Server version is newer or equal',
+                            'server_data' => $existing,
+                        ];
+                        continue;
+                    }
+
+                    // Update existing collection
+                    $existing->update(array_merge($collectionData, [
+                        'user_id' => $userId,
+                        'synced_at' => now(),
+                    ]));
+                    
+                    $results[] = [
+                        'client_id' => $clientId,
+                        'status' => 'updated',
+                        'id' => $existing->id,
+                    ];
+                } else {
+                    // Create new collection
+                    $collection = Collection::create(array_merge($collectionData, [
+                        'user_id' => $userId,
+                        'synced_at' => now(),
+                    ]));
+                    
+                    $results[] = [
+                        'client_id' => $clientId,
+                        'status' => 'created',
+                        'id' => $collection->id,
+                    ];
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Sync completed',
+                'results' => $results,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'message' => 'Sync failed',
+                'error' => $e->getMessage(),
+            ], 500);
         }
+    }
 
-        Device::query()->updateOrCreate(
-            ['id' => $deviceId],
-            [
-                'user_id' => $user->id,
-                'last_seen_at' => now(),
-            ]
-        );
+    /**
+     * Sync payments from mobile device
+     */
+    public function syncPayments(Request $request)
+    {
+        $validated = $request->validate([
+            'payments' => 'required|array',
+            'payments.*.client_id' => 'required|string|uuid',
+            'payments.*.supplier_id' => 'required|exists:suppliers,id',
+            'payments.*.collection_id' => 'nullable|exists:collections,id',
+            'payments.*.payment_type' => 'required|string|in:advance,partial,full',
+            'payments.*.amount' => 'required|numeric|min:0.01',
+            'payments.*.payment_date' => 'required|date',
+            'payments.*.payment_method' => 'nullable|string',
+            'payments.*.reference_number' => 'nullable|string',
+            'payments.*.notes' => 'nullable|string',
+            'payments.*.metadata' => 'nullable|array',
+            'payments.*.version' => 'required|integer',
+        ]);
 
-        $service = new SyncService();
-        $applied = [];
-        $conflicts = [];
+        $results = [];
+        $userId = $request->user()->id;
 
-        foreach (($validated['ops'] ?? []) as $op) {
-            $opId = (string) $op['op_id'];
+        DB::beginTransaction();
+        try {
+            foreach ($validated['payments'] as $paymentData) {
+                $clientId = $paymentData['client_id'];
+                
+                // Check if payment already exists
+                $existing = Payment::where('client_id', $clientId)->first();
 
-            // Idempotency: if op_id already processed, skip.
-            $already = DB::table('sync_ops')->where('op_id', $opId)->exists();
-            if ($already) {
-                $applied[] = ['status' => 'skipped', 'op_id' => $opId];
-                continue;
+                if ($existing) {
+                    // Handle conflict resolution
+                    if ($existing->version >= $paymentData['version']) {
+                        $results[] = [
+                            'client_id' => $clientId,
+                            'status' => 'conflict',
+                            'message' => 'Server version is newer or equal',
+                            'server_data' => $existing,
+                        ];
+                        continue;
+                    }
+
+                    // Update existing payment
+                    $existing->update(array_merge($paymentData, [
+                        'user_id' => $userId,
+                        'synced_at' => now(),
+                    ]));
+                    
+                    $results[] = [
+                        'client_id' => $clientId,
+                        'status' => 'updated',
+                        'id' => $existing->id,
+                    ];
+                } else {
+                    // Create new payment
+                    $payment = Payment::create(array_merge($paymentData, [
+                        'user_id' => $userId,
+                        'synced_at' => now(),
+                    ]));
+                    
+                    $results[] = [
+                        'client_id' => $clientId,
+                        'status' => 'created',
+                        'id' => $payment->id,
+                    ];
+                }
             }
 
-            $result = $service->applyOperation((int) $user->id, $deviceId, $op, $conflictStrategy);
+            DB::commit();
 
-            if (($result['status'] ?? null) !== 'conflict') {
-                DB::table('sync_ops')->insert([
-                    'op_id' => $opId,
-                    'user_id' => $user->id,
-                    'device_id' => $deviceId,
-                    'entity' => (string) $op['entity'],
-                    'type' => (string) $op['type'],
-                    'entity_id' => (string) $op['id'],
-                    'received_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            $applied[] = ['op_id' => $opId, ...$result];
-            if (($result['status'] ?? null) === 'conflict') {
-                $conflicts[] = ['op_id' => $opId, ...$result];
-            }
+            return response()->json([
+                'message' => 'Sync completed',
+                'results' => $results,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'message' => 'Sync failed',
+                'error' => $e->getMessage(),
+            ], 500);
         }
+    }
 
-        $changes = ChangeLog::query()
-            ->where('id', '>', $cursor)
-            ->orderBy('id')
-            ->limit(500)
+    /**
+     * Get updates from server since last sync
+     */
+    public function getUpdates(Request $request)
+    {
+        $validated = $request->validate([
+            'last_sync' => 'required|date',
+        ]);
+
+        $lastSync = $validated['last_sync'];
+        $userId = $request->user()->id;
+
+        $collections = Collection::where('user_id', $userId)
+            ->where('updated_at', '>', $lastSync)
+            ->with(['supplier', 'product'])
             ->get();
 
-        $newCursor = $cursor;
-        if ($changes->isNotEmpty()) {
-            $newCursor = (int) $changes->last()->id;
-        }
-
-        Device::query()->whereKey($deviceId)->update([
-            'last_pulled_seq' => $newCursor,
-            'last_seen_at' => now(),
-        ]);
+        $payments = Payment::where('user_id', $userId)
+            ->where('updated_at', '>', $lastSync)
+            ->with(['supplier', 'collection'])
+            ->get();
 
         return response()->json([
-            'device_id' => $deviceId,
-            'applied' => $applied,
-            'conflicts' => $conflicts,
-            'pull' => [
-                'cursor' => $newCursor,
-                'changes' => $changes->map(fn ($c) => [
-                    'seq' => (int) $c->id,
-                    'model' => $c->model,
-                    'model_id' => $c->model_id,
-                    'operation' => $c->operation,
-                    'version' => (int) $c->version,
-                    'payload' => $c->payload,
-                    'changed_at' => $c->changed_at?->toIso8601String(),
-                ])->all(),
-            ],
+            'collections' => $collections,
+            'payments' => $payments,
+            'sync_time' => now()->toIso8601String(),
         ]);
     }
 }

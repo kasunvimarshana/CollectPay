@@ -1,32 +1,49 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CollectionEntryController;
-use App\Http\Controllers\Api\LedgerController;
+use App\Http\Controllers\Api\CollectionController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RateController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\SyncController;
-use App\Http\Controllers\Api\UnitController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->group(function () {
-    Route::post('/auth/login', [AuthController::class, 'login']);
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/auth/logout', [AuthController::class, 'logout']);
-        Route::get('/me', [AuthController::class, 'me']);
+// Public routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
-        Route::apiResource('suppliers', SupplierController::class);
-        Route::apiResource('products', ProductController::class);
-        Route::apiResource('units', UnitController::class)->only(['index', 'show']);
-        Route::apiResource('collection-entries', CollectionEntryController::class);
-        Route::apiResource('payments', PaymentController::class);
-        Route::apiResource('rates', RateController::class);
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth routes
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
 
-        Route::get('/suppliers/{supplier}/ledger', [LedgerController::class, 'supplierLedger']);
+    // Supplier routes
+    Route::apiResource('suppliers', SupplierController::class);
 
-        Route::post('/sync', [SyncController::class, 'sync']);
-    });
+    // Product routes
+    Route::apiResource('products', ProductController::class);
+
+    // Rate routes
+    Route::get('rates/current', [RateController::class, 'current']);
+    Route::apiResource('rates', RateController::class);
+
+    // Collection routes
+    Route::apiResource('collections', CollectionController::class);
+
+    // Payment routes
+    Route::get('payments/summary', [PaymentController::class, 'summary']);
+    Route::apiResource('payments', PaymentController::class);
+
+    // Sync routes
+    Route::post('sync/collections', [SyncController::class, 'syncCollections']);
+    Route::post('sync/payments', [SyncController::class, 'syncPayments']);
+    Route::post('sync/updates', [SyncController::class, 'getUpdates']);
 });

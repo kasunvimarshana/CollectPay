@@ -2,42 +2,50 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
 {
-    use HasUuids;
-    use SoftDeletes;
-
-    public $incrementing = false;
-    protected $keyType = 'string';
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'id',
         'name',
+        'code',
         'phone',
         'address',
-        'external_code',
+        'area',
         'is_active',
-        'created_by_user_id',
-        'version',
+        'metadata',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'version' => 'integer',
-        'deleted_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
-    public function collectionEntries()
+    /**
+     * Get collections for this supplier
+     */
+    public function collections()
     {
-        return $this->hasMany(CollectionEntry::class);
+        return $this->hasMany(Collection::class);
     }
 
+    /**
+     * Get payments for this supplier
+     */
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Get rates for this supplier
+     */
+    public function rates()
+    {
+        return $this->hasMany(Rate::class);
     }
 }
