@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: collectpay-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: collectpay
+      MYSQL_USER: collectpay
+      MYSQL_PASSWORD: collectpay
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - collectpay-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: collectpay-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - collectpay-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Laravel Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: collectpay-backend
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - collectpay-network
+    environment:
+      DB_HOST: mysql
+      DB_DATABASE: collectpay
+      DB_USERNAME: collectpay
+      DB_PASSWORD: collectpay
+      REDIS_HOST: redis
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  # PhpMyAdmin (Optional)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: collectpay-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: collectpay
+      PMA_PASSWORD: collectpay
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - collectpay-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  collectpay-network:
+    driver: bridge
