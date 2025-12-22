@@ -1,0 +1,174 @@
+openapi: 3.0.3
+info:
+  title: KV API
+  version: 0.1.0
+  description: REST API for mobile app with offline sync. Auth via Bearer token (Sanctum issued).
+servers:
+  - url: http://localhost:8000/api
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      required: [id, name, email, role, version]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [admin, manager, user] }
+        attributes: { type: object, additionalProperties: true }
+        version: { type: integer }
+        updated_at: { type: string, format: date-time }
+        deleted_at: { type: string, format: date-time, nullable: true }
+    NewUser:
+      type: object
+      required: [name, email, role]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [admin, manager, user] }
+        attributes: { type: object, additionalProperties: true }
+    UpdateUser:
+      allOf:
+        - $ref: '#/components/schemas/NewUser'
+        - type: object
+          properties:
+            version: { type: integer, description: Current known version for optimistic concurrency }
+paths:
+  /auth/login:
+    post:
+      summary: Login and return token + user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                device: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '401': { description: Invalid credentials }
+  /auth/me:
+    get:
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { description: Unauthorized }
+  /users:
+    get:
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/User' }
+    post:
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewUser' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '403': { description: Forbidden }
+  /users/{id}:
+    put:
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUser' }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+        '409': { description: Conflict, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+        '403': { description: Forbidden }
+    delete:
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '403': { description: Forbidden }
+  /sync:
+    get:
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: since
+          in: query
+          required: false
+          schema: { type: string, description: Opaque token or ISO date for incremental sync }
+      responses:
+        '200':
+          description: Changes since token and next token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+                  token: { type: string }
+    post:
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [op, table]
+              properties:
+                op: { type: string, enum: [create, update, delete] }
+                table: { type: string, enum: [users] }
+                id: { type: string, format: uuid }
+                payload: { type: object, additionalProperties: true }
+                version: { type: integer }
+      responses:
+        '200': { description: Applied }
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  conflict: { $ref: '#/components/schemas/User' }

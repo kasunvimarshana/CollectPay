@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "KV Mobile",
+    "slug": "kv-mobile",
+    "scheme": "kvapp",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "jsEngine": "hermes",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true },
+    "android": {
+      "adaptiveIcon": {}
+    },
+    "web": { "bundler": "metro", "output": "static" },
+    "experiments": { "tsconfigPaths": true }
+  }
+}
