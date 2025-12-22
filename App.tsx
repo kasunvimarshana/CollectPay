@@ -1,44 +1,58 @@
-import React, {useEffect, useMemo, useState} from 'react';
-import {SafeAreaView, StatusBar, Text, View, StyleSheet} from 'react-native';
-import {AppNavigator} from './src/ui/navigation/AppNavigator';
-import {initFirebase} from './src/config/firebase';
-import {EventBus} from './src/utils/EventBus';
-import {SyncService, SyncEvents} from './src/services/SyncService';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View, Button, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { StoreProvider, useStore, createUser, updateUser, deleteUser } from './src/application/state/Store';
+import { UserList } from './src/application/ui/components/UserList';
+import { UserForm } from './src/application/ui/components/UserForm';
+import type { User } from './src/domain/models/User';
 
-const bus = new EventBus<SyncEvents>();
-const sync = new SyncService(bus);
+function UsersScreen() {
+  const { state, dispatch } = useStore();
+  const [editing, setEditing] = useState<User | undefined>(undefined);
+  const [showForm, setShowForm] = useState(false);
 
-function App(): React.JSX.Element {
-  const [online, setOnline] = useState(false);
-  const [inSync, setInSync] = useState(true);
+  const onSave = async (user: User) => {
+    if (editing) {
+      await updateUser(user);
+      dispatch({ type: 'update', user });
+    } else {
+      await createUser(user);
+      dispatch({ type: 'create', user });
+    }
+    setEditing(undefined);
+    setShowForm(false);
+  };
 
-  useEffect(() => {
-    initFirebase();
-    sync.start();
-    const off = bus.on('sync:status', s => {
-      setOnline(s.online);
-      setInSync(s.inSync);
-    });
-    return () => {
-      off();
-      sync.stop();
-    };
-  }, []);
+  const onDelete = async (user: User) => {
+    await deleteUser(user.id);
+    dispatch({ type: 'delete', id: user.id });
+  };
 
   return (
-    <SafeAreaView style={{flex: 1}}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>{online ? 'Online' : 'Offline'} {inSync ? '' : '• syncing...'}</Text>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Users</Text>
+        <Button title="Add" onPress={() => { setEditing(undefined); setShowForm(true); }} />
       </View>
-      <AppNavigator />
+      {showForm ? (
+        <UserForm initial={editing} onSave={onSave} onCancel={() => { setEditing(undefined); setShowForm(false); }} />
+      ) : (
+        <UserList users={state.users} onEdit={(u) => { setEditing(u); setShowForm(true); }} onDelete={onDelete} />
+      )}
+      <StatusBar style="auto" />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {padding: 6, backgroundColor: '#f2f2f2', alignItems: 'center'},
-  bannerText: {fontSize: 12, color: '#555'},
-});
+export default function App() {
+  return (
+    <StoreProvider>
+      <UsersScreen />
+    </StoreProvider>
+  );
+}
 
-export default App;
+const styles = StyleSheet.create({
+  header: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  title: { fontSize: 20, fontWeight: '700' },
+});

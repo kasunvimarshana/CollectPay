@@ -1,64 +1,51 @@
-## OfflineKVApp – Offline‑First React Native with Firestore
+# PKVApp (Expo, Offline-First)
 
-This app demonstrates a clean, modular architecture that supports robust offline capability and multi‑device sync using Firebase Firestore directly (no custom API).
+## Overview
 
-Key traits:
-
-- Clean architecture layering (domain, data, services, store, UI)
-- Offline‑first with Firestore local persistence and transactions
-- Intelligent sync hints and optimistic concurrency via `version`
-- User CRUD works offline and syncs when back online
+This React Native Expo app implements an offline-first architecture for user CRUD with reliable local persistence (SQLite), transactional writes, a durable sync queue, and pluggable conflict resolution. It is designed with SOLID principles, strict separation of concerns, and minimal dependencies.
 
 ## Architecture
 
-- `src/domain`: entities, repository interfaces, use cases
-- `src/data/firestore`: Firestore repository implementation and mappers
-- `src/services`: `SyncService` for network/snapshots sync events
-- `src/store`: Zustand store for UI‑level state
-- `src/ui`: screens and navigation
-- `src/config/firebase.ts`: initialization + persistence settings
+- **Domain**: `src/domain` contains `User` model and repository interfaces.
+- **Persistence**: `src/infrastructure/persistence/sqlite` provides a lightweight SQLite client and a `SQLiteUserRepository` implementing atomic writes + enqueueing sync ops.
+- **Sync**: `src/infrastructure/sync` includes a `SyncService`, conflict resolution strategies (default Last-Write-Wins), background fetch task, and a `SyncProvider` interface.
+- **Application State**: `src/application/state/Store.tsx` houses a small React context store coordinating repository + sync.
+- **UI**: `src/application/ui/components` provides clean, modular components for listing and editing users.
 
-## Prerequisites
+## Offline-First Strategy
 
-- React Native environment set up for Android/iOS
-- Firebase project with Firestore enabled
+- **Local DB (ACID)**: All CRUD operations execute inside transactions and persist to SQLite immediately.
+- **Outbox Queue**: Each write enqueues a `sync_operations` record for transmission when connectivity is available.
+- **Connectivity Check**: `expo-network` is used to opportunistically trigger sync when online; `expo-background-fetch` schedules periodic background sync.
+- **Conflict Resolution**: Default is Last-Write-Wins by `updatedAt`. Alternate strategies can be injected via the `ConflictResolver` interface.
 
-Android setup:
+## Direct MySQL Access — Important Constraints
 
-1. Download `google-services.json` from Firebase Console and place it at:
-   `android/app/google-services.json`
-2. Ensure the app package name matches `applicationId` in `android/app/build.gradle` (default `com.offlinekvapp`). Update Firebase config if you change it.
+Connecting directly to a remote MySQL instance from an Expo/React Native app is both infeasible and **not** an industry best practice:
 
-iOS setup (optional, if you plan to build for iOS):
+- **Security**: Shipping DB credentials in mobile apps exposes your database; TLS client cert management on mobile is brittle; no server-side access controls or auditing.
+- **Network**: Managed Expo environments cannot open raw TCP sockets to MySQL reliably; drivers target Node.js, not RN.
+- **Best Practices**: Mobile clients should use a secure sync/API layer with authentication, authorization, validation, and rate limiting.
 
-1. Download `GoogleService-Info.plist` and add it to the Xcode project under the iOS app target.
-2. Run `cd ios && pod install`.
+This app includes a stub `MySQLSyncProvider` that intentionally throws to prevent unsafe usage. To enable multi-device sync while preserving best practices, implement a thin **Sync Endpoint** (serverless or microservice) that:
 
-## Install & Run
+- Accepts batched operations (`create|update|delete`) with idempotency keys.
+- Applies transactions to MySQL with optimistic concurrency (`updatedAt` checks).
+- Returns authoritative records changed since a timestamp.
+- Uses token-based auth (e.g., OAuth2/JWT), TLS, and least-privilege DB access.
+
+## Running
 
 ```bash
-npm install
-npm start
-npm run android   # with an emulator or device connected
+# From the workspace root
+cd PKVApp
+npx expo start
+# or to quickly verify compilation in web
+npx expo start --web
 ```
 
-The banner at the top shows online/offline and basic sync status.
+## Next Steps
 
-## Conflict resolution & transactions
-
-- Each user document has a numeric `version`.
-- Writes run inside Firestore transactions and bump `version` and `updatedAt`.
-- Firestore’s offline queue ensures writes persist and sync later.
-- If two devices edit the same record, the later write wins by version; customize strategies in `FirestoreUserRepository` if you prefer different merge logic.
-
-## Folder Highlights
-
-- `src/domain/usecases/user/*`: CRUD use cases
-- `src/data/firestore/FirestoreUserRepository.ts`: direct Firestore access
-- `src/services/SyncService.ts`: network + snapshots in‑sync events
-- `src/ui/screens`: `UsersListScreen`, `UserFormScreen`
-
-## Notes
-
-- For production, secure Firestore via rules and add auth (email/anon/OAuth).
-- You can replace Firestore with another direct DB (e.g., Realm Sync or CouchDB/PouchDB) by implementing `UserRepository` for that backend.
+- Implement `SyncProvider` against a secure endpoint to enable multi-device sync.
+- Add unit tests for conflict resolution and repository transactions.
+- Consider EAS build for background fetch support on devices.
