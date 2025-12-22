@@ -3,100 +3,74 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Application\Services\Auth\AuthenticationService;
-use Illuminate\Http\JsonResponse;
+use App\Models\Device;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    public function __construct(
-        private readonly AuthenticationService $authService
-    ) {}
-
-    public function login(Request $request): JsonResponse
+    public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string|min:6',
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+            'device_id' => ['nullable', 'uuid'],
+            'device_name' => ['nullable', 'string', 'max:255'],
+            'platform' => ['nullable', 'string', 'max:64'],
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+        if (!Auth::attempt(['email' => $validated['email'], 'password' => $validated['password']])) {
+            return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 
-        try {
-            $result = $this->authService->login(
-                $request->input('email'),
-                $request->input('password')
-            );
+        /** @var User $user */
+        $user = $request->user();
 
-            return response()->json([
-                'success' => true,
-                'data' => $result,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], $e->getCode() ?: 500);
+        $deviceId = $validated['device_id'] ?? (string) Str::uuid();
+
+        $device = Device::query()->whereKey($deviceId)->first();
+        if ($device !== null && $device->user_id !== $user->id) {
+            return response()->json(['message' => 'Device already registered to another user.'], 409);
         }
+
+        Device::query()->updateOrCreate(
+            ['id' => $deviceId],
+            [
+                'user_id' => $user->id,
+                'device_name' => $validated['device_name'] ?? null,
+                'platform' => $validated['platform'] ?? null,
+                'last_seen_at' => now(),
+            ]
+        );
+
+        $token = $user->createToken('mobile:' . $deviceId)->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'device_id' => $deviceId,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ]);
     }
 
-    public function refresh(Request $request): JsonResponse
+    public function logout(Request $request)
     {
-        try {
-            $token = $request->bearerToken();
-            $newToken = $this->authService->refreshToken($token);
-
-            return response()->json([
-                'success' => true,
-                'data' => ['token' => $newToken],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 401);
-        }
+        $request->user()?->currentAccessToken()?->delete();
+        return response()->json(['ok' => true]);
     }
 
-    public function logout(Request $request): JsonResponse
+    public function me(Request $request)
     {
-        try {
-            $token = $request->bearerToken();
-            $this->authService->logout($token);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Logged out successfully',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function me(Request $request): JsonResponse
-    {
-        try {
-            $token = $request->bearerToken();
-            $userData = $this->authService->validateToken($token);
-
-            return response()->json([
-                'success' => true,
-                'data' => $userData,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 401);
-        }
+        $user = $request->user();
+        return response()->json([
+            'id' => $user?->id,
+            'name' => $user?->name,
+            'email' => $user?->email,
+        ]);
     }
 }
