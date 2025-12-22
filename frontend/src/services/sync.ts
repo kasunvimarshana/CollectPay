@@ -6,11 +6,32 @@ import { PaymentModel } from '../models/Payment';
 
 const LAST_SYNC_KEY = 'last_sync_timestamp';
 
+export interface CollectionServerData {
+  id: number;
+  client_id: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+  notes?: string;
+  metadata?: any;
+  version: number;
+}
+
+export interface PaymentServerData {
+  id: number;
+  client_id: string;
+  amount: number;
+  payment_type: string;
+  notes?: string;
+  metadata?: any;
+  version: number;
+}
+
 export interface SyncConflict {
   type: 'collection' | 'payment';
   clientId: string;
   message: string;
-  serverData?: any;
+  serverData?: CollectionServerData | PaymentServerData;
 }
 
 export interface SyncResult {

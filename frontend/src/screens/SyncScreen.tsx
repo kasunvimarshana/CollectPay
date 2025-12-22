@@ -11,6 +11,8 @@ import {
 import SyncService, { SyncConflict } from '../services/sync';
 import { format } from 'date-fns';
 
+const MAX_SYNC_HISTORY = 10;
+
 const SyncScreen = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
@@ -44,7 +46,7 @@ const SyncScreen = () => {
           conflicts: result.conflicts?.length || 0,
         };
         
-        setSyncHistory([newEntry, ...syncHistory.slice(0, 9)]);
+        setSyncHistory([newEntry, ...syncHistory.slice(0, MAX_SYNC_HISTORY - 1)]);
         await loadLastSyncTime();
 
         if (result.conflicts && result.conflicts.length > 0) {
