@@ -20,11 +20,15 @@ import SuppliersScreen from './src/screens/SuppliersScreen';
 import ProductsScreen from './src/screens/ProductsScreen';
 import CollectionsScreen from './src/screens/CollectionsScreen';
 import PaymentsScreen from './src/screens/PaymentsScreen';
+import ProductRateManagementScreen from './src/screens/ProductRateManagementScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
+  const user = useAppSelector(state => state.auth.user);
+  const canManageRates = user && (user.role === 'admin' || user.role === 'manager');
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -37,6 +41,13 @@ function MainTabs() {
       <Tab.Screen name="Products" component={ProductsScreen} />
       <Tab.Screen name="Collections" component={CollectionsScreen} />
       <Tab.Screen name="Payments" component={PaymentsScreen} />
+      {canManageRates && (
+        <Tab.Screen 
+          name="Rates" 
+          component={ProductRateManagementScreen}
+          options={{ title: 'Rate Mgmt' }}
+        />
+      )}
     </Tab.Navigator>
   );
 }

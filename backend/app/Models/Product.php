@@ -38,6 +38,10 @@ class Product extends Model
     {
         return $this->rates()
             ->where('effective_from', '<=', now())
+            ->where(function($query) {
+                $query->whereNull('effective_to')
+                      ->orWhere('effective_to', '>', now());
+            })
             ->orderBy('effective_from', 'desc')
             ->first()?->rate ?? $this->base_rate;
     }

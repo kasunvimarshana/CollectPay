@@ -110,6 +110,12 @@ New methods added:
 
 #### 4. UI Components
 
+**Navigation Integration**:
+- ProductRateManagementScreen is accessible via the bottom tab navigation
+- Visible only to users with admin or manager roles
+- Tab labeled "Rate Mgmt" for easy access
+- Seamlessly integrated into the main app flow
+
 **ProductRateManagementScreen** (`mobile/src/screens/ProductRateManagementScreen.tsx`):
 - Full-featured rate management interface
 - Two-step navigation: Select product → Manage rates
@@ -117,16 +123,22 @@ New methods added:
 - Add, edit, delete rate functionality
 - Modal-based form for rate entry
 - Date validation for effective periods
+- Shows creator information for each rate
+- Displays rate history ordered by effective date
 
 **Updated ProductsScreen**:
 - Now displays `current_rate` alongside `base_rate`
 - Highlights when current rate differs from base rate
 - Color-coded display (blue for current rate)
+- Visual indicator (⬆) when rate has changed from base
+- Rates displayed in a highlighted section for easy visibility
 
 **Updated CollectionsScreen**:
-- Shows the rate used for each collection
-- Displays warning if rate differs from current rate
-- Helps identify collections using outdated rates
+- Shows the rate used at the time of collection
+- Displays warning (⚠) if rate differs from current rate
+- Helps identify collections using historical rates
+- Rate information grouped in a highlighted section
+- Clear distinction between collection rate and current rate
 
 ## Usage Guide
 
@@ -397,10 +409,45 @@ For issues or questions:
 
 ## Changelog
 
-### Version 1.0.0 (Current)
+### Version 1.1.0 (Current)
+- Fixed `getCurrentRate()` method to properly check `effective_to` dates
+- Added ProductRateManagementScreen to main navigation (admin/manager only)
+- Enhanced ProductsScreen to display both base and current rates prominently
+- Improved CollectionsScreen to highlight rate differences with warnings
+- Updated sync service to automatically fetch updated products and rates
+- Improved offline-first architecture with automatic rate synchronization
+
+### Version 1.0.0
 - Initial implementation of product rate management
 - CRUD operations for product rates
 - Historical rate tracking
 - Current rate display in UI
 - Rate validation and overlap prevention
 - Role-based access control
+
+## Offline Functionality
+
+The system is designed to work seamlessly in offline mode:
+
+### Offline Behavior
+- **Product rates are cached**: When online, product rates are fetched and stored locally
+- **Collections use cached rates**: Offline collections use the last known current rate
+- **Rate history preserved**: All rate changes are stored locally and available offline
+- **Automatic sync on reconnect**: When connection is restored, the system:
+  1. Syncs pending collections and payments to server
+  2. Fetches updated products with current rates
+  3. Updates local cache with latest rate information
+
+### Sync Strategy
+The sync service automatically:
+- Monitors network connectivity
+- Triggers sync when connection is available
+- Fetches updated products and suppliers on every successful sync
+- Ensures rate changes are propagated to all devices
+- Handles conflicts gracefully with server-side resolution
+
+### Data Integrity
+- Collections retain their original rate even when product rates change
+- Rate changes don't affect historical collection values
+- Current rates are always up-to-date when online
+- Offline collections use the most recently synced rate information

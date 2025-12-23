@@ -33,12 +33,14 @@ export default function CollectionsScreen() {
             <Text style={styles.cardText}>
               Quantity: {item.quantity} {item.unit}
             </Text>
-            <Text style={styles.cardText}>Rate: ${item.rate}</Text>
-            {item.product?.current_rate && item.product.current_rate !== item.rate && (
-              <Text style={styles.cardTextWarning}>
-                (Current rate: ${item.product.current_rate})
-              </Text>
-            )}
+            <View style={styles.rateSection}>
+              <Text style={styles.cardText}>Rate at collection: ${item.rate}</Text>
+              {item.product?.current_rate && item.product.current_rate !== item.rate && (
+                <Text style={styles.cardTextWarning}>
+                  ⚠ Current rate: ${item.product.current_rate}
+                </Text>
+              )}
+            </View>
             <Text style={styles.cardAmount}>Total: ${item.total_amount}</Text>
             <Text style={styles.cardDate}>
               {format(new Date(item.collection_date), 'PPp')}
@@ -97,6 +99,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
+  },
+  rateSection: {
+    backgroundColor: '#f9f9f9',
+    padding: 8,
+    borderRadius: 6,
+    marginBottom: 8,
   },
   cardTextWarning: {
     fontSize: 13,

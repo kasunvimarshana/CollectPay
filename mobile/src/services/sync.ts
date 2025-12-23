@@ -6,6 +6,8 @@ import { setOnlineStatus, setLastSyncTimestamp, incrementPendingSyncCount } from
 import { startSync, syncSuccess, syncFailure, setConflicts } from '../store/slices/syncSlice';
 import { setCollections, addCollection as addCollectionToStore } from '../store/slices/collectionsSlice';
 import { setPayments, addPayment as addPaymentToStore } from '../store/slices/paymentsSlice';
+import { setProducts } from '../store/slices/productsSlice';
+import { setSuppliers } from '../store/slices/suppliersSlice';
 import apiService from './api';
 
 class SyncService {
@@ -32,6 +34,26 @@ class SyncService {
       const result = await apiService.sync(syncData);
 
       if (result.success) {
+        // Fetch updated products with current rates
+        try {
+          const productsResponse = await apiService.getProducts();
+          if (productsResponse.data) {
+            dispatch(setProducts(productsResponse.data));
+          }
+        } catch (error) {
+          console.error('Failed to fetch products during sync:', error);
+        }
+
+        // Fetch updated suppliers
+        try {
+          const suppliersResponse = await apiService.getSuppliers();
+          if (suppliersResponse.data) {
+            dispatch(setSuppliers(suppliersResponse.data));
+          }
+        } catch (error) {
+          console.error('Failed to fetch suppliers during sync:', error);
+        }
+
         // Update local store with server data
         if (result.server_collections && result.server_collections.length > 0) {
           result.server_collections.forEach((collection: any) => {

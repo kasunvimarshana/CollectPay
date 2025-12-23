@@ -13,18 +13,25 @@ export default function ProductsScreen() {
       <FlatList
         data={products}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            {item.description && <Text style={styles.cardText}>{item.description}</Text>}
-            <Text style={styles.cardText}>Base Rate: ${item.base_rate}</Text>
-            {item.current_rate && item.current_rate !== item.base_rate && (
-              <Text style={styles.cardTextHighlight}>Current Rate: ${item.current_rate}</Text>
-            )}
-            <Text style={styles.cardText}>Unit Type: {item.unit_type}</Text>
-            <Text style={styles.cardText}>Status: {item.status}</Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const displayRate = item.current_rate || item.base_rate;
+          const rateChanged = item.current_rate && item.current_rate !== item.base_rate;
+          
+          return (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{item.name}</Text>
+              {item.description && <Text style={styles.cardText}>{item.description}</Text>}
+              <View style={styles.rateContainer}>
+                <Text style={styles.cardText}>Base Rate: ${item.base_rate}</Text>
+                <Text style={rateChanged ? styles.cardTextHighlight : styles.cardText}>
+                  Current Rate: ${displayRate}{rateChanged ? ' ⬆' : ''}
+                </Text>
+              </View>
+              <Text style={styles.cardText}>Unit Type: {item.unit_type}</Text>
+              <Text style={styles.cardText}>Status: {item.status}</Text>
+            </View>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No products yet</Text>
@@ -71,6 +78,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
+  },
+  rateContainer: {
+    backgroundColor: '#f9f9f9',
+    padding: 8,
+    borderRadius: 6,
+    marginBottom: 8,
   },
   cardTextHighlight: {
     fontSize: 14,
