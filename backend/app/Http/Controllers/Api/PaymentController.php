@@ -4,10 +4,22 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Services\PaymentCalculationService;
+use App\Services\AuthorizationService;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
+    protected PaymentCalculationService $paymentService;
+    protected AuthorizationService $authService;
+    
+    public function __construct(
+        PaymentCalculationService $paymentService,
+        AuthorizationService $authService
+    ) {
+        $this->paymentService = $paymentService;
+        $this->authService = $authService;
+    }
     public function index(Request $request)
     {
         $query = Payment::with(['supplier', 'user']);
@@ -55,12 +67,31 @@ class PaymentController extends Controller
             'device_id' => 'nullable|string',
         ]);
 
+        // Validate payment against supplier balance
+        $validation = $this->paymentService->validatePayment(
+            $validated['supplier_id'],
+            $validated['amount'],
+            $validated['payment_type']
+        );
+        
+        if (!$validation['valid']) {
+            return response()->json([
+                'message' => 'Payment validation failed',
+                'errors' => $validation['errors'],
+                'warnings' => $validation['warnings'] ?? [],
+            ], 422);
+        }
+
         $validated['user_id'] = $request->user()->id;
 
         $payment = Payment::create($validated);
         $payment->load(['supplier', 'user']);
 
-        return response()->json($payment, 201);
+        return response()->json([
+            'payment' => $payment,
+            'balance' => $validation['new_balance'],
+            'warnings' => $validation['warnings'] ?? [],
+        ], 201);
     }
 
     public function show(Payment $payment)
@@ -95,5 +126,56 @@ class PaymentController extends Controller
         return response()->json([
             'message' => 'Payment deleted successfully',
         ]);
+    }
+    
+    /**
+     * Get supplier balance
+     */
+    public function getSupplierBalance(Request $request, int $supplierId)
+    {
+        $upToDate = $request->get('up_to_date');
+        $balance = $this->paymentService->calculateSupplierBalance($supplierId, $upToDate);
+        
+        return response()->json($balance);
+    }
+    
+    /**
+     * Get payment summary for all suppliers
+     */
+    public function getPaymentSummary(Request $request)
+    {
+        $summary = $this->paymentService->getPaymentSummary();
+        
+        return response()->json($summary);
+    }
+    
+    /**
+     * Get detailed payment history for a supplier
+     */
+    public function getSupplierHistory(Request $request, int $supplierId)
+    {
+        $history = $this->paymentService->getSupplierPaymentHistory($supplierId);
+        
+        return response()->json($history);
+    }
+    
+    /**
+     * Validate a payment before creation
+     */
+    public function validatePayment(Request $request)
+    {
+        $validated = $request->validate([
+            'supplier_id' => 'required|integer',
+            'amount' => 'required|numeric|min:0.01',
+            'payment_type' => 'required|in:advance,partial,full',
+        ]);
+        
+        $validation = $this->paymentService->validatePayment(
+            $validated['supplier_id'],
+            $validated['amount'],
+            $validated['payment_type']
+        );
+        
+        return response()->json($validation);
     }
 }

@@ -222,6 +222,32 @@ class ApiService {
     return response.data;
   }
 
+  // Payment calculations and reports
+  async validatePayment(data: {
+    supplier_id: number;
+    amount: number;
+    payment_type: 'advance' | 'partial' | 'full';
+  }) {
+    const response = await this.api.post('/payments/validate', data);
+    return response.data;
+  }
+
+  async getPaymentSummary() {
+    const response = await this.api.get('/payments/summary');
+    return response.data;
+  }
+
+  async getSupplierBalance(supplierId: number, upToDate?: string) {
+    const params = upToDate ? { up_to_date: upToDate } : {};
+    const response = await this.api.get(`/suppliers/${supplierId}/balance`, { params });
+    return response.data;
+  }
+
+  async getSupplierPaymentHistory(supplierId: number) {
+    const response = await this.api.get(`/suppliers/${supplierId}/payment-history`);
+    return response.data;
+  }
+
   // Sync
   async sync(data: {
     device_id: string;
