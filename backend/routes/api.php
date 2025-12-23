@@ -36,6 +36,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Payments
     Route::apiResource('payments', PaymentController::class);
+    Route::post('/payments/validate', [PaymentController::class, 'validatePayment']);
+    Route::get('/payments/summary', [PaymentController::class, 'getPaymentSummary']);
+    Route::get('/suppliers/{supplierId}/balance', [PaymentController::class, 'getSupplierBalance']);
+    Route::get('/suppliers/{supplierId}/payment-history', [PaymentController::class, 'getSupplierHistory']);
     
     // Sync
     Route::post('/sync', [SyncController::class, 'sync']);
