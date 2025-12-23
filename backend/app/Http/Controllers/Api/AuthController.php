@@ -3,48 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function login(LoginRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'phone' => 'nullable|string|max:20',
-            'device_id' => 'nullable|string|max:255',
-        ]);
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'phone' => $validated['phone'] ?? null,
-            'device_id' => $validated['device_id'] ?? null,
-            'role' => 'collector',
-        ]);
-
-        $token = $user->createToken('mobile-app')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 201);
-    }
-
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-            'device_id' => 'nullable|string',
-        ]);
-
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -53,35 +23,89 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($user->status !== 'active') {
-            throw ValidationException::withMessages([
-                'email' => ['Your account is not active.'],
-            ]);
+        if (!$user->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has been deactivated.',
+            ], 403);
         }
 
-        if ($request->device_id) {
-            $user->update(['device_id' => $request->device_id]);
-        }
+        // Delete old tokens
+        $user->tokens()->delete();
 
-        $token = $user->createToken('mobile-app')->plainTextToken;
+        // Create new token
+        $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json([
-            'user' => $user,
-            'token' => $token,
+            'success' => true,
+            'data' => [
+                'user' => $user,
+                'token' => $token,
+            ],
+            'message' => 'Login successful',
         ]);
     }
 
-    public function logout(Request $request)
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role ?? 'user',
+            'is_active' => true,
+        ]);
+
+        $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json([
-            'message' => 'Logged out successfully',
+            'success' => true,
+            'data' => [
+                'user' => $user,
+                'token' => $token,
+            ],
+            'message' => 'Registration successful',
+        ], 201);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $token = $request->user()->currentAccessToken();
+        
+        if ($token) {
+            $token->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout successful',
         ]);
     }
 
-    public function user(Request $request)
+    public function refresh(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        
+        // Delete old tokens
+        $user->tokens()->delete();
+        
+        // Create new token
+        $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'token' => $token,
+            ],
+            'message' => 'Token refreshed successfully',
+        ]);
+    }
+
+    public function user(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user(),
+        ]);
     }
 }

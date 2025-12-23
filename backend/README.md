@@ -1,145 +1,59 @@
-# TransacTrack Backend API
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-Laravel-based REST API for the TransacTrack data collection and payment management system.
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-## Features
+## About Laravel
 
-- **Authentication**: JWT-based authentication using Laravel Sanctum
-- **Supplier Management**: Create, read, update, delete supplier profiles with location tracking
-- **Product Management**: Manage products with flexible unit types and dynamic pricing
-- **Collection Tracking**: Record product collections with automatic payment calculations
-- **Payment Management**: Track advance, partial, and full payments
-- **Offline Sync**: Robust synchronization with conflict detection and resolution
-- **Multi-user Support**: Role-based access control (RBAC) for different user types
-- **Data Security**: Encrypted data handling and secure transactions
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-## Requirements
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-- PHP >= 8.1
-- MySQL >= 5.7 or MariaDB >= 10.3
-- Composer
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Installation
+## Learning Laravel
 
-1. Copy environment file:
-```bash
-cp .env.example .env
-```
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
 
-2. Install dependencies:
-```bash
-composer install
-```
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-3. Generate application key:
-```bash
-php artisan key:generate
-```
+## Laravel Sponsors
 
-4. Configure database in `.env`:
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=transactrack
-DB_USERNAME=root
-DB_PASSWORD=
-```
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-5. Run migrations:
-```bash
-php artisan migrate
-```
+### Premium Partners
 
-6. (Optional) Seed database:
-```bash
-php artisan db:seed
-```
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
 
-7. Start development server:
-```bash
-php artisan serve
-```
+## Contributing
 
-The API will be available at `http://localhost:8000`
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-## API Endpoints
+## Code of Conduct
 
-### Authentication
-- `POST /api/register` - Register new user
-- `POST /api/login` - Login user
-- `POST /api/logout` - Logout user
-- `GET /api/user` - Get authenticated user
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-### Suppliers
-- `GET /api/suppliers` - List all suppliers
-- `POST /api/suppliers` - Create new supplier
-- `GET /api/suppliers/{id}` - Get supplier details
-- `PUT /api/suppliers/{id}` - Update supplier
-- `DELETE /api/suppliers/{id}` - Delete supplier
+## Security Vulnerabilities
 
-### Products
-- `GET /api/products` - List all products
-- `POST /api/products` - Create new product
-- `GET /api/products/{id}` - Get product details
-- `PUT /api/products/{id}` - Update product
-- `DELETE /api/products/{id}` - Delete product
-
-### Collections
-- `GET /api/collections` - List all collections
-- `POST /api/collections` - Create new collection
-- `GET /api/collections/{id}` - Get collection details
-- `PUT /api/collections/{id}` - Update collection
-- `DELETE /api/collections/{id}` - Delete collection
-
-### Payments
-- `GET /api/payments` - List all payments
-- `POST /api/payments` - Create new payment
-- `GET /api/payments/{id}` - Get payment details
-- `PUT /api/payments/{id}` - Update payment
-- `DELETE /api/payments/{id}` - Delete payment
-
-### Sync
-- `POST /api/sync` - Synchronize offline data
-- `POST /api/sync/conflicts/{id}/resolve` - Resolve sync conflict
-
-## Security
-
-- All API endpoints (except register/login) require authentication
-- Uses Laravel Sanctum for token-based authentication
-- CORS configured for cross-origin requests
-- Input validation on all endpoints
-- SQL injection protection via Eloquent ORM
-- XSS protection via Laravel's built-in escape functions
-
-## Architecture
-
-The backend follows clean architecture principles:
-
-- **Models**: Eloquent models representing database entities
-- **Controllers**: API controllers handling HTTP requests
-- **Migrations**: Database schema definitions
-- **Policies**: Authorization logic (RBAC/ABAC)
-- **Services**: Business logic layer (to be expanded)
-- **Repositories**: Data access layer (to be expanded)
-
-## Database Schema
-
-- `users` - System users with roles
-- `suppliers` - Supplier profiles
-- `products` - Product catalog
-- `product_rates` - Historical product pricing
-- `collections` - Product collection records
-- `payments` - Payment transactions
-- `sync_conflicts` - Conflict tracking for offline sync
-
-## Testing
-
-Run tests with:
-```bash
-php artisan test
-```
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
 ## License
 
-MIT License
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
