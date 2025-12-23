@@ -12,8 +12,9 @@ import { store, persistor } from './src/store';
 import { useAppDispatch, useAppSelector } from './src/hooks/redux';
 import { setDeviceId } from './src/store/slices/appSlice';
 import { useNetworkMonitoring, useAutoSync } from './src/services/sync';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
-// Screens (will be created next)
+// Screens
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import SuppliersScreen from './src/screens/SuppliersScreen';
@@ -80,12 +81,12 @@ function AppNavigator() {
 
 function AppContent() {
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="auto" />
       <NavigationContainer>
         <AppNavigator />
       </NavigationContainer>
-    </>
+    </ErrorBoundary>
   );
 }
 
