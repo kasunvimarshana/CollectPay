@@ -2,83 +2,102 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
-        'code',
+        'uuid',
         'name',
+        'code',
         'description',
-        'unit_type',
-        'primary_unit',
-        'allowed_units',
-        'is_active',
+        'category',
+        'units',
+        'default_unit',
         'metadata',
+        'is_active',
+        'created_by',
+        'updated_by',
+        'synced_at',
+        'device_id',
+        'version',
     ];
 
-    protected $casts = [
-        'allowed_units' => 'array',
-        'metadata' => 'array',
-        'is_active' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'units' => 'array',
+            'metadata' => 'array',
+            'is_active' => 'boolean',
+            'synced_at' => 'datetime',
+            'deleted_at' => 'datetime',
+        ];
+    }
 
     protected static function boot()
     {
         parent::boot();
         
-        static::creating(function ($product) {
-            if (empty($product->code)) {
-                $product->code = 'PRD-' . strtoupper(uniqid());
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
             }
-            
-            // Set default allowed units based on unit type
-            if (empty($product->allowed_units)) {
-                $product->allowed_units = $product->unit_type === 'weight' 
-                    ? ['gram', 'kilogram']
-                    : ['milliliter', 'liter'];
+            if (empty($model->version)) {
+                $model->version = 1;
             }
+        });
+
+        static::updating(function ($model) {
+            $model->version++;
         });
     }
 
+    /**
+     * Get the user who created this product.
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the rates for this product.
+     */
     public function rates(): HasMany
     {
         return $this->hasMany(ProductRate::class);
     }
 
-    public function currentRate()
+    /**
+     * Get the active rate for this product and unit
+     */
+    public function getActiveRate(string $unit, $timestamp = null)
     {
-        return $this->hasOne(ProductRate::class)
-            ->where('is_current', true)
-            ->where('effective_from', '<=', now())
-            ->where(function ($query) {
-                $query->whereNull('effective_to')
-                    ->orWhere('effective_to', '>=', now());
-            })
-            ->latest('effective_from');
-    }
+        $timestamp = $timestamp ?? now();
 
-    public function collections(): HasMany
-    {
-        return $this->hasMany(Collection::class);
-    }
-
-    public function getRateForDate($date = null)
-    {
-        $date = $date ?? now();
-        
         return $this->rates()
-            ->where('effective_from', '<=', $date)
-            ->where(function ($query) use ($date) {
-                $query->whereNull('effective_to')
-                    ->orWhere('effective_to', '>=', $date);
+            ->where('unit', $unit)
+            ->where('is_active', true)
+            ->where('valid_from', '<=', $timestamp)
+            ->where(function ($query) use ($timestamp) {
+                $query->whereNull('valid_to')
+                    ->orWhere('valid_to', '>=', $timestamp);
             })
-            ->latest('effective_from')
+            ->orderBy('version', 'desc')
             ->first();
+    }
+
+    /**
+     * Get collection items for this product.
+     */
+    public function collectionItems(): HasMany
+    {
+        return $this->hasMany(CollectionItem::class);
     }
 }

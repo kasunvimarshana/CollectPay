@@ -7,59 +7,61 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductRateController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\SyncController;
-use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group. Make something great!
+|
+*/
+
 // Public routes
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/register', [AuthController::class, 'register']);
+Route::prefix('auth')->group(function () {
+    Route::post('register', [AuthController::class, 'register']);
+    Route::post('login', [AuthController::class, 'login']);
+});
 
 // Protected routes
-Route::middleware('auth:sanctum')->group(function () {
-    // Auth
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/user', [AuthController::class, 'user']);
-    Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
-    Route::put('/auth/password', [AuthController::class, 'updatePassword']);
+Route::middleware('auth:api')->group(function () {
+    // Auth routes
+    Route::prefix('auth')->group(function () {
+        Route::get('me', [AuthController::class, 'me']);
+        Route::post('logout', [AuthController::class, 'logout']);
+        Route::post('refresh', [AuthController::class, 'refresh']);
+    });
 
-    // Dashboard
-    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
-    Route::get('/dashboard/recent-activity', [DashboardController::class, 'recentActivity']);
-
-    // Suppliers
+    // Supplier routes
     Route::apiResource('suppliers', SupplierController::class);
-    Route::get('/suppliers/{supplier}/balance', [SupplierController::class, 'balance']);
-    Route::get('/suppliers/{supplier}/transactions', [SupplierController::class, 'transactions']);
+    Route::get('suppliers/{supplier}/balance', [SupplierController::class, 'balance']);
 
-    // Products
+    // Product routes
     Route::apiResource('products', ProductController::class);
-    Route::get('/products/{product}/current-rate', [ProductController::class, 'currentRate']);
+    
+    // Product Rate routes
+    Route::apiResource('product-rates', ProductRateController::class);
+    Route::get('products/{product}/rates', [ProductRateController::class, 'productRates']);
+    Route::get('products/{product}/active-rate', [ProductRateController::class, 'activeRate']);
 
-    // Product Rates (Admin only)
-    Route::middleware('rbac:admin,manager')->group(function () {
-        Route::apiResource('product-rates', ProductRateController::class)->except(['update']);
-        Route::get('/products/{product}/rates', [ProductRateController::class, 'productRates']);
-    });
-
-    // Collections
+    // Collection routes
     Route::apiResource('collections', CollectionController::class);
-    Route::get('/my-collections', [CollectionController::class, 'myCollections']);
+    Route::post('collections/{collection}/confirm', [CollectionController::class, 'confirm']);
+    Route::post('collections/{collection}/cancel', [CollectionController::class, 'cancel']);
 
-    // Payments (Admin and Manager only for create/update/delete)
-    Route::get('/payments', [PaymentController::class, 'index']);
-    Route::get('/payments/{payment}', [PaymentController::class, 'show']);
-    Route::middleware('rbac:admin,manager')->group(function () {
-        Route::post('/payments', [PaymentController::class, 'store']);
-        Route::put('/payments/{payment}', [PaymentController::class, 'update']);
-        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy']);
-    });
+    // Payment routes
+    Route::apiResource('payments', PaymentController::class);
+    Route::post('payments/{payment}/confirm', [PaymentController::class, 'confirm']);
+    Route::get('suppliers/{supplier}/transactions', [PaymentController::class, 'transactions']);
 
-    // Sync endpoints
+    // Sync routes
     Route::prefix('sync')->group(function () {
-        Route::post('/push', [SyncController::class, 'push']);
-        Route::get('/pull', [SyncController::class, 'pull']);
-        Route::get('/status', [SyncController::class, 'status']);
-        Route::post('/resolve-conflict/{syncQueue}', [SyncController::class, 'resolveConflict']);
-        Route::get('/conflicts', [SyncController::class, 'conflicts']);
+        Route::post('push', [SyncController::class, 'push']);
+        Route::get('pull', [SyncController::class, 'pull']);
+        Route::get('status', [SyncController::class, 'status']);
+        Route::post('resolve-conflict', [SyncController::class, 'resolveConflict']);
     });
 });

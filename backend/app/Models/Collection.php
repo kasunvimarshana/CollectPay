@@ -2,108 +2,143 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Collection extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
+        'uuid',
         'collection_number',
         'supplier_id',
-        'product_id',
-        'collector_id',
-        'quantity',
-        'unit',
-        'quantity_in_base_unit',
-        'rate_id',
-        'rate_applied',
-        'amount',
+        'collected_by',
         'collected_at',
         'notes',
+        'status',
+        'total_amount',
         'metadata',
-        'client_uuid',
-        'is_synced',
         'synced_at',
-        'sync_version',
         'device_id',
+        'version',
+        'client_created_at',
+        'conflict_status',
+        'conflict_data',
     ];
 
-    protected $casts = [
-        'quantity' => 'decimal:3',
-        'quantity_in_base_unit' => 'decimal:3',
-        'rate_applied' => 'decimal:2',
-        'amount' => 'decimal:2',
-        'collected_at' => 'datetime',
-        'synced_at' => 'datetime',
-        'is_synced' => 'boolean',
-        'metadata' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'collected_at' => 'datetime',
+            'total_amount' => 'decimal:2',
+            'metadata' => 'array',
+            'synced_at' => 'datetime',
+            'client_created_at' => 'datetime',
+            'conflict_data' => 'array',
+            'deleted_at' => 'datetime',
+        ];
+    }
 
     protected static function boot()
     {
         parent::boot();
         
-        static::creating(function ($collection) {
-            if (empty($collection->collection_number)) {
-                $collection->collection_number = 'COL-' . date('Ymd') . '-' . strtoupper(uniqid());
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
             }
             
-            // Convert quantity to base unit
-            $collection->quantity_in_base_unit = self::convertToBaseUnit(
-                $collection->quantity,
-                $collection->unit
-            );
-            
-            // Calculate amount if not set
-            if (empty($collection->amount)) {
-                $collection->amount = $collection->quantity_in_base_unit * $collection->rate_applied;
+            if (empty($model->collection_number)) {
+                $model->collection_number = 'COL-' . date('Ymd') . '-' . str_pad(
+                    static::whereDate('created_at', today())->count() + 1,
+                    5,
+                    '0',
+                    STR_PAD_LEFT
+                );
             }
+
+            if (empty($model->version)) {
+                $model->version = 1;
+            }
+
+            if (empty($model->collected_at)) {
+                $model->collected_at = now();
+            }
+        });
+
+        static::updating(function ($model) {
+            $model->version++;
+        });
+
+        // Recalculate total when items change
+        static::saved(function ($model) {
+            $model->recalculateTotal();
         });
     }
 
+    /**
+     * Get the supplier for this collection.
+     */
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class);
-    }
-
+    /**
+     * Get the user who collected this.
+     */
     public function collector(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'collector_id');
+        return $this->belongsTo(User::class, 'collected_by');
     }
 
-    public function rate(): BelongsTo
+    /**
+     * Get the items for this collection.
+     */
+    public function items(): HasMany
     {
-        return $this->belongsTo(ProductRate::class, 'rate_id');
+        return $this->hasMany(CollectionItem::class);
     }
 
-    public static function convertToBaseUnit(float $quantity, string $unit): float
+    /**
+     * Recalculate total amount from items
+     */
+    public function recalculateTotal(): void
     {
-        return match($unit) {
-            'gram' => $quantity / 1000,
-            'kilogram' => $quantity,
-            'milliliter' => $quantity / 1000,
-            'liter' => $quantity,
-            default => $quantity,
-        };
+        $total = $this->items()->sum('amount');
+        if ($this->total_amount != $total) {
+            $this->update(['total_amount' => $total]);
+        }
     }
 
-    public static function convertFromBaseUnit(float $quantity, string $unit): float
+    /**
+     * Create transaction entry when collection is confirmed
+     */
+    public function createTransaction(): void
     {
-        return match($unit) {
-            'gram' => $quantity * 1000,
-            'kilogram' => $quantity,
-            'milliliter' => $quantity * 1000,
-            'liter' => $quantity,
-            default => $quantity,
-        };
+        if ($this->status === 'confirmed' && !$this->transactions()->exists()) {
+            PaymentTransaction::create([
+                'uuid' => (string) Str::uuid(),
+                'supplier_id' => $this->supplier_id,
+                'collection_id' => $this->id,
+                'type' => 'debit',
+                'amount' => $this->total_amount,
+                'balance' => $this->supplier->balance,
+                'transaction_date' => $this->collected_at,
+                'description' => "Collection #{$this->collection_number}",
+            ]);
+        }
+    }
+
+    /**
+     * Get transactions related to this collection
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(PaymentTransaction::class);
     }
 }
