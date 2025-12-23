@@ -1,417 +1,327 @@
-"# FieldPay
+"# TransacTrack
 
-A comprehensive, secure, and production-ready data collection and payment management application designed for field workers operating in rural or low-connectivity environments.
+A comprehensive, secure, and production-ready data collection and payment management system designed for field workers operating in rural or low-connectivity environments.
 
-## 🎯 Project Status
+## Overview
 
-**Foundation Complete**: The core architecture, database schema, models, and authentication system are fully implemented and production-ready. Comprehensive documentation provides a clear path to completion.
+TransacTrack is a full-stack application consisting of:
+- **Backend**: Laravel REST API with robust security and sync mechanisms
+- **Frontend**: React Native (Expo) mobile app with offline-first architecture
 
-**Current Progress**: ~70% Backend | ~15% Frontend | 100% Documentation
+## Key Features
 
-## ✨ Features
+### Core Functionality
+- **Supplier Management**: Detailed profiles with contact info, location, and metadata
+- **Product Collection Tracking**: Multiple unit support (g, kg, ml, l)
+- **Payment Management**: Advance, partial, and full payments with various methods
+- **Dynamic Pricing**: Fluctuating rates with historical tracking
+- **Automatic Calculations**: Transparent payment computation
 
 ### Offline-First Architecture
-- **Work Without Internet**: Seamlessly continue operations when offline
-- **Automatic Sync**: Changes sync automatically when connectivity returns
-- **Conflict Resolution**: Intelligent conflict detection and resolution strategies
-- **Version Control**: Optimistic locking prevents data loss
+- **Network Monitoring**: Real-time connectivity detection
+- **Local Storage**: Complete offline functionality
+- **Automatic Sync**: Background synchronization when online
+- **Conflict Resolution**: Robust multi-device conflict handling
+- **Queue Management**: Pending operations tracked and synced
 
-### Supplier Management
-- Comprehensive profiles with contact information
-- Geolocation support (latitude/longitude)
-- Custom metadata fields
-- Automatic balance calculation
-- Transaction history
+### Security
+- **Authentication**: JWT-based authentication with Laravel Sanctum
+- **Authorization**: RBAC (Role-Based Access Control)
+- **Data Encryption**: Secure storage and transmission
+- **Input Validation**: Comprehensive validation on both client and server
+- **SQL Injection Protection**: Eloquent ORM with prepared statements
+- **XSS Protection**: Built-in Laravel security features
 
-### Product Collection Tracking
-- Multi-unit support (kg, liters, pieces, etc.)
-- Real-time quantity tracking
-- User attribution for every entry
-- Automated amount calculations
-- Historical rate preservation
+### Architecture
+- **Clean Code**: SOLID principles throughout
+- **DRY**: No code duplication
+- **Separation of Concerns**: Clear layer separation
+- **Minimal Dependencies**: Only essential, LTS-supported libraries
+- **Scalable Design**: Ready for growth
 
-### Financial Management
-- **Payment Types**: Advance, partial, full, adjustment
-- **Rate Versioning**: Time-based rates with historical integrity
-- **Auto-Calculation**: Transparent payment calculations
-- **Transaction Ledger**: Complete audit trail
-- **Balance Tracking**: Real-time supplier balances
-
-### Security & Authorization
-- **JWT Authentication**: Secure token-based authentication
-- **RBAC**: Role-based access control (Admin, Manager, Collector, Viewer)
-- **ABAC**: Attribute-based access control support
-- **Encrypted Storage**: Secure data handling
-- **Permission System**: Granular resource-level permissions
-
-### Multi-Device Support
-- UUID-based entity identification
-- Device tracking
-- Concurrent operation support
-- Deterministic conflict resolution
-- Data integrity guarantees
-
-## 🏗️ Architecture
-
-### Backend (Laravel 12)
-- **Framework**: Laravel 12.x with PHP 8.3
-- **Authentication**: JWT (tymon/jwt-auth)
-- **Database**: MySQL/PostgreSQL with comprehensive schema
-- **API**: RESTful with versioning support
-- **Architecture**: Clean code, SOLID principles, DRY
-
-**Key Models**:
-- User (with JWT, roles, permissions)
-- Supplier (with balance calculation)
-- Product (with multi-unit support)
-- ProductRate (with automatic versioning)
-- Collection (with auto-numbering)
-- CollectionItem (with rate application)
-- Payment (with transaction creation)
-- PaymentTransaction (ledger system)
-- SyncLog (conflict tracking)
-
-### Frontend (React Native/Expo)
-- **Framework**: React Native with Expo SDK
-- **Database**: SQLite for offline storage
-- **State Management**: Context API
-- **Network**: NetInfo for connectivity monitoring
-- **Security**: SecureStore for sensitive data
-
-## 📂 Project Structure
+## Project Structure
 
 ```
-FieldPay/
+TransacTrack/
 ├── backend/                 # Laravel API
 │   ├── app/
-│   │   ├── Models/         # Eloquent models (fully implemented)
 │   │   ├── Http/
-│   │   │   └── Controllers/Api/  # API controllers
+│   │   │   └── Controllers/
+│   │   │       └── Api/    # API controllers
+│   │   ├── Models/         # Eloquent models
+│   │   ├── Services/       # Business logic
+│   │   └── Repositories/   # Data access layer
+│   ├── config/             # Configuration files
 │   ├── database/
-│   │   ├── migrations/     # Complete schema (12+ migrations)
-│   │   └── seeders/        # Roles and permissions
-│   ├── routes/
-│   │   └── api.php         # API routes
-│   └── config/             # Configuration files
-├── frontend/               # React Native/Expo app
-│   ├── src/               # Source code (structure defined)
-│   │   ├── api/           # API clients
-│   │   ├── components/    # React components
-│   │   ├── contexts/      # State management
-│   │   ├── database/      # SQLite operations
-│   │   ├── navigation/    # Navigation structure
-│   │   ├── screens/       # App screens
-│   │   ├── services/      # Business logic
-│   │   └── utils/         # Utilities
-│   ├── assets/            # Images and fonts
-│   └── App.js             # Root component
-├── ARCHITECTURE.md         # System design documentation
-├── IMPLEMENTATION_GUIDE.md # Step-by-step implementation
-├── API_DOCUMENTATION.md    # Complete API reference
-├── DEPLOYMENT.md          # Production deployment guide
-└── README.md              # This file
+│   │   └── migrations/     # Database schema
+│   └── routes/
+│       └── api.php         # API routes
+│
+├── mobile/                  # React Native app
+│   ├── src/
+│   │   ├── components/     # UI components
+│   │   ├── screens/        # Screen components
+│   │   ├── services/       # API & sync services
+│   │   ├── store/          # Redux state management
+│   │   └── types/          # TypeScript types
+│   └── App.tsx             # Main app component
+│
+└── README.md               # This file
 ```
 
-## 🚀 Quick Start
+## Getting Started
+
+### Prerequisites
+
+- **Backend**:
+  - PHP >= 8.1
+  - Composer
+  - MySQL >= 5.7 or MariaDB >= 10.3
+
+- **Frontend**:
+  - Node.js >= 18
+  - npm or yarn
+  - Expo CLI
 
 ### Backend Setup
 
+1. Navigate to backend directory:
 ```bash
 cd backend
+```
 
-# Install dependencies
+2. Install dependencies:
+```bash
 composer install
+```
 
-# Configure environment
+3. Configure environment:
+```bash
 cp .env.example .env
-nano .env  # Update database credentials
+# Edit .env with your database credentials
+```
 
-# Generate keys
-php artisan key:generate
-php artisan jwt:secret
-
-# Run migrations
+4. Run migrations:
+```bash
 php artisan migrate
+```
 
-# Seed roles and permissions
-php artisan db:seed --class=RolesAndPermissionsSeeder
-
-# Start development server
+5. Start server:
+```bash
 php artisan serve
 ```
 
-### Frontend Setup
+API will be available at `http://localhost:8000`
 
+See [backend/README.md](backend/README.md) for detailed instructions.
+
+### Mobile App Setup
+
+1. Navigate to mobile directory:
 ```bash
-cd frontend
+cd mobile
+```
 
-# Install dependencies
+2. Install dependencies:
+```bash
 npm install
+```
 
-# Start development server
+3. Configure API endpoint in `app.json`:
+```json
+{
+  "expo": {
+    "extra": {
+      "apiUrl": "http://localhost:8000/api"
+    }
+  }
+}
+```
+
+4. Start the app:
+```bash
 npm start
-
-# Run on Android
-npm run android
-
-# Run on iOS (macOS only)
-npm run ios
-
-# Run on web
-npm run web
 ```
 
-## 📚 Documentation
+See [mobile/README.md](mobile/README.md) for detailed instructions.
 
-### For Developers
-- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Complete system architecture and design decisions
-- **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)**: Step-by-step implementation guide with code examples
-- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)**: Comprehensive API reference with examples
+## API Documentation
 
-### For DevOps
-- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Production deployment guide with server setup, configuration, and maintenance
+### Authentication Endpoints
 
-### Quick References
-- **Database Schema**: See migrations in `backend/database/migrations/`
-- **Model Relationships**: Check model files in `backend/app/Models/`
-- **API Routes**: Review `backend/routes/api.php`
-- **Seeder Data**: Check `backend/database/seeders/`
+- `POST /api/register` - Register new user
+- `POST /api/login` - Login user
+- `POST /api/logout` - Logout user
+- `GET /api/user` - Get authenticated user
 
-## 🎓 Implementation Roadmap
+### Resource Endpoints
 
-### Phase 1: Foundation ✅ (Completed)
-- [x] Project initialization
-- [x] Database schema design
-- [x] Model implementation
-- [x] Authentication system
-- [x] API structure
-- [x] Documentation
+All resource endpoints follow RESTful conventions and require authentication:
 
-### Phase 2: Backend API (In Progress)
-- [ ] Controller implementations
-- [ ] Request validation
-- [ ] API resources
-- [ ] Service layer
-- [ ] Authorization middleware
-- [ ] Testing
+- `/api/suppliers` - Supplier management
+- `/api/products` - Product management
+- `/api/collections` - Collection tracking
+- `/api/payments` - Payment management
 
-**Estimated Time**: 8-11 hours
+### Sync Endpoints
 
-### Phase 3: Frontend Development
-- [ ] Navigation setup
-- [ ] Context implementation
-- [ ] Screen development
-- [ ] Local database
-- [ ] Sync engine
-- [ ] Testing
+- `POST /api/sync` - Synchronize offline data
+- `POST /api/sync/conflicts/{id}/resolve` - Resolve sync conflict
 
-**Estimated Time**: 22-27 hours
+## Database Schema
 
-### Phase 4: Integration & Testing
-- [ ] End-to-end testing
-- [ ] Performance optimization
-- [ ] Security audit
-- [ ] Bug fixes
+### Core Tables
 
-**Estimated Time**: 8-12 hours
+- **users**: System users with role-based access
+- **suppliers**: Supplier profiles with location data
+- **products**: Product catalog with unit types
+- **product_rates**: Historical pricing data
+- **collections**: Product collection records
+- **payments**: Payment transactions
+- **sync_conflicts**: Conflict tracking for sync
 
-### Phase 5: Deployment
-- [ ] Server setup
-- [ ] Backend deployment
-- [ ] Frontend builds
-- [ ] App store submission
-- [ ] Monitoring setup
+### Relationships
 
-**Estimated Time**: 8-10 hours
+- User has many Collections, Payments
+- Supplier has many Collections, Payments
+- Product has many Collections, ProductRates
+- Collection belongs to Supplier, Product, User
+- Payment belongs to Supplier, User
 
-**Total Estimated Time to Production: 46-60 hours**
+## User Roles
 
-## 🔧 Technology Stack
+- **Admin**: Full system access, user management
+- **Manager**: View reports, manage suppliers/products
+- **Collector**: Record collections and payments
+- **Viewer**: Read-only access to data
 
-### Backend
-- Laravel 12.x
-- PHP 8.3
-- MySQL 8.0 / PostgreSQL 13+
-- JWT Authentication
-- Redis (caching & queues)
+## Security Considerations
 
-### Frontend
-- React Native
-- Expo SDK
-- SQLite
-- Axios
-- React Navigation
+1. **Authentication**: JWT tokens with expiration
+2. **Authorization**: Role-based access control
+3. **Data Encryption**: Sensitive data encrypted at rest
+4. **Secure Communication**: HTTPS in production
+5. **Input Validation**: Both client and server validation
+6. **SQL Injection**: Protected via ORM
+7. **XSS**: Protected via output escaping
+8. **CSRF**: Protected via Laravel middleware
 
-### DevOps
-- Nginx
-- Supervisor (queue workers)
-- Let's Encrypt (SSL)
-- Ubuntu/CentOS
+## Offline-First Strategy
 
-## 🛡️ Security Features
+1. **Data Persistence**: Redux Persist with AsyncStorage
+2. **Network Detection**: NetInfo for connectivity monitoring
+3. **Queue Management**: Track pending operations
+4. **Automatic Sync**: Background sync when online
+5. **Conflict Resolution**: Version-based conflict detection
+6. **Optimistic Updates**: Immediate UI updates with rollback
 
-- JWT token authentication with refresh
-- Encrypted data storage
-- HTTPS/TLS for API communication
-- Input validation (server & client)
-- SQL injection protection (Eloquent ORM)
-- XSS prevention (React Native)
-- RBAC and ABAC authorization
-- Rate limiting
-- Secure password hashing
-- Token expiration
+## Development Guidelines
 
-## 🎯 Key Business Features
+### Code Style
 
-### Rate Management
-- **Versioning**: Automatic version increment on rate changes
-- **Time-Based**: Valid from/to dates for rates
-- **Historical Integrity**: Past collections retain original rates
-- **Automatic Application**: Latest rates applied to new collections
-- **Audit Trail**: Complete history of rate changes
+- Follow PSR-12 for PHP
+- Follow Airbnb style guide for TypeScript/React
+- Use meaningful variable and function names
+- Comment complex logic
 
-### Payment Calculation
-```
-Total Owed = Sum of all confirmed collections
-Total Paid = Sum of all confirmed payments
-Balance = Total Owed - Total Paid
-```
+### Git Workflow
 
-### Offline Operations
-1. **Create**: Operations stored locally with UUID
-2. **Queue**: Changes added to sync queue
-3. **Auto-Sync**: Triggered on connectivity restore
-4. **Conflict Check**: Version comparison
-5. **Resolution**: User-guided or automatic
+1. Create feature branch from main
+2. Make small, focused commits
+3. Write descriptive commit messages
+4. Submit pull request for review
+5. Merge after approval
 
-## 📊 What's Implemented
+### Testing
 
-### ✅ Production Ready
-- Database schema with migrations
-- All Eloquent models with relationships
-- JWT authentication system
-- User management with roles
-- UUID generation
-- Version control
-- Soft deletes
-- Rate versioning logic
-- Balance calculations
-- Transaction ledger
-- Conflict detection support
+- Write unit tests for business logic
+- Write integration tests for API endpoints
+- Test offline scenarios thoroughly
+- Test sync conflicts and resolution
 
-### 🔄 In Progress
-- Controller implementations (stubs created)
-- Request validation classes
-- API resource transformers
-- Service layer classes
-- Authorization middleware
+## Deployment
 
-### ⏳ Pending
-- Frontend screens
-- Offline sync engine
-- Testing suite
-- API documentation (Swagger)
+### Backend Deployment
 
-## 🤝 Contributing
+1. Set up production server (Linux recommended)
+2. Configure web server (Apache/Nginx)
+3. Set up MySQL database
+4. Configure SSL certificate
+5. Set environment variables
+6. Run migrations
+7. Set up monitoring
 
-This is a production application. Follow these guidelines:
+### Mobile App Deployment
 
-1. Read ARCHITECTURE.md for design decisions
-2. Follow IMPLEMENTATION_GUIDE.md for development
-3. Use API_DOCUMENTATION.md for API reference
-4. Write tests for new features
-5. Follow PSR-12 coding standards (PHP)
-6. Use TypeScript for React Native
-7. Submit PRs for review
+1. Configure production API URL
+2. Build production bundles
+3. Submit to App Store (iOS)
+4. Submit to Play Store (Android)
+5. Set up crash reporting
+6. Monitor user feedback
 
-## 📝 License
+## Performance Optimization
 
-MIT License - See LICENSE file for details
+- Database indexing on frequently queried columns
+- API response caching where appropriate
+- Pagination for large datasets
+- Lazy loading in mobile app
+- Image optimization
+- Minification and bundling
 
-## 👥 Team Roles
+## Monitoring and Logging
 
-- **Admin**: Full system access, user management, rate configuration
-- **Manager**: Collection and payment management, reporting
-- **Collector**: Create collections, view suppliers and products
-- **Viewer**: Read-only access to all data
+- Error logging on backend
+- User action tracking
+- Sync success/failure rates
+- API response times
+- Database query performance
+- Mobile app crash reports
 
-## 🆘 Support
+## Troubleshooting
 
-### Getting Help
-1. Check documentation in order:
-   - ARCHITECTURE.md for design questions
-   - IMPLEMENTATION_GUIDE.md for development help
-   - API_DOCUMENTATION.md for endpoint details
-   - DEPLOYMENT.md for deployment issues
+### Common Issues
 
-2. Review code:
-   - Model files for business logic
-   - Migration files for schema
-   - Seeder files for sample data
+1. **Sync not working**: Check network connectivity and API availability
+2. **Login fails**: Verify credentials and API endpoint
+3. **Data not saving offline**: Check Redux Persist configuration
+4. **Conflicts not resolving**: Review conflict resolution logic
 
-3. Test locally:
-   - Use Laravel Tinker for database queries
-   - Use Postman/Insomnia for API testing
-   - Check logs in `backend/storage/logs/`
+## Future Enhancements
 
-### Common Commands
+- [ ] Real-time notifications
+- [ ] Advanced reporting and analytics
+- [ ] Bulk data import/export
+- [ ] Multi-language support
+- [ ] Photo attachments for collections
+- [ ] GPS tracking for collections
+- [ ] Barcode scanning
+- [ ] Biometric authentication
 
-**Backend:**
-```bash
-# Clear cache
-php artisan cache:clear
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
+## Contributing
 
-# Run tests
-php artisan test
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-# Database
-php artisan migrate:fresh --seed
-php artisan db:seed
+## License
 
-# Queue
-php artisan queue:work
-php artisan queue:listen
+MIT License - see LICENSE file for details
 
-# Tinker (REPL)
-php artisan tinker
-```
+## Support
 
-**Frontend:**
-```bash
-# Clear cache
-npm start -- --clear
+For issues and questions:
+- Open an issue on GitHub
+- Contact: support@transactrack.com
+- Documentation: https://docs.transactrack.com
 
-# Reset
-expo start --clear
+## Acknowledgments
 
-# Build
-eas build --platform android
-eas build --platform ios
-```
-
-## 🎉 Success Metrics
-
-The application is considered complete when:
-- ✅ All API endpoints functional
-- ✅ Frontend screens operational
-- ✅ Offline sync working
-- ✅ Tests passing (>80% coverage)
-- ✅ Security audit passed
-- ✅ Performance optimized
-- ✅ Deployed to production
-- ✅ Documentation complete
-
-**Current Status**: Foundation complete, 70% backend done, clear path to completion with comprehensive documentation.
-
-## 🔗 Links
-
-- Repository: https://github.com/kasunvimarshana/FieldPay
-- Issues: https://github.com/kasunvimarshana/FieldPay/issues
-- Pull Requests: https://github.com/kasunvimarshana/FieldPay/pulls
-
----
-
-**Built with ❤️ for field workers in low-connectivity environments**" 
+Built with:
+- Laravel - PHP Framework
+- React Native - Mobile Framework
+- Expo - React Native Platform
+- Redux - State Management
+- Laravel Sanctum - Authentication" 

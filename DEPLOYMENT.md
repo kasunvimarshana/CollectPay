@@ -1,181 +1,165 @@
-# FieldPay Deployment Guide
+# Deployment Guide
+
+## Production Deployment Guide for TransacTrack
+
+This guide covers deploying both the Laravel backend and React Native mobile app to production.
 
 ## Prerequisites
 
 ### Backend Requirements
-- Ubuntu 20.04+ or CentOS 8+
+- Ubuntu 20.04+ or similar Linux distribution
 - PHP 8.1 or higher
-- Composer 2.x
-- MySQL 8.0+ or PostgreSQL 13+
-- Nginx or Apache web server
-- Node.js 18+ (for frontend builds if needed)
-- SSL Certificate (Let's Encrypt recommended)
+- MySQL 5.7+ or MariaDB 10.3+
+- Nginx or Apache
+- Composer
+- Git
+- SSL certificate
 
-### Frontend Requirements
-- Expo EAS CLI
-- Apple Developer Account (for iOS)
-- Google Play Console Account (for Android)
+### Mobile App Requirements
+- Apple Developer Account (iOS)
+- Google Play Console Account (Android)
+- Expo account
 - Node.js 18+
 
 ## Backend Deployment
 
 ### 1. Server Setup
 
+#### Update System
 ```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
+sudo apt update
+sudo apt upgrade -y
+```
 
-# Install PHP and extensions
-sudo apt install -y php8.1 php8.1-fpm php8.1-mysql php8.1-pgsql \
-    php8.1-mbstring php8.1-xml php8.1-bcmath php8.1-curl \
-    php8.1-zip php8.1-gd php8.1-intl php8.1-redis
+#### Install PHP and Extensions
+```bash
+sudo apt install -y php8.1-fpm php8.1-mysql php8.1-xml php8.1-mbstring \
+php8.1-curl php8.1-zip php8.1-bcmath php8.1-intl
+```
 
-# Install Composer
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-
-# Install MySQL
-sudo apt install -y mysql-server
+#### Install MySQL
+```bash
+sudo apt install mysql-server
 sudo mysql_secure_installation
-
-# Or install PostgreSQL
-sudo apt install -y postgresql postgresql-contrib
-
-# Install Nginx
-sudo apt install -y nginx
-
-# Install Redis (for caching and queues)
-sudo apt install -y redis-server
-sudo systemctl enable redis-server
-sudo systemctl start redis-server
 ```
 
-### 2. Create Database
-
+#### Install Nginx
 ```bash
-# For MySQL
-sudo mysql -u root -p
-
-CREATE DATABASE fieldpay CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'fieldpay_user'@'localhost' IDENTIFIED BY 'strong_password_here';
-GRANT ALL PRIVILEGES ON fieldpay.* TO 'fieldpay_user'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-
-# For PostgreSQL
-sudo -u postgres psql
-
-CREATE DATABASE fieldpay;
-CREATE USER fieldpay_user WITH ENCRYPTED PASSWORD 'strong_password_here';
-GRANT ALL PRIVILEGES ON DATABASE fieldpay TO fieldpay_user;
-\q
+sudo apt install nginx
 ```
 
-### 3. Deploy Laravel Application
-
+#### Install Composer
 ```bash
-# Create application directory
-sudo mkdir -p /var/www/fieldpay
-sudo chown -R $USER:$USER /var/www/fieldpay
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php
+sudo mv composer.phar /usr/local/bin/composer
+```
 
-# Clone repository (or upload files)
-cd /var/www/fieldpay
-git clone https://github.com/yourusername/FieldPay.git .
-cd backend
+### 2. Application Setup
 
-# Install dependencies
+#### Clone Repository
+```bash
+cd /var/www
+sudo git clone https://github.com/kasunvimarshana/TransacTrack.git
+cd TransacTrack/backend
+```
+
+#### Set Permissions
+```bash
+sudo chown -R www-data:www-data /var/www/TransacTrack
+sudo chmod -R 755 /var/www/TransacTrack
+sudo chmod -R 775 /var/www/TransacTrack/backend/storage
+sudo chmod -R 775 /var/www/TransacTrack/backend/bootstrap/cache
+```
+
+#### Install Dependencies
+```bash
 composer install --no-dev --optimize-autoloader
+```
 
-# Set up environment
+#### Configure Environment
+```bash
 cp .env.example .env
 nano .env
 ```
 
-### 4. Configure Environment (.env)
-
-```bash
-APP_NAME=FieldPay
+Edit `.env`:
+```env
+APP_NAME=TransacTrack
 APP_ENV=production
 APP_KEY=
 APP_DEBUG=false
-APP_URL=https://api.fieldpay.com
-
-LOG_CHANNEL=stack
-LOG_LEVEL=error
+APP_URL=https://api.transactrack.com
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=fieldpay
-DB_USERNAME=fieldpay_user
-DB_PASSWORD=strong_password_here
+DB_DATABASE=transactrack_prod
+DB_USERNAME=transactrack_user
+DB_PASSWORD=STRONG_PASSWORD_HERE
 
-BROADCAST_DRIVER=log
-CACHE_DRIVER=redis
-QUEUE_CONNECTION=redis
-SESSION_DRIVER=redis
-
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.mailtrap.io
-MAIL_PORT=2525
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS=noreply@fieldpay.com
-MAIL_FROM_NAME="${APP_NAME}"
-
-JWT_SECRET=your_jwt_secret_here
-JWT_TTL=60
-JWT_REFRESH_TTL=20160
+DATA_ENCRYPTION_KEY=GENERATE_STRONG_KEY
 ```
 
-### 5. Application Setup
-
+#### Generate Keys
 ```bash
-# Generate application key
 php artisan key:generate
+```
 
-# Generate JWT secret (if not already set)
-php artisan jwt:secret
-
-# Run migrations
+#### Run Migrations
+```bash
 php artisan migrate --force
+```
 
-# Seed roles and permissions
-php artisan db:seed --class=RolesAndPermissionsSeeder
-
-# Optimize for production
+#### Optimize Application
+```bash
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-php artisan optimize
-
-# Set permissions
-sudo chown -R www-data:www-data /var/www/fieldpay/backend/storage
-sudo chown -R www-data:www-data /var/www/fieldpay/backend/bootstrap/cache
-sudo chmod -R 775 /var/www/fieldpay/backend/storage
-sudo chmod -R 775 /var/www/fieldpay/backend/bootstrap/cache
 ```
 
-### 6. Configure Nginx
+### 3. Database Setup
 
+#### Create Database and User
 ```bash
-# Create Nginx configuration
-sudo nano /etc/nginx/sites-available/fieldpay
+sudo mysql
 ```
 
+```sql
+CREATE DATABASE transactrack_prod CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'transactrack_user'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD';
+GRANT ALL PRIVILEGES ON transactrack_prod.* TO 'transactrack_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+### 4. Web Server Configuration
+
+#### Nginx Configuration
+```bash
+sudo nano /etc/nginx/sites-available/transactrack
+```
+
+Add:
 ```nginx
 server {
     listen 80;
-    server_name api.fieldpay.com;
-    root /var/www/fieldpay/backend/public;
+    server_name api.transactrack.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.transactrack.com;
+    root /var/www/TransacTrack/backend/public;
+
+    ssl_certificate /etc/letsencrypt/live/api.transactrack.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.transactrack.com/privkey.pem;
 
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
     index index.php;
 
@@ -202,365 +186,314 @@ server {
 }
 ```
 
+Enable site:
 ```bash
-# Enable site
-sudo ln -s /etc/nginx/sites-available/fieldpay /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/transactrack /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-### 7. SSL Certificate (Let's Encrypt)
+### 5. SSL Certificate
 
+#### Using Let's Encrypt
 ```bash
-# Install Certbot
-sudo apt install -y certbot python3-certbot-nginx
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d api.transactrack.com
+```
 
-# Obtain certificate
-sudo certbot --nginx -d api.fieldpay.com
-
-# Auto-renewal (should be automatic, but verify)
+#### Auto-renewal
+```bash
 sudo certbot renew --dry-run
 ```
 
-### 8. Set Up Queue Worker
+### 6. Process Manager (Optional)
 
+#### Install Supervisor
 ```bash
-# Create supervisor configuration
-sudo nano /etc/supervisor/conf.d/fieldpay-worker.conf
+sudo apt install supervisor
 ```
 
+#### Configure Queue Worker
+```bash
+sudo nano /etc/supervisor/conf.d/transactrack-worker.conf
+```
+
+Add:
 ```ini
-[program:fieldpay-worker]
+[program:transactrack-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/fieldpay/backend/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+command=php /var/www/TransacTrack/backend/artisan queue:work --sleep=3 --tries=3
 autostart=true
 autorestart=true
-stopasgroup=true
-killasgroup=true
 user=www-data
 numprocs=2
 redirect_stderr=true
-stdout_logfile=/var/www/fieldpay/backend/storage/logs/worker.log
-stopwaitsecs=3600
+stdout_logfile=/var/www/TransacTrack/backend/storage/logs/worker.log
 ```
 
+Start worker:
 ```bash
-# Start supervisor
 sudo supervisorctl reread
 sudo supervisorctl update
-sudo supervisorctl start fieldpay-worker:*
+sudo supervisorctl start transactrack-worker:*
 ```
 
-### 9. Set Up Cron Jobs
+### 7. Firewall Configuration
 
 ```bash
-# Edit crontab
-sudo crontab -e -u www-data
-```
-
-```cron
-* * * * * cd /var/www/fieldpay/backend && php artisan schedule:run >> /dev/null 2>&1
-```
-
-### 10. Configure Firewall
-
-```bash
-# Allow HTTP, HTTPS, and SSH
 sudo ufw allow 22
 sudo ufw allow 80
 sudo ufw allow 443
 sudo ufw enable
-sudo ufw status
 ```
 
-## Frontend Deployment
+### 8. Backup Configuration
 
-### 1. Configure EAS Build
-
+#### Database Backup Script
 ```bash
-cd frontend
-
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
-
-# Configure build
-eas build:configure
+sudo nano /usr/local/bin/backup-transactrack-db.sh
 ```
 
-### 2. Update App Configuration
+Add:
+```bash
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/var/backups/transactrack"
+mkdir -p $BACKUP_DIR
 
-**app.json**
+mysqldump -u transactrack_user -p'PASSWORD' transactrack_prod | \
+gzip > $BACKUP_DIR/transactrack_$DATE.sql.gz
+
+# Keep only last 30 days
+find $BACKUP_DIR -name "transactrack_*.sql.gz" -mtime +30 -delete
+```
+
+Make executable:
+```bash
+sudo chmod +x /usr/local/bin/backup-transactrack-db.sh
+```
+
+#### Schedule Backup
+```bash
+sudo crontab -e
+```
+
+Add:
+```cron
+0 2 * * * /usr/local/bin/backup-transactrack-db.sh
+```
+
+### 9. Monitoring Setup
+
+#### Install Monitoring Tools
+```bash
+sudo apt install monit
+```
+
+#### Configure Monitoring
+```bash
+sudo nano /etc/monit/conf.d/transactrack
+```
+
+Add:
+```
+check process nginx with pidfile /var/run/nginx.pid
+    start program = "/usr/sbin/service nginx start"
+    stop program = "/usr/sbin/service nginx stop"
+    if failed host 127.0.0.1 port 80 then restart
+
+check process mysql with pidfile /var/run/mysqld/mysqld.pid
+    start program = "/usr/sbin/service mysql start"
+    stop program = "/usr/sbin/service mysql stop"
+    if failed host 127.0.0.1 port 3306 then restart
+```
+
+## Mobile App Deployment
+
+### 1. Prepare for Build
+
+#### Update Configuration
+Edit `mobile/app.json`:
 ```json
 {
   "expo": {
-    "name": "FieldPay",
-    "slug": "fieldpay",
+    "name": "TransacTrack",
+    "slug": "transactrack",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.fieldpay"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      },
-      "package": "com.yourcompany.fieldpay",
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "INTERNET"
-      ]
-    },
     "extra": {
-      "eas": {
-        "projectId": "your-project-id"
-      },
-      "apiUrl": "https://api.fieldpay.com/api"
+      "apiUrl": "https://api.transactrack.com/api"
     }
   }
 }
 ```
 
-### 3. Build for Android
-
+#### Install Dependencies
 ```bash
-# Build APK (for testing)
-eas build --platform android --profile preview
-
-# Build AAB (for Play Store)
-eas build --platform android --profile production
+cd mobile
+npm install
 ```
 
-### 4. Build for iOS
+### 2. iOS Deployment
 
+#### Prerequisites
+- macOS with Xcode
+- Apple Developer Account ($99/year)
+- Valid certificates and provisioning profiles
+
+#### Build for iOS
 ```bash
-# You need to be on macOS or use EAS Build
-eas build --platform ios --profile production
+expo build:ios
 ```
 
-### 5. Submit to App Stores
+Follow prompts:
+1. Select build type (archive or app-store)
+2. Provide credentials
+3. Wait for build to complete
 
+#### Submit to App Store
+1. Download IPA from Expo
+2. Use Xcode or Application Loader
+3. Submit for review
+
+### 3. Android Deployment
+
+#### Build for Android
 ```bash
-# Android (Google Play)
-eas submit --platform android
-
-# iOS (App Store)
-eas submit --platform ios
+expo build:android -t app-bundle
 ```
 
-## Monitoring and Maintenance
+Follow prompts:
+1. Generate or provide keystore
+2. Wait for build to complete
 
-### 1. Log Monitoring
+#### Submit to Play Store
+1. Download AAB from Expo
+2. Upload to Play Console
+3. Complete store listing
+4. Submit for review
 
+### 4. Over-the-Air Updates (OTA)
+
+#### Configure Updates
 ```bash
-# Laravel logs
-tail -f /var/www/fieldpay/backend/storage/logs/laravel.log
-
-# Nginx access logs
-tail -f /var/log/nginx/access.log
-
-# Nginx error logs
-tail -f /var/log/nginx/error.log
-
-# Queue worker logs
-tail -f /var/www/fieldpay/backend/storage/logs/worker.log
+expo publish
 ```
 
-### 2. Database Backups
+Updates will be delivered automatically to users.
 
+## Post-Deployment
+
+### 1. Verification Checklist
+
+- [ ] API endpoints responding
+- [ ] Database connections working
+- [ ] SSL certificate valid
+- [ ] Authentication working
+- [ ] CORS configured correctly
+- [ ] Email notifications working (if configured)
+- [ ] Backup script running
+- [ ] Monitoring active
+- [ ] Logs rotating properly
+- [ ] Mobile app connecting to API
+
+### 2. Performance Tuning
+
+#### PHP-FPM Optimization
 ```bash
-# Create backup script
-sudo nano /usr/local/bin/backup-fieldpay-db.sh
+sudo nano /etc/php/8.1/fpm/pool.d/www.conf
 ```
 
-```bash
-#!/bin/bash
-BACKUP_DIR="/var/backups/fieldpay"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-DB_NAME="fieldpay"
-DB_USER="fieldpay_user"
-DB_PASS="strong_password_here"
-
-mkdir -p $BACKUP_DIR
-
-# For MySQL
-mysqldump -u $DB_USER -p$DB_PASS $DB_NAME | gzip > $BACKUP_DIR/fieldpay_$TIMESTAMP.sql.gz
-
-# Keep only last 30 days of backups
-find $BACKUP_DIR -name "fieldpay_*.sql.gz" -mtime +30 -delete
-
-echo "Backup completed: fieldpay_$TIMESTAMP.sql.gz"
-```
-
-```bash
-# Make executable
-sudo chmod +x /usr/local/bin/backup-fieldpay-db.sh
-
-# Schedule daily backups
-sudo crontab -e
-```
-
-```cron
-0 2 * * * /usr/local/bin/backup-fieldpay-db.sh >> /var/log/fieldpay-backup.log 2>&1
-```
-
-### 3. Application Updates
-
-```bash
-# Pull latest changes
-cd /var/www/fieldpay/backend
-git pull origin main
-
-# Install dependencies
-composer install --no-dev --optimize-autoloader
-
-# Run migrations
-php artisan migrate --force
-
-# Clear and rebuild cache
-php artisan config:clear
-php artisan cache:clear
-php artisan route:clear
-php artisan view:clear
-
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan optimize
-
-# Restart queue workers
-sudo supervisorctl restart fieldpay-worker:*
-
-# Restart PHP-FPM
-sudo systemctl restart php8.1-fpm
-```
-
-### 4. Performance Optimization
-
-**Enable OPcache**
-```bash
-sudo nano /etc/php/8.1/fpm/php.ini
-```
-
+Adjust:
 ```ini
-opcache.enable=1
-opcache.memory_consumption=128
-opcache.interned_strings_buffer=8
-opcache.max_accelerated_files=10000
-opcache.revalidate_freq=60
-opcache.fast_shutdown=1
+pm.max_children = 50
+pm.start_servers = 10
+pm.min_spare_servers = 5
+pm.max_spare_servers = 20
 ```
 
-**Configure Redis for better performance**
+#### MySQL Optimization
 ```bash
-sudo nano /etc/redis/redis.conf
+sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
 ```
 
-```conf
-maxmemory 256mb
-maxmemory-policy allkeys-lru
+Add:
+```ini
+[mysqld]
+innodb_buffer_pool_size = 1G
+innodb_log_file_size = 256M
+max_connections = 200
 ```
 
+### 3. Monitoring and Maintenance
+
+#### Log Monitoring
 ```bash
-sudo systemctl restart redis-server
+tail -f /var/www/TransacTrack/backend/storage/logs/laravel.log
 ```
 
-### 5. Security Hardening
-
+#### System Resources
 ```bash
-# Disable directory listing
-sudo nano /etc/nginx/nginx.conf
-# Add: autoindex off;
-
-# Hide PHP version
-sudo nano /etc/php/8.1/fpm/php.ini
-# Set: expose_php = Off
-
-# Set secure permissions
-sudo find /var/www/fieldpay/backend -type d -exec chmod 755 {} \;
-sudo find /var/www/fieldpay/backend -type f -exec chmod 644 {} \;
-sudo chmod -R 775 /var/www/fieldpay/backend/storage
-sudo chmod -R 775 /var/www/fieldpay/backend/bootstrap/cache
-
-# Install fail2ban
-sudo apt install -y fail2ban
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
+htop
+df -h
+free -m
 ```
 
-## Troubleshooting
-
-### Common Issues
-
-1. **500 Internal Server Error**
-   - Check Laravel logs: `/var/www/fieldpay/backend/storage/logs/laravel.log`
-   - Check Nginx error logs: `/var/log/nginx/error.log`
-   - Verify file permissions
-   - Clear and rebuild cache
-
-2. **Database Connection Failed**
-   - Verify database credentials in `.env`
-   - Check if database service is running
-   - Test connection: `php artisan tinker` then `DB::connection()->getPdo()`
-
-3. **Queue Jobs Not Processing**
-   - Check supervisor status: `sudo supervisorctl status`
-   - Check worker logs: `/var/www/fieldpay/backend/storage/logs/worker.log`
-   - Restart workers: `sudo supervisorctl restart fieldpay-worker:*`
-
-4. **JWT Token Issues**
-   - Regenerate JWT secret: `php artisan jwt:secret`
-   - Clear config cache: `php artisan config:clear`
+#### Database Performance
+```bash
+mysql -u root -p
+SHOW PROCESSLIST;
+SHOW STATUS;
+```
 
 ## Rollback Procedure
 
+### If Issues Occur
+
+1. **Revert Code**
 ```bash
-# If deployment fails, rollback
-cd /var/www/fieldpay/backend
-
-# Revert to previous version
-git reset --hard HEAD~1
-
-# Rollback migrations (if needed)
-php artisan migrate:rollback
-
-# Rebuild cache
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# Restart services
-sudo supervisorctl restart fieldpay-worker:*
-sudo systemctl restart php8.1-fpm
+cd /var/www/TransacTrack
+git checkout <previous-commit>
+composer install --no-dev
 ```
 
-## Support and Maintenance
+2. **Restore Database**
+```bash
+gunzip < /var/backups/transactrack/transactrack_YYYYMMDD.sql.gz | \
+mysql -u transactrack_user -p transactrack_prod
+```
 
-- Monitor application logs daily
-- Review security updates weekly
-- Update dependencies monthly
-- Full system backup weekly
-- Test disaster recovery quarterly
+3. **Clear Cache**
+```bash
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+```
 
-For production support, maintain a runbook with:
-- Emergency contacts
-- Service credentials
-- Escalation procedures
-- Common issue resolutions
+## Security Hardening
+
+### Additional Security Measures
+
+1. **Install Fail2ban**
+```bash
+sudo apt install fail2ban
+sudo systemctl enable fail2ban
+```
+
+2. **Disable Root Login**
+```bash
+sudo nano /etc/ssh/sshd_config
+```
+Set: `PermitRootLogin no`
+
+3. **Enable Automatic Security Updates**
+```bash
+sudo apt install unattended-upgrades
+sudo dpkg-reconfigure unattended-upgrades
+```
+
+## Support
+
+For deployment issues:
+- Email: devops@transactrack.com
+- Documentation: https://docs.transactrack.com/deployment
+- GitHub Issues: https://github.com/kasunvimarshana/TransacTrack/issues

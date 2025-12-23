@@ -4,152 +4,84 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user
-     */
-    public function register(Request $request): JsonResponse
+    public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'phone_number' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20',
+            'device_id' => 'nullable|string|max:255',
         ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'phone_number' => $request->phone_number,
-            'is_active' => true,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'phone' => $validated['phone'] ?? null,
+            'device_id' => $validated['device_id'] ?? null,
+            'role' => 'collector',
         ]);
 
-        // Assign default role (e.g., 'collector')
-        // $user->roles()->attach(Role::where('slug', 'collector')->first());
-
-        $token = JWTAuth::fromUser($user);
+        $token = $user->createToken('mobile-app')->plainTextToken;
 
         return response()->json([
-            'success' => true,
-            'message' => 'User registered successfully',
             'user' => $user,
             'token' => $token,
-            'token_type' => 'bearer',
         ], 201);
     }
 
-    /**
-     * Login user
-     */
-    public function login(Request $request): JsonResponse
+    public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $request->validate([
             'email' => 'required|email',
-            'password' => 'required|string',
+            'password' => 'required',
+            'device_id' => 'nullable|string',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
         }
 
-        $credentials = $request->only('email', 'password');
-
-        if (!$token = auth('api')->attempt($credentials)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid credentials'
-            ], 401);
+        if ($user->status !== 'active') {
+            throw ValidationException::withMessages([
+                'email' => ['Your account is not active.'],
+            ]);
         }
 
-        $user = auth('api')->user();
-        
-        if (!$user->is_active) {
-            auth('api')->logout();
-            return response()->json([
-                'success' => false,
-                'message' => 'User account is inactive'
-            ], 403);
+        if ($request->device_id) {
+            $user->update(['device_id' => $request->device_id]);
         }
 
-        // Update last login
-        $user->update(['last_login_at' => now()]);
-
-        return $this->respondWithToken($token, $user);
-    }
-
-    /**
-     * Get authenticated user
-     */
-    public function me(): JsonResponse
-    {
-        $user = auth('api')->user();
-        
-        return response()->json([
-            'success' => true,
-            'user' => $user->load('roles.permissions')
-        ]);
-    }
-
-    /**
-     * Logout user
-     */
-    public function logout(): JsonResponse
-    {
-        auth('api')->logout();
+        $token = $user->createToken('mobile-app')->plainTextToken;
 
         return response()->json([
-            'success' => true,
-            'message' => 'Successfully logged out'
-        ]);
-    }
-
-    /**
-     * Refresh token
-     */
-    public function refresh(): JsonResponse
-    {
-        try {
-            $token = auth('api')->refresh();
-            $user = auth('api')->user();
-
-            return $this->respondWithToken($token, $user);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token refresh failed'
-            ], 401);
-        }
-    }
-
-    /**
-     * Helper to format token response
-     */
-    protected function respondWithToken($token, $user): JsonResponse
-    {
-        return response()->json([
-            'success' => true,
             'user' => $user,
             'token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 60
         ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully',
+        ]);
+    }
+
+    public function user(Request $request)
+    {
+        return response()->json($request->user());
     }
 }

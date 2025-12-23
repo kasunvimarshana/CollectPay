@@ -1,330 +1,393 @@
-# FieldPay Architecture Documentation
+# TransacTrack Architecture Documentation
 
-## Overview
-FieldPay is a comprehensive offline-first data collection and payment management system designed for field workers in low-connectivity environments.
+## System Architecture
 
-## Technology Stack
+TransacTrack follows a modern, scalable architecture designed for reliability, security, and offline-first operation.
 
-### Backend
-- **Framework**: Laravel 12.x
-- **Authentication**: JWT (tymon/jwt-auth)
-- **Database**: PostgreSQL/MySQL with versioning support
-- **Architecture**: Clean Architecture with SOLID principles
+## High-Level Architecture
 
-### Frontend
-- **Framework**: React Native with Expo
-- **State Management**: Context API with offline-first architecture
-- **Local Database**: SQLite / Async Storage
-- **Sync Engine**: Custom conflict resolution
-
-## Database Schema
-
-### Core Tables
-
-#### Users & Authorization
-- **users**: User accounts with UUID, soft deletes, ABAC attributes
-- **roles**: Role definitions with ABAC support
-- **permissions**: Granular permissions with resource-action model
-- **role_user**: Many-to-many pivot (User-Role)
-- **permission_role**: Many-to-many pivot (Permission-Role)
-
-#### Business Entities
-- **suppliers**: Supplier profiles (name, email, phone, location, metadata)
-- **products**: Product catalog with units and categories
-- **product_rates**: Versioned, time-based pricing (valid_from, valid_to)
-- **collections**: Collection records with supplier, collector, timestamp
-- **collection_items**: Individual product entries with historical rates
-- **payments**: Payment records (advance, partial, full, adjustment)
-- **payment_transactions**: Ledger-style transaction log
-- **sync_logs**: Synchronization tracking with conflict detection
-
-### Offline-First Features
-All major tables include:
-- `uuid`: Globally unique identifier for offline creation
-- `synced_at`: Last synchronization timestamp
-- `device_id`: Device that created/modified record
-- `version`: Optimistic locking version number
-- `client_created_at`: Original creation timestamp on device
-
-### Conflict Resolution
-- **Version-based**: Using optimistic locking
-- **Timestamp-based**: Client vs server timestamps
-- **User-guided**: For complex conflicts requiring human intervention
-- **Automatic**: Last-write-wins for simple conflicts
-
-## API Architecture
-
-### Authentication Endpoints
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - JWT token generation
-- `POST /api/auth/logout` - Token invalidation
-- `POST /api/auth/refresh` - Token refresh
-- `GET /api/auth/me` - Current user profile
-
-### Resource Endpoints (RESTful)
-- `/api/suppliers` - Supplier CRUD
-- `/api/products` - Product CRUD
-- `/api/product-rates` - Rate management with versioning
-- `/api/collections` - Collection entry and management
-- `/api/payments` - Payment processing
-- `/api/payment-transactions` - Transaction history
-
-### Sync Endpoints
-- `POST /api/sync/push` - Push offline changes
-- `GET /api/sync/pull` - Pull server changes since last sync
-- `POST /api/sync/resolve-conflict` - Manual conflict resolution
-- `GET /api/sync/status` - Sync status for device
-
-### Authorization Strategy
-- **RBAC**: Role-based access (Admin, Manager, Collector, Viewer)
-- **ABAC**: Attribute-based (location, department, time-based rules)
-- **Resource-level**: Fine-grained permissions per resource action
-- **Offline enforcement**: Rules cached on device with periodic refresh
-
-## Frontend Architecture
-
-### Screen Structure
 ```
-App
-├── Auth
-│   ├── Login
-│   └── Register
-├── Dashboard
-│   └── Overview (stats, recent activity)
-├── Suppliers
-│   ├── List
-│   ├── Create/Edit
-│   └── Detail (with collections and balance)
-├── Products
-│   ├── List
-│   └── Create/Edit
-├── Rates
-│   ├── List (admin only)
-│   ├── Create/Edit (with versioning)
-│   └── History
-├── Collections
-│   ├── List
-│   ├── Create (with offline support)
-│   └── Detail
-├── Payments
-│   ├── List
-│   ├── Create
-│   └── Detail
-└── Sync
-    ├── Status
-    ├── Conflicts (resolution UI)
-    └── Settings
+┌─────────────────────────────────────────────────────────────┐
+│                     Mobile App (React Native)                │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Presentation Layer (UI)                  │  │
+│  │  - Screens (Login, Home, Suppliers, Products, etc.)  │  │
+│  │  - Components (Reusable UI elements)                  │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │           State Management (Redux)                    │  │
+│  │  - Auth State  - App State  - Entity States          │  │
+│  │  - Redux Persist for offline storage                 │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Business Logic Layer                     │  │
+│  │  - Sync Service (Conflict resolution)                │  │
+│  │  - Network Monitor (Connectivity detection)          │  │
+│  │  - Validation Logic                                  │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Data Access Layer                        │  │
+│  │  - API Service (HTTP client)                         │  │
+│  │  - Local Storage (AsyncStorage, SecureStore)         │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ HTTPS / REST API
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    Backend (Laravel)                         │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              API Layer (Controllers)                  │  │
+│  │  - Authentication (JWT with Sanctum)                 │  │
+│  │  - Resource Controllers (CRUD)                       │  │
+│  │  - Sync Controller (Offline sync)                    │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │            Business Logic Layer (Services)            │  │
+│  │  - Payment Calculations                              │  │
+│  │  - Conflict Resolution                               │  │
+│  │  - Authorization (RBAC/ABAC)                         │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │          Data Access Layer (Models/Repos)             │  │
+│  │  - Eloquent Models                                   │  │
+│  │  - Repositories (Future enhancement)                 │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Database (MySQL)                         │  │
+│  │  - Users  - Suppliers  - Products                    │  │
+│  │  - Collections  - Payments  - Conflicts              │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### State Management
-- **Auth Context**: User authentication state
-- **Offline Context**: Network status, queue management
-- **Data Context**: Cached data with optimistic updates
-- **Sync Context**: Sync state and conflict management
+## Design Principles
 
-### Offline Queue
-1. **Action Recording**: All CUD operations recorded
-2. **Optimistic UI**: Immediate UI update with pending indicator
-3. **Auto Sync**: Trigger on connectivity restore
-4. **Retry Logic**: Exponential backoff for failed syncs
-5. **Conflict UI**: User-friendly conflict resolution
+### SOLID Principles
 
-## Security Considerations
+1. **Single Responsibility Principle (SRP)**
+   - Each class/module has one reason to change
+   - Controllers handle HTTP, Services handle business logic
+   - Models represent data structure only
 
-### Data Protection
-- **Encryption at Rest**: SQLCipher for mobile database
-- **Encryption in Transit**: HTTPS/TLS for API calls
-- **Token Security**: JWT with short expiration, refresh tokens
-- **Input Validation**: Server and client-side validation
-- **SQL Injection**: Eloquent ORM with prepared statements
-- **XSS Prevention**: React Native built-in protection
+2. **Open/Closed Principle (OCP)**
+   - Entities open for extension, closed for modification
+   - Use interfaces and abstract classes for extensibility
+
+3. **Liskov Substitution Principle (LSP)**
+   - Derived classes substitutable for base classes
+   - Interface contracts maintained
+
+4. **Interface Segregation Principle (ISP)**
+   - Clients not forced to depend on unused interfaces
+   - Specific interfaces over general-purpose ones
+
+5. **Dependency Inversion Principle (DIP)**
+   - Depend on abstractions, not concretions
+   - Service layer abstracts business logic
+
+### DRY (Don't Repeat Yourself)
+
+- Reusable components in frontend
+- Shared validation logic
+- Common API patterns
+- Utility functions extracted
+
+### Separation of Concerns
+
+- Clear layer boundaries
+- Models don't contain business logic
+- Controllers don't access database directly
+- UI components don't contain business logic
+
+## Data Flow
+
+### Online Mode
+
+```
+User Action → UI Component → Redux Action → API Service
+    ↓
+API Request → Backend Controller → Business Logic → Database
+    ↓
+Database Response → Controller → JSON Response → API Service
+    ↓
+Redux Store Update → UI Component Re-render
+```
+
+### Offline Mode
+
+```
+User Action → UI Component → Redux Action → Local Store
+    ↓
+Immediate UI Update (Optimistic)
+    ↓
+Mark as Pending Sync
+    ↓
+[Network Becomes Available]
+    ↓
+Auto Sync Process → Send to Backend → Conflict Check
+    ↓
+Success: Update Local Status | Conflict: Present to User
+```
+
+## Offline-First Strategy
+
+### Data Persistence
+
+1. **Redux Persist**: State persisted to AsyncStorage
+2. **Secure Storage**: Auth tokens in SecureStore
+3. **Version Tracking**: All entities have version numbers
+4. **Timestamp Tracking**: Server timestamps for sync
+
+### Sync Process
+
+```
+1. Network Detection
+   └─> Online status change detected
+
+2. Data Collection
+   ├─> Gather pending collections
+   └─> Gather pending payments
+
+3. Sync Request
+   ├─> Send device_id
+   ├─> Send last_sync_timestamp
+   ├─> Send pending data
+   └─> Receive server updates
+
+4. Conflict Detection
+   ├─> Compare versions
+   ├─> Detect concurrent modifications
+   └─> Create conflict records
+
+5. Resolution
+   ├─> Automatic: Server wins (default)
+   ├─> Manual: User chooses
+   └─> Merge: Combine changes
+
+6. Update Local Store
+   ├─> Mark synced items
+   ├─> Add server data
+   └─> Update sync timestamp
+```
+
+## Security Architecture
 
 ### Authentication Flow
-1. User logs in → JWT token issued (access + refresh)
-2. Token stored securely (Keychain/KeyStore)
-3. API calls include Authorization header
-4. Token refresh before expiration
-5. Logout clears tokens and local sensitive data
 
-### Authorization Flow
-1. User permissions loaded on login
-2. Cached locally with encrypted storage
-3. Route guards check permissions
-4. API validates permissions on server
-5. Offline: Use cached permissions with periodic refresh
-
-## Rate Management Strategy
-
-### Version Control
-- Each rate change creates new version
-- Previous versions remain for historical accuracy
-- `valid_from` and `valid_to` define active period
-- Collections reference specific rate version
-
-### Rate Application Logic
 ```
-1. Collection created → Find active rate at collection timestamp
-2. Rate not found → Use default/manual entry
-3. Rate stored with collection item (denormalized)
-4. Historical reports use stored rates
-5. Rate updates don't affect past collections
+1. User Login
+   ├─> Email/Password validation
+   ├─> Device ID capture
+   └─> JWT token generation
+
+2. Token Storage
+   ├─> Secure token storage (SecureStore)
+   └─> Token included in API headers
+
+3. Token Validation
+   ├─> Middleware checks token
+   ├─> User model loaded
+   └─> Request authorized
+
+4. Token Refresh
+   └─> Automatic on expiration
 ```
 
-### Admin Interface
-- View all rates with version history
-- Create new rate (auto-increments version)
-- Set validity period
-- Preview affected future collections
-- Audit log of rate changes
+### Authorization (RBAC)
 
-## Payment Calculation
-
-### Automated Calculation
 ```
-Total Owed = SUM(collection_items.amount) for supplier
-Total Paid = SUM(payments.amount WHERE status='confirmed') for supplier
-Balance = Total Owed - Total Paid
-```
+User Role → Permissions → Resource Access
 
-### Transaction Ledger
-- Every collection creates DEBIT transaction
-- Every payment creates CREDIT transaction
-- Running balance maintained in real-time
-- Prevents data inconsistency
+Admin
+├─> Full system access
+├─> User management
+└─> System configuration
 
-### Payment Types
-- **Advance**: Payment before collection (creates credit balance)
-- **Partial**: Partial settlement of outstanding balance
-- **Full**: Complete settlement
-- **Adjustment**: Administrative corrections
+Manager
+├─> View all data
+├─> Manage suppliers/products
+└─> View reports
 
-## Sync Strategy
+Collector
+├─> Create collections
+├─> Create payments
+├─> View own data
+└─> Manage assigned suppliers
 
-### Pull Sync (Server → Client)
-1. Client sends last_sync_timestamp
-2. Server returns all changes since timestamp
-3. Client applies changes with conflict detection
-4. Client updates last_sync_timestamp
-
-### Push Sync (Client → Server)
-1. Client sends queued changes with device_id and uuid
-2. Server checks for conflicts (version mismatch)
-3. For conflicts: Return conflict data
-4. For success: Update server records
-5. Return confirmation with server version
-
-### Conflict Detection
-```
-1. Check if record exists with same UUID
-2. Compare versions
-3. If version mismatch → Conflict
-4. Check timestamps (server vs client)
-5. Apply resolution strategy
+Viewer
+└─> Read-only access
 ```
 
-### Resolution Strategies
-- **Auto (Last-Write-Wins)**: Use latest timestamp
-- **Server-Wins**: Always prefer server version
-- **Client-Wins**: Prefer client for specific fields
-- **Manual**: Present both versions to user
+### Data Protection
 
-## Development Guidelines
+1. **In Transit**
+   - HTTPS/TLS encryption
+   - Secure WebSocket connections (future)
 
-### Code Quality
-- Follow PSR-12 coding standards (PHP)
-- Use TypeScript for React Native
-- ESLint + Prettier for JavaScript/TypeScript
-- PHPStan/Psalm for static analysis
-- Comprehensive PHPDoc comments
+2. **At Rest**
+   - Database encryption capability
+   - Secure credential storage
+   - Encrypted backups
 
-### Testing Strategy
-- Unit tests for business logic
-- Feature tests for API endpoints
-- Integration tests for sync logic
-- E2E tests for critical workflows
-- Minimum 80% code coverage
-
-### Git Workflow
-- Feature branches from main
-- PR required for merging
-- Code review mandatory
-- CI/CD pipeline runs tests
-- Semantic versioning
-
-## Deployment
-
-### Backend
-```bash
-# Production environment
-composer install --no-dev --optimize-autoloader
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan migrate --force
-```
-
-### Frontend
-```bash
-# Build for production
-eas build --platform all
-# Or for web
-npm run build
-```
-
-### Environment Variables
-- Database credentials
-- JWT secret
-- API endpoints
-- Feature flags
-- Encryption keys
-
-## Monitoring & Logging
-
-### Backend Logging
-- API request/response logging
-- Error logging with stack traces
-- Sync operation logs
-- Authentication attempts
-- Performance metrics
-
-### Frontend Logging
-- Crash reporting (Sentry)
-- Analytics (optional)
-- Sync errors
-- Offline queue status
-- Performance monitoring
+3. **In Use**
+   - Input sanitization
+   - SQL injection protection (Eloquent)
+   - XSS protection (Laravel)
+   - CSRF protection
 
 ## Scalability Considerations
 
-### Backend
-- Database indexing on UUID, timestamps, foreign keys
-- Query optimization with eager loading
-- Caching layer (Redis) for frequently accessed data
-- Queue system (Laravel Queue) for async tasks
-- Horizontal scaling with load balancer
+### Backend Scalability
 
-### Frontend
-- Pagination for large lists
-- Virtual scrolling for long lists
-- Image optimization and caching
-- Background sync limits
-- Local database cleanup for old data
+1. **Horizontal Scaling**
+   - Stateless API design
+   - Load balancer ready
+   - Session stored in database/Redis
+
+2. **Database Optimization**
+   - Proper indexing
+   - Query optimization
+   - Connection pooling
+   - Read replicas (future)
+
+3. **Caching Strategy**
+   - API response caching
+   - Database query caching
+   - Redis integration (future)
+
+### Frontend Scalability
+
+1. **Performance**
+   - Lazy loading
+   - Pagination
+   - Virtual lists for large datasets
+   - Image optimization
+
+2. **Bundle Size**
+   - Code splitting
+   - Tree shaking
+   - Minimal dependencies
+
+## Error Handling
+
+### Backend Errors
+
+```
+Exception → Handler → Log → JSON Response
+
+Types:
+- Validation Errors (422)
+- Authentication Errors (401)
+- Authorization Errors (403)
+- Not Found Errors (404)
+- Server Errors (500)
+```
+
+### Frontend Errors
+
+```
+Error → Catch → Display to User → Log
+
+Types:
+- Network Errors
+- Validation Errors
+- Sync Conflicts
+- Application Errors
+```
+
+## Testing Strategy
+
+### Backend Testing
+
+1. **Unit Tests**
+   - Model methods
+   - Service logic
+   - Utilities
+
+2. **Integration Tests**
+   - API endpoints
+   - Database interactions
+   - Authentication flow
+
+3. **Feature Tests**
+   - Complete user flows
+   - Sync process
+   - Conflict resolution
+
+### Frontend Testing
+
+1. **Unit Tests**
+   - Redux reducers
+   - Utility functions
+   - Components
+
+2. **Integration Tests**
+   - Redux actions
+   - API service
+   - Sync service
+
+3. **E2E Tests**
+   - User flows
+   - Offline scenarios
+   - Sync scenarios
+
+## Monitoring and Observability
+
+### Metrics to Track
+
+1. **Performance**
+   - API response times
+   - Database query times
+   - App load time
+
+2. **Business**
+   - Active users
+   - Collections per day
+   - Payments processed
+   - Sync success rate
+
+3. **Errors**
+   - Error rates
+   - Failed syncs
+   - API failures
 
 ## Future Enhancements
 
-### Planned Features
-- Multi-currency support
-- Biometric authentication
-- Photo attachments for collections
-- GPS tracking for collection locations
-- Advanced reporting and analytics
-- Export to PDF/Excel
-- Push notifications
-- Multi-language support
+### Phase 2
+- Real-time notifications (WebSockets)
+- Advanced reporting dashboard
+- Data export functionality
+- Bulk operations
 
-### Technical Debt
-- Implement GraphQL for flexible queries
-- Add WebSocket for real-time sync
-- Implement CDC (Change Data Capture)
-- Add comprehensive audit trail
-- Implement data archival strategy
+### Phase 3
+- Machine learning for fraud detection
+- Predictive analytics
+- Advanced conflict resolution AI
+- Multi-tenant support
+
+### Phase 4
+- Integration with accounting systems
+- Mobile payment gateways
+- Blockchain for audit trail
+- IoT device integration
+
+## Dependencies
+
+### Backend
+- Laravel 11.x (LTS)
+- Laravel Sanctum (Auth)
+- PHP 8.1+ (LTS)
+- MySQL 5.7+ (LTS)
+
+### Frontend
+- React Native (LTS)
+- Expo SDK (Stable)
+- Redux Toolkit (Latest)
+- React Navigation (Latest)
+
+All dependencies chosen for:
+- Long-term support
+- Active maintenance
+- Large community
+- Security updates
