@@ -3,137 +3,193 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreProductRateRequest;
 use App\Models\Product;
 use App\Models\ProductRate;
-use App\Models\Transaction;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProductRateController extends Controller
 {
-    public function index(Product $product): JsonResponse
+    public function index(Request $request, Product $product)
     {
-        $rates = $product->rates()
-            ->with(['creator', 'updater'])
-            ->orderBy('effective_from', 'desc')
-            ->get();
+        $query = $product->rates();
 
-        return response()->json([
-            'success' => true,
-            'data' => $rates,
-        ]);
+        if ($request->has('active_only') && $request->active_only) {
+            $query->where('effective_from', '<=', now())
+                  ->where(function($q) {
+                      $q->whereNull('effective_to')
+                        ->orWhere('effective_to', '>', now());
+                  });
+        }
+
+        $rates = $query->orderBy('effective_from', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        return response()->json($rates);
     }
 
-    public function store(StoreProductRateRequest $request, Product $product): JsonResponse
+    public function store(Request $request, Product $product)
     {
-        $rate = ProductRate::create([
-            'product_id' => $product->id,
-            ...$request->validated(),
-            'created_by' => $request->user()->id,
-            'version' => 1,
+        $validated = $request->validate([
+            'rate' => 'required|numeric|min:0',
+            'effective_from' => 'required|date',
+            'effective_to' => 'nullable|date|after:effective_from',
         ]);
 
-        // Log transaction
-        Transaction::create([
-            'entity_type' => 'rates',
-            'entity_id' => $rate->id,
-            'user_id' => $request->user()->id,
-            'action' => 'create',
-            'data_after' => $rate->toArray(),
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
+        $validated['product_id'] = $product->id;
+        $validated['created_by'] = $request->user()->id;
 
-        return response()->json([
-            'success' => true,
-            'data' => $rate->load(['product', 'creator', 'updater']),
-            'message' => 'Product rate created successfully',
-        ], 201);
+        // Check for overlapping rates
+        $overlapping = $product->rates()
+            ->where(function($query) use ($validated) {
+                $query->where(function($q) use ($validated) {
+                    $q->where('effective_from', '<=', $validated['effective_from'])
+                      ->where(function($subq) use ($validated) {
+                          $subq->whereNull('effective_to')
+                               ->orWhere('effective_to', '>', $validated['effective_from']);
+                      });
+                });
+                if (isset($validated['effective_to'])) {
+                    $query->orWhere(function($q) use ($validated) {
+                        $q->where('effective_from', '<', $validated['effective_to'])
+                          ->where(function($subq) use ($validated) {
+                              $subq->whereNull('effective_to')
+                                   ->orWhere('effective_to', '>', $validated['effective_from']);
+                          });
+                    });
+                }
+            })
+            ->exists();
+
+        if ($overlapping) {
+            return response()->json([
+                'message' => 'A rate already exists for the specified date range',
+                'errors' => [
+                    'effective_from' => ['The effective date range overlaps with an existing rate']
+                ]
+            ], 422);
+        }
+
+        $productRate = ProductRate::create($validated);
+
+        return response()->json($productRate, 201);
     }
 
-    public function show(ProductRate $rate): JsonResponse
+    public function show(Product $product, ProductRate $productRate)
     {
-        return response()->json([
-            'success' => true,
-            'data' => $rate->load(['product', 'creator', 'updater']),
-        ]);
+        if ($productRate->product_id !== $product->id) {
+            return response()->json([
+                'message' => 'Product rate not found for this product'
+            ], 404);
+        }
+
+        $productRate->load('creator');
+        return response()->json($productRate);
     }
 
-    public function update(Request $request, ProductRate $rate): JsonResponse
+    public function update(Request $request, Product $product, ProductRate $productRate)
     {
-        $request->validate([
+        if ($productRate->product_id !== $product->id) {
+            return response()->json([
+                'message' => 'Product rate not found for this product'
+            ], 404);
+        }
+
+        $validated = $request->validate([
             'rate' => 'sometimes|required|numeric|min:0',
             'effective_from' => 'sometimes|required|date',
-            'effective_to' => 'sometimes|nullable|date|after:effective_from',
-            'is_active' => 'sometimes|boolean',
+            'effective_to' => 'nullable|date|after:effective_from',
         ]);
 
-        $before = $rate->toArray();
+        // Check for overlapping rates (excluding current rate)
+        if (isset($validated['effective_from']) || isset($validated['effective_to'])) {
+            $effectiveFrom = $validated['effective_from'] ?? $productRate->effective_from;
+            $effectiveTo = $validated['effective_to'] ?? $productRate->effective_to;
 
-        $rate->update([
-            ...$request->only(['rate', 'effective_from', 'effective_to', 'is_active']),
-            'updated_by' => $request->user()->id,
-            'version' => $rate->version + 1,
-        ]);
+            $overlapping = $product->rates()
+                ->where('id', '!=', $productRate->id)
+                ->where(function($query) use ($effectiveFrom, $effectiveTo) {
+                    $query->where(function($q) use ($effectiveFrom) {
+                        $q->where('effective_from', '<=', $effectiveFrom)
+                          ->where(function($subq) use ($effectiveFrom) {
+                              $subq->whereNull('effective_to')
+                                   ->orWhere('effective_to', '>', $effectiveFrom);
+                          });
+                    });
+                    if ($effectiveTo) {
+                        $query->orWhere(function($q) use ($effectiveFrom, $effectiveTo) {
+                            $q->where('effective_from', '<', $effectiveTo)
+                              ->where(function($subq) use ($effectiveFrom) {
+                                  $subq->whereNull('effective_to')
+                                       ->orWhere('effective_to', '>', $effectiveFrom);
+                              });
+                        });
+                    }
+                })
+                ->exists();
 
-        // Log transaction
-        Transaction::create([
-            'entity_type' => 'rates',
-            'entity_id' => $rate->id,
-            'user_id' => $request->user()->id,
-            'action' => 'update',
-            'data_before' => $before,
-            'data_after' => $rate->fresh()->toArray(),
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
+            if ($overlapping) {
+                return response()->json([
+                    'message' => 'A rate already exists for the specified date range',
+                    'errors' => [
+                        'effective_from' => ['The effective date range overlaps with an existing rate']
+                    ]
+                ], 422);
+            }
+        }
 
-        return response()->json([
-            'success' => true,
-            'data' => $rate->load(['product', 'creator', 'updater']),
-            'message' => 'Product rate updated successfully',
-        ]);
+        $productRate->update($validated);
+
+        return response()->json($productRate);
     }
 
-    public function destroy(Request $request, ProductRate $rate): JsonResponse
+    public function destroy(Product $product, ProductRate $productRate)
     {
-        $before = $rate->toArray();
+        if ($productRate->product_id !== $product->id) {
+            return response()->json([
+                'message' => 'Product rate not found for this product'
+            ], 404);
+        }
 
-        // Log transaction before deleting
-        Transaction::create([
-            'entity_type' => 'rates',
-            'entity_id' => $rate->id,
-            'user_id' => $request->user()->id,
-            'action' => 'delete',
-            'data_before' => $before,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-
-        $rate->delete();
+        $productRate->delete();
 
         return response()->json([
-            'success' => true,
             'message' => 'Product rate deleted successfully',
         ]);
     }
 
-    public function current(Request $request, Product $product): JsonResponse
+    public function getCurrentRate(Product $product)
     {
-        $unit = $request->query('unit', $product->default_unit);
-        $rate = $product->getCurrentRate($unit);
+        $currentRate = $product->getCurrentRate();
+        
+        return response()->json([
+            'product_id' => $product->id,
+            'current_rate' => $currentRate,
+            'base_rate' => $product->base_rate,
+        ]);
+    }
 
-        if (!$rate) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No active rate found for this product and unit',
-            ], 404);
-        }
+    public function getRateAtDate(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        $rate = $product->rates()
+            ->where('effective_from', '<=', $validated['date'])
+            ->where(function($q) use ($validated) {
+                $q->whereNull('effective_to')
+                  ->orWhere('effective_to', '>', $validated['date']);
+            })
+            ->orderBy('effective_from', 'desc')
+            ->first();
+
+        $rateValue = $rate ? $rate->rate : $product->base_rate;
 
         return response()->json([
-            'success' => true,
-            'data' => $rate->load(['product', 'creator', 'updater']),
+            'product_id' => $product->id,
+            'date' => $validated['date'],
+            'rate' => $rateValue,
+            'rate_record' => $rate,
         ]);
     }
 }

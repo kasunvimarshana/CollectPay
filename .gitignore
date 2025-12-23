@@ -1,50 +1,52 @@
-# Dependencies
-node_modules/
-vendor/
+# Laravel Backend
+/backend/vendor/
+/backend/node_modules/
+/backend/.env
+/backend/.env.backup
+/backend/.phpunit.result.cache
+/backend/Homestead.json
+/backend/Homestead.yaml
+/backend/npm-debug.log
+/backend/yarn-error.log
+/backend/.DS_Store
+/backend/storage/*.key
+/backend/storage/app/public/*
+/backend/storage/framework/cache/*
+/backend/storage/framework/sessions/*
+/backend/storage/framework/testing/*
+/backend/storage/framework/views/*
+/backend/storage/logs/*
 
-# Build outputs
-backend/bootstrap/cache/*
-!backend/bootstrap/cache/.gitignore
-backend/storage/framework/cache/*
-!backend/storage/framework/cache/.gitignore
-backend/storage/framework/sessions/*
-!backend/storage/framework/sessions/.gitignore
-backend/storage/framework/views/*
-!backend/storage/framework/views/.gitignore
-backend/storage/logs/*
-!backend/storage/logs/.gitignore
+# React Native / Expo
+/mobile/node_modules/
+/mobile/.expo/
+/mobile/dist/
+/mobile/npm-debug.*
+/mobile/*.jks
+/mobile/*.p8
+/mobile/*.p12
+/mobile/*.key
+/mobile/*.mobileprovision
+/mobile/*.orig.*
+/mobile/web-build/
+/mobile/.env
+/mobile/.env.local
 
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Database
-*.sqlite
-*.sqlite-journal
+# OS Files
+.DS_Store
+Thumbs.db
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-*.swn
-.DS_Store
+*~
 
-# OS
-Thumbs.db
+# Logs
+*.log
+logs/
 
 # Temporary files
-/tmp/
-*.tmp
-*.log
-
-# Frontend specific
-frontend/.expo/
-frontend/dist/
-frontend/web-build/
-
-# Build artifacts
-*.apk
-*.ipa
-*.aab
+tmp/
+temp/

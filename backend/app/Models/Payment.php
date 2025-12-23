@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
@@ -13,43 +12,42 @@ class Payment extends Model
 
     protected $fillable = [
         'supplier_id',
-        'product_id',
+        'user_id',
         'amount',
         'payment_type',
         'payment_method',
         'reference_number',
-        'notes',
         'payment_date',
-        'created_by',
-        'updated_by',
+        'notes',
+        'device_id',
+        'sync_status',
         'version',
+        'server_timestamp',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'payment_date' => 'date',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'payment_date' => 'datetime',
+        'server_timestamp' => 'datetime',
+        'version' => 'integer',
     ];
 
-    public function supplier(): BelongsTo
+    public function supplier()
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function product(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(User::class);
     }
 
-    public function creator(): BelongsTo
+    protected static function boot()
     {
-        return $this->belongsTo(User::class, 'created_by');
-    }
+        parent::boot();
 
-    public function updater(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'updated_by');
+        static::saving(function ($payment) {
+            $payment->version = ($payment->version ?? 0) + 1;
+        });
     }
 }
