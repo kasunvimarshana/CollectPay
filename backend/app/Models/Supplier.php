@@ -12,40 +12,41 @@ class Supplier extends Model
 
     protected $fillable = [
         'name',
-        'code',
+        'email',
         'phone',
-        'address',
-        'area',
-        'is_active',
+        'location',
+        'latitude',
+        'longitude',
         'metadata',
+        'status',
+        'created_by',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
         'metadata' => 'array',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
     ];
 
-    /**
-     * Get collections for this supplier
-     */
     public function collections()
     {
         return $this->hasMany(Collection::class);
     }
 
-    /**
-     * Get payments for this supplier
-     */
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
-    /**
-     * Get rates for this supplier
-     */
-    public function rates()
+    public function creator()
     {
-        return $this->hasMany(Rate::class);
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getBalanceAttribute()
+    {
+        $totalPayments = $this->payments()->sum('amount');
+        $totalDue = $this->collections()->sum('total_amount');
+        return $totalDue - $totalPayments;
     }
 }

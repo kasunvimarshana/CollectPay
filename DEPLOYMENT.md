@@ -1,113 +1,165 @@
-# CollectPay Deployment Guide
+# Deployment Guide
 
-This guide covers deploying CollectPay to production environments.
+## Production Deployment Guide for TransacTrack
 
-## Backend Deployment (Laravel API)
+This guide covers deploying both the Laravel backend and React Native mobile app to production.
 
-### Prerequisites
-- PHP 8.2+
+## Prerequisites
+
+### Backend Requirements
+- Ubuntu 20.04+ or similar Linux distribution
+- PHP 8.1 or higher
+- MySQL 5.7+ or MariaDB 10.3+
+- Nginx or Apache
 - Composer
-- MySQL/PostgreSQL database
-- Web server (Apache/Nginx)
-- SSL certificate (recommended)
+- Git
+- SSL certificate
 
-### Deployment Steps
+### Mobile App Requirements
+- Apple Developer Account (iOS)
+- Google Play Console Account (Android)
+- Expo account
+- Node.js 18+
 
-#### 1. Server Setup
+## Backend Deployment
 
+### 1. Server Setup
+
+#### Update System
 ```bash
-# Install PHP and required extensions
 sudo apt update
-sudo apt install php8.2 php8.2-fpm php8.2-mysql php8.2-xml php8.2-mbstring php8.2-curl
+sudo apt upgrade -y
+```
 
-# Install Composer
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
+#### Install PHP and Extensions
+```bash
+sudo apt install -y php8.1-fpm php8.1-mysql php8.1-xml php8.1-mbstring \
+php8.1-curl php8.1-zip php8.1-bcmath php8.1-intl
+```
 
-# Install MySQL
+#### Install MySQL
+```bash
 sudo apt install mysql-server
+sudo mysql_secure_installation
 ```
 
-#### 2. Deploy Code
-
+#### Install Nginx
 ```bash
-# Clone repository
-git clone https://github.com/kasunvimarshana/CollectPay.git
-cd CollectPay/backend
+sudo apt install nginx
+```
 
-# Install dependencies
+#### Install Composer
+```bash
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php
+sudo mv composer.phar /usr/local/bin/composer
+```
+
+### 2. Application Setup
+
+#### Clone Repository
+```bash
+cd /var/www
+sudo git clone https://github.com/kasunvimarshana/TransacTrack.git
+cd TransacTrack/backend
+```
+
+#### Set Permissions
+```bash
+sudo chown -R www-data:www-data /var/www/TransacTrack
+sudo chmod -R 755 /var/www/TransacTrack
+sudo chmod -R 775 /var/www/TransacTrack/backend/storage
+sudo chmod -R 775 /var/www/TransacTrack/backend/bootstrap/cache
+```
+
+#### Install Dependencies
+```bash
 composer install --no-dev --optimize-autoloader
-
-# Set permissions
-sudo chown -R www-data:www-data storage bootstrap/cache
-sudo chmod -R 775 storage bootstrap/cache
 ```
 
-#### 3. Environment Configuration
-
+#### Configure Environment
 ```bash
-# Copy environment file
 cp .env.example .env
-
-# Edit .env
 nano .env
 ```
 
-Update these values:
+Edit `.env`:
 ```env
+APP_NAME=TransacTrack
 APP_ENV=production
+APP_KEY=
 APP_DEBUG=false
-APP_URL=https://your-domain.com
+APP_URL=https://api.transactrack.com
 
 DB_CONNECTION=mysql
-DB_HOST=your-db-host
-DB_DATABASE=collectpay_prod
-DB_USERNAME=your-db-user
-DB_PASSWORD=your-db-password
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=transactrack_prod
+DB_USERNAME=transactrack_user
+DB_PASSWORD=STRONG_PASSWORD_HERE
 
-# Generate secure key
+DATA_ENCRYPTION_KEY=GENERATE_STRONG_KEY
+```
+
+#### Generate Keys
+```bash
 php artisan key:generate
 ```
 
-#### 4. Database Setup
-
+#### Run Migrations
 ```bash
-# Run migrations
 php artisan migrate --force
-
-# Optional: Seed initial data
-php artisan db:seed
 ```
 
-#### 5. Optimize for Production
-
+#### Optimize Application
 ```bash
-# Cache configuration
 php artisan config:cache
-
-# Cache routes
 php artisan route:cache
-
-# Cache views
 php artisan view:cache
-
-# Optimize autoloader
-composer dump-autoload --optimize
 ```
 
-#### 6. Web Server Configuration
+### 3. Database Setup
 
-**Nginx Configuration:**
+#### Create Database and User
+```bash
+sudo mysql
+```
 
+```sql
+CREATE DATABASE transactrack_prod CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'transactrack_user'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD';
+GRANT ALL PRIVILEGES ON transactrack_prod.* TO 'transactrack_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+### 4. Web Server Configuration
+
+#### Nginx Configuration
+```bash
+sudo nano /etc/nginx/sites-available/transactrack
+```
+
+Add:
 ```nginx
 server {
     listen 80;
-    listen [::]:80;
-    server_name api.collectpay.com;
-    root /var/www/collectpay/backend/public;
+    server_name api.transactrack.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.transactrack.com;
+    root /var/www/TransacTrack/backend/public;
+
+    ssl_certificate /etc/letsencrypt/live/api.transactrack.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.transactrack.com/privkey.pem;
 
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
     index index.php;
 
@@ -123,7 +175,7 @@ server {
     error_page 404 /index.php;
 
     location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
     }
@@ -134,294 +186,314 @@ server {
 }
 ```
 
-#### 7. SSL Setup
-
+Enable site:
 ```bash
-# Install Certbot
+sudo ln -s /etc/nginx/sites-available/transactrack /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### 5. SSL Certificate
+
+#### Using Let's Encrypt
+```bash
 sudo apt install certbot python3-certbot-nginx
-
-# Obtain SSL certificate
-sudo certbot --nginx -d api.collectpay.com
+sudo certbot --nginx -d api.transactrack.com
 ```
 
-#### 8. Queue Workers (Optional)
-
+#### Auto-renewal
 ```bash
-# Install supervisor
-sudo apt install supervisor
-
-# Create supervisor configuration
-sudo nano /etc/supervisor/conf.d/collectpay-worker.conf
+sudo certbot renew --dry-run
 ```
 
+### 6. Process Manager (Optional)
+
+#### Install Supervisor
+```bash
+sudo apt install supervisor
+```
+
+#### Configure Queue Worker
+```bash
+sudo nano /etc/supervisor/conf.d/transactrack-worker.conf
+```
+
+Add:
 ```ini
-[program:collectpay-worker]
+[program:transactrack-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/collectpay/backend/artisan queue:work --sleep=3 --tries=3
+command=php /var/www/TransacTrack/backend/artisan queue:work --sleep=3 --tries=3
 autostart=true
 autorestart=true
 user=www-data
 numprocs=2
 redirect_stderr=true
-stdout_logfile=/var/www/collectpay/backend/storage/logs/worker.log
+stdout_logfile=/var/www/TransacTrack/backend/storage/logs/worker.log
 ```
 
+Start worker:
 ```bash
-# Start worker
 sudo supervisorctl reread
 sudo supervisorctl update
-sudo supervisorctl start collectpay-worker:*
+sudo supervisorctl start transactrack-worker:*
 ```
 
-#### 9. Scheduled Tasks
+### 7. Firewall Configuration
 
-Add to crontab:
 ```bash
-crontab -e
+sudo ufw allow 22
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw enable
 ```
 
+### 8. Backup Configuration
+
+#### Database Backup Script
+```bash
+sudo nano /usr/local/bin/backup-transactrack-db.sh
+```
+
+Add:
+```bash
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/var/backups/transactrack"
+mkdir -p $BACKUP_DIR
+
+mysqldump -u transactrack_user -p'PASSWORD' transactrack_prod | \
+gzip > $BACKUP_DIR/transactrack_$DATE.sql.gz
+
+# Keep only last 30 days
+find $BACKUP_DIR -name "transactrack_*.sql.gz" -mtime +30 -delete
+```
+
+Make executable:
+```bash
+sudo chmod +x /usr/local/bin/backup-transactrack-db.sh
+```
+
+#### Schedule Backup
+```bash
+sudo crontab -e
+```
+
+Add:
 ```cron
-* * * * * cd /var/www/collectpay/backend && php artisan schedule:run >> /dev/null 2>&1
+0 2 * * * /usr/local/bin/backup-transactrack-db.sh
 ```
 
-## Frontend Deployment (React Native/Expo)
+### 9. Monitoring Setup
 
-### Building for Production
-
-#### iOS Build
-
+#### Install Monitoring Tools
 ```bash
-cd frontend
-
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
-
-# Configure build
-eas build:configure
-
-# Build for iOS
-eas build --platform ios
+sudo apt install monit
 ```
 
-#### Android Build
-
+#### Configure Monitoring
 ```bash
-# Build APK for Android
-eas build --platform android --profile production
-
-# Or build AAB for Google Play
-eas build --platform android --profile production
+sudo nano /etc/monit/conf.d/transactrack
 ```
 
-### App Store Submission
+Add:
+```
+check process nginx with pidfile /var/run/nginx.pid
+    start program = "/usr/sbin/service nginx start"
+    stop program = "/usr/sbin/service nginx stop"
+    if failed host 127.0.0.1 port 80 then restart
 
-#### iOS (App Store)
-1. Create app in App Store Connect
-2. Upload build from EAS
-3. Configure app details and screenshots
-4. Submit for review
+check process mysql with pidfile /var/run/mysqld/mysqld.pid
+    start program = "/usr/sbin/service mysql start"
+    stop program = "/usr/sbin/service mysql stop"
+    if failed host 127.0.0.1 port 3306 then restart
+```
 
-#### Android (Google Play)
-1. Create app in Google Play Console
-2. Upload AAB file
-3. Configure store listing
-4. Submit for review
+## Mobile App Deployment
 
-### OTA Updates
+### 1. Prepare for Build
 
-Configure OTA updates in `app.json`:
-
+#### Update Configuration
+Edit `mobile/app.json`:
 ```json
 {
   "expo": {
-    "updates": {
-      "enabled": true,
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+    "name": "TransacTrack",
+    "slug": "transactrack",
+    "version": "1.0.0",
+    "extra": {
+      "apiUrl": "https://api.transactrack.com/api"
     }
   }
 }
 ```
 
-Publish updates:
+#### Install Dependencies
 ```bash
-eas update --branch production
+cd mobile
+npm install
 ```
 
-## Environment Variables
+### 2. iOS Deployment
 
-### Backend (.env)
-```env
-APP_NAME=CollectPay
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://api.collectpay.com
+#### Prerequisites
+- macOS with Xcode
+- Apple Developer Account ($99/year)
+- Valid certificates and provisioning profiles
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=collectpay
-DB_USERNAME=collectpay_user
-DB_PASSWORD=secure_password
-
-SANCTUM_STATEFUL_DOMAINS=collectpay.com,api.collectpay.com
-```
-
-### Frontend (Update src/services/api.ts)
-```typescript
-const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:8000/api' 
-  : 'https://api.collectpay.com/api';
-```
-
-## Monitoring & Maintenance
-
-### Log Monitoring
-
+#### Build for iOS
 ```bash
-# Laravel logs
-tail -f /var/www/collectpay/backend/storage/logs/laravel.log
-
-# Nginx access logs
-tail -f /var/log/nginx/access.log
-
-# Nginx error logs
-tail -f /var/log/nginx/error.log
+expo build:ios
 ```
 
-### Database Backups
+Follow prompts:
+1. Select build type (archive or app-store)
+2. Provide credentials
+3. Wait for build to complete
 
+#### Submit to App Store
+1. Download IPA from Expo
+2. Use Xcode or Application Loader
+3. Submit for review
+
+### 3. Android Deployment
+
+#### Build for Android
 ```bash
-# Create backup script
-nano /usr/local/bin/backup-collectpay.sh
+expo build:android -t app-bundle
 ```
 
+Follow prompts:
+1. Generate or provide keystore
+2. Wait for build to complete
+
+#### Submit to Play Store
+1. Download AAB from Expo
+2. Upload to Play Console
+3. Complete store listing
+4. Submit for review
+
+### 4. Over-the-Air Updates (OTA)
+
+#### Configure Updates
 ```bash
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/var/backups/collectpay"
-mkdir -p $BACKUP_DIR
-
-# Backup database
-mysqldump -u collectpay_user -p'secure_password' collectpay > $BACKUP_DIR/db_$DATE.sql
-
-# Compress
-gzip $BACKUP_DIR/db_$DATE.sql
-
-# Remove old backups (keep 7 days)
-find $BACKUP_DIR -name "db_*.sql.gz" -mtime +7 -delete
+expo publish
 ```
 
+Updates will be delivered automatically to users.
+
+## Post-Deployment
+
+### 1. Verification Checklist
+
+- [ ] API endpoints responding
+- [ ] Database connections working
+- [ ] SSL certificate valid
+- [ ] Authentication working
+- [ ] CORS configured correctly
+- [ ] Email notifications working (if configured)
+- [ ] Backup script running
+- [ ] Monitoring active
+- [ ] Logs rotating properly
+- [ ] Mobile app connecting to API
+
+### 2. Performance Tuning
+
+#### PHP-FPM Optimization
 ```bash
-# Make executable
-chmod +x /usr/local/bin/backup-collectpay.sh
-
-# Schedule daily backup
-crontab -e
+sudo nano /etc/php/8.1/fpm/pool.d/www.conf
 ```
 
-```cron
-0 2 * * * /usr/local/bin/backup-collectpay.sh
-```
-
-### Performance Optimization
-
-1. **Enable OPcache** (php.ini):
+Adjust:
 ```ini
-opcache.enable=1
-opcache.memory_consumption=256
-opcache.max_accelerated_files=20000
-opcache.validate_timestamps=0
+pm.max_children = 50
+pm.start_servers = 10
+pm.min_spare_servers = 5
+pm.max_spare_servers = 20
 ```
 
-2. **Use Redis for cache** (.env):
-```env
-CACHE_DRIVER=redis
-SESSION_DRIVER=redis
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-```
-
-3. **Database indexing**: Already included in migrations
-
-4. **CDN for assets**: Configure CDN for static assets
-
-### Security Checklist
-
-- [ ] SSL/TLS enabled
-- [ ] Firewall configured (only 80, 443 open)
-- [ ] Database not exposed to internet
-- [ ] Environment files not in web root
-- [ ] Regular security updates
-- [ ] Rate limiting configured
-- [ ] CORS properly configured
-- [ ] Strong database passwords
-- [ ] Regular backups
-- [ ] Monitoring alerts set up
-
-### Scaling Considerations
-
-1. **Database**: Use read replicas for heavy read loads
-2. **Cache**: Redis cluster for distributed cache
-3. **Load Balancer**: Multiple app servers behind load balancer
-4. **Queue Workers**: Scale workers based on queue size
-5. **CDN**: Use CDN for static assets and API responses
-
-## Troubleshooting
-
-### Common Issues
-
-**Permission errors:**
+#### MySQL Optimization
 ```bash
-sudo chown -R www-data:www-data storage bootstrap/cache
-sudo chmod -R 775 storage bootstrap/cache
+sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
 ```
 
-**500 errors:**
-```bash
-# Check logs
-tail -f storage/logs/laravel.log
+Add:
+```ini
+[mysqld]
+innodb_buffer_pool_size = 1G
+innodb_log_file_size = 256M
+max_connections = 200
+```
 
-# Clear cache
+### 3. Monitoring and Maintenance
+
+#### Log Monitoring
+```bash
+tail -f /var/www/TransacTrack/backend/storage/logs/laravel.log
+```
+
+#### System Resources
+```bash
+htop
+df -h
+free -m
+```
+
+#### Database Performance
+```bash
+mysql -u root -p
+SHOW PROCESSLIST;
+SHOW STATUS;
+```
+
+## Rollback Procedure
+
+### If Issues Occur
+
+1. **Revert Code**
+```bash
+cd /var/www/TransacTrack
+git checkout <previous-commit>
+composer install --no-dev
+```
+
+2. **Restore Database**
+```bash
+gunzip < /var/backups/transactrack/transactrack_YYYYMMDD.sql.gz | \
+mysql -u transactrack_user -p transactrack_prod
+```
+
+3. **Clear Cache**
+```bash
 php artisan cache:clear
 php artisan config:clear
 php artisan route:clear
 ```
 
-**Database connection errors:**
-- Verify database credentials in .env
-- Check MySQL is running: `sudo systemctl status mysql`
-- Test connection: `mysql -u username -p`
+## Security Hardening
 
-## Rollback Procedure
+### Additional Security Measures
 
+1. **Install Fail2ban**
 ```bash
-# Backup current state
-cp -r /var/www/collectpay /var/www/collectpay.backup
+sudo apt install fail2ban
+sudo systemctl enable fail2ban
+```
 
-# Pull previous version
-git checkout <previous-tag>
+2. **Disable Root Login**
+```bash
+sudo nano /etc/ssh/sshd_config
+```
+Set: `PermitRootLogin no`
 
-# Install dependencies
-composer install --no-dev
-
-# Run migrations if needed
-php artisan migrate --force
-
-# Clear caches
-php artisan config:cache
-php artisan route:cache
+3. **Enable Automatic Security Updates**
+```bash
+sudo apt install unattended-upgrades
+sudo dpkg-reconfigure unattended-upgrades
 ```
 
 ## Support
 
-For deployment issues, check:
-- Laravel logs: `storage/logs/laravel.log`
-- Web server logs: `/var/log/nginx/` or `/var/log/apache2/`
-- System logs: `/var/log/syslog`
-
-Create an issue on GitHub for assistance.
+For deployment issues:
+- Email: devops@transactrack.com
+- Documentation: https://docs.transactrack.com/deployment
+- GitHub Issues: https://github.com/kasunvimarshana/TransacTrack/issues

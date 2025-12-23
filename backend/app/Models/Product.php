@@ -12,31 +12,33 @@ class Product extends Model
 
     protected $fillable = [
         'name',
-        'code',
-        'unit',
         'description',
-        'is_active',
+        'unit_type',
+        'base_rate',
         'metadata',
+        'status',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
         'metadata' => 'array',
+        'base_rate' => 'decimal:2',
     ];
 
-    /**
-     * Get collections for this product
-     */
     public function collections()
     {
         return $this->hasMany(Collection::class);
     }
 
-    /**
-     * Get rates for this product
-     */
     public function rates()
     {
-        return $this->hasMany(Rate::class);
+        return $this->hasMany(ProductRate::class);
+    }
+
+    public function getCurrentRate()
+    {
+        return $this->rates()
+            ->where('effective_from', '<=', now())
+            ->orderBy('effective_from', 'desc')
+            ->first()?->rate ?? $this->base_rate;
     }
 }

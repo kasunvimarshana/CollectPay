@@ -1,233 +1,295 @@
-# CollectPay Quick Start Guide
+# Quick Start Guide
 
-Get CollectPay up and running in minutes!
+Get TransacTrack up and running in minutes!
 
-## 🚀 Quick Start (Docker)
+## Prerequisites
 
-The fastest way to get started is using Docker Compose:
+Install the following before you begin:
 
-### Prerequisites
-- Docker
-- Docker Compose
+- **Backend**: PHP 8.1+, Composer, MySQL
+- **Mobile**: Node.js 18+, npm, Expo CLI
 
-### Steps
+## Quick Setup (Development)
 
-1. **Clone the repository**
+### 1. Clone the Repository
+
 ```bash
-git clone https://github.com/kasunvimarshana/CollectPay.git
-cd CollectPay
+git clone https://github.com/kasunvimarshana/TransacTrack.git
+cd TransacTrack
 ```
 
-2. **Configure backend environment**
+### 2. Backend Setup (5 minutes)
+
 ```bash
+# Navigate to backend
 cd backend
-cp .env.example .env
-```
 
-3. **Start services**
-```bash
-cd ..
-docker-compose up -d
-```
-
-4. **Initialize database**
-```bash
-docker exec -it collectpay-backend php artisan migrate
-docker exec -it collectpay-backend php artisan db:seed
-```
-
-5. **Access the application**
-- API: http://localhost:8000
-- PhpMyAdmin: http://localhost:8080
-
-6. **Test credentials**
-```
-Admin:
-- Email: admin@collectpay.com
-- Password: password
-
-Collector:
-- Email: collector@collectpay.com
-- Password: password
-```
-
-## 📱 Mobile App Setup
-
-1. **Install dependencies**
-```bash
-cd frontend
-npm install
-```
-
-2. **Start Expo**
-```bash
-npm start
-```
-
-3. **Run on device**
-- Press `i` for iOS simulator
-- Press `a` for Android emulator
-- Scan QR with Expo Go on phone
-
-## 🔧 Manual Setup (Without Docker)
-
-### Backend Setup
-
-1. **Install dependencies**
-```bash
-cd backend
+# Install dependencies
 composer install
-```
 
-2. **Configure environment**
-```bash
+# Setup environment
 cp .env.example .env
+
 # Edit .env with your database credentials
-```
+nano .env  # or use your preferred editor
 
-3. **Generate key**
-```bash
+# Generate application key
 php artisan key:generate
-```
 
-4. **Create database**
-```bash
-mysql -u root -p
-CREATE DATABASE collectpay;
-exit
-```
+# Create database
+mysql -u root -p -e "CREATE DATABASE transactrack;"
 
-5. **Run migrations**
-```bash
+# Run migrations
 php artisan migrate
-php artisan db:seed
-```
 
-6. **Start server**
-```bash
+# Start server
 php artisan serve
 ```
 
-### Frontend Setup
+Backend will be available at `http://localhost:8000`
 
-1. **Install dependencies**
+### 3. Mobile App Setup (3 minutes)
+
 ```bash
-cd frontend
+# Navigate to mobile (in a new terminal)
+cd mobile
+
+# Install dependencies
 npm install
-```
 
-2. **Configure API**
-Edit `src/services/api.ts` if backend URL is different.
-
-3. **Start app**
-```bash
+# Start Expo
 npm start
 ```
 
-## 🧪 Testing the Application
+### 4. Test the Application
 
-### Backend API Tests
+1. **Scan QR code** with Expo Go app (iOS/Android)
+2. **Register a new user** in the app
+3. **Login** with your credentials
+4. **Explore** the features!
+
+## Quick Test Data (Optional)
+
+Create test data via API or directly in database:
+
+### Create a Test User
 
 ```bash
-cd backend
-php artisan test
+curl -X POST http://localhost:8000/api/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password",
+    "password_confirmation": "password"
+  }'
 ```
 
-### Test API Endpoints
+### Login
 
-Using curl:
 ```bash
-# Login
 curl -X POST http://localhost:8000/api/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"collector@collectpay.com","password":"password"}'
-
-# Get suppliers (requires token)
-curl -X GET http://localhost:8000/api/suppliers \
-  -H "Authorization: Bearer YOUR_TOKEN"
+  -d '{
+    "email": "test@example.com",
+    "password": "password"
+  }'
 ```
 
-### Mobile App Testing
+Copy the token from the response and use it for authenticated requests.
 
-1. Login with test credentials
-2. Create a new collection
-3. Create a new payment
-4. Test offline mode (airplane mode)
-5. Test sync when back online
+## Configuration Tips
 
-## 📊 Sample Data
+### Backend (.env)
 
-After seeding, you'll have:
-- 3 users (admin, supervisor, collector)
-- 3 suppliers
-- 3 products (tea leaves, green tea, milk)
-- 4 rates
+Key settings to configure:
 
-## 🐛 Troubleshooting
+```env
+# Application
+APP_NAME=TransacTrack
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=transactrack
+DB_USERNAME=root
+DB_PASSWORD=your_password
+
+# CORS (for mobile app)
+SANCTUM_STATEFUL_DOMAINS=localhost:3000,localhost:19006
+```
+
+### Mobile (app.json)
+
+Update API URL:
+
+```json
+{
+  "expo": {
+    "extra": {
+      "apiUrl": "http://YOUR_LOCAL_IP:8000/api"
+    }
+  }
+}
+```
+
+**Note**: Use your computer's local IP (e.g., 192.168.1.100) not localhost when testing on a physical device.
+
+## Common Issues
 
 ### Backend Issues
 
-**Port 8000 already in use:**
+**Issue**: `php artisan migrate` fails
+- **Solution**: Check database credentials in `.env`
+- **Solution**: Ensure MySQL is running: `sudo systemctl start mysql`
+
+**Issue**: Permission denied errors
+- **Solution**: Fix storage permissions:
+  ```bash
+  chmod -R 775 storage bootstrap/cache
+  ```
+
+### Mobile Issues
+
+**Issue**: Cannot connect to API
+- **Solution**: Use your local IP address, not localhost
+- **Solution**: Ensure backend is running
+- **Solution**: Check firewall settings
+
+**Issue**: Expo app not loading
+- **Solution**: Clear cache: `expo start -c`
+- **Solution**: Delete node_modules and reinstall
+
+## Next Steps
+
+1. **Read the Documentation**
+   - [README.md](README.md) - System overview
+   - [API.md](API.md) - API endpoints
+   - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+
+2. **Explore Features**
+   - Create suppliers
+   - Add products
+   - Record collections
+   - Process payments
+   - Test offline sync
+
+3. **Customize**
+   - Modify user roles
+   - Add custom fields
+   - Extend API endpoints
+   - Customize UI
+
+4. **Deploy to Production**
+   - See [DEPLOYMENT.md](DEPLOYMENT.md)
+
+## Development Workflow
+
+### Backend Development
+
 ```bash
-php artisan serve --port=8001
+# Watch for file changes (optional)
+php artisan serve --watch
+
+# Run tests
+php artisan test
+
+# Clear cache
+php artisan cache:clear
 ```
 
-**Database connection error:**
-- Check MySQL is running
-- Verify credentials in .env
-- Ensure database exists
+### Mobile Development
 
-**Permission errors:**
 ```bash
-chmod -R 775 storage bootstrap/cache
+# Development
+npm start
+
+# Run on specific platform
+npm run ios      # iOS simulator
+npm run android  # Android emulator
+
+# Lint code
+npm run lint
+
+# Run tests
+npm test
 ```
 
-### Frontend Issues
+## Default Credentials
 
-**Metro bundler error:**
+After seeding (if you create a seeder):
+- Email: admin@transactrack.com
+- Password: password
+
+**Important**: Change these in production!
+
+## Getting Help
+
+- **Documentation**: See docs in repository
+- **Issues**: https://github.com/kasunvimarshana/TransacTrack/issues
+- **API**: See [API.md](API.md)
+
+## Quick Reference
+
+### Useful Commands
+
 ```bash
-rm -rf node_modules
-npm install
-npm start -- --clear
+# Backend
+php artisan serve              # Start server
+php artisan migrate           # Run migrations
+php artisan migrate:fresh     # Fresh migration
+php artisan db:seed          # Seed database
+php artisan config:cache     # Cache config
+php artisan route:list       # List routes
+
+# Mobile
+npm start                    # Start Expo
+npm run ios                 # iOS simulator
+npm run android            # Android emulator
+expo start -c              # Clear cache
 ```
 
-**Expo Go not connecting:**
-- Ensure phone and computer on same network
-- Try tunnel connection: `npm start -- --tunnel`
+### File Structure
 
-## 📖 Next Steps
+```
+TransacTrack/
+├── backend/            # Laravel API
+│   ├── app/           # Application code
+│   ├── config/        # Configuration
+│   ├── database/      # Migrations, seeders
+│   └── routes/        # API routes
+├── mobile/            # React Native app
+│   ├── src/          # Application code
+│   ├── App.tsx       # Entry point
+│   └── app.json      # Expo config
+└── docs/             # Documentation
+```
 
-1. Read the [full README](README.md)
-2. Check [API Documentation](API_DOCUMENTATION.md)
-3. Review [Deployment Guide](DEPLOYMENT.md)
-4. Explore the code!
+## Tips for Success
 
-## 💡 Key Features to Try
+1. **Start Simple**: Test basic features first
+2. **Check Logs**: Monitor backend logs for errors
+3. **Use Postman**: Test API endpoints independently
+4. **Read Errors**: Error messages are helpful!
+5. **Ask Questions**: Use GitHub issues
 
-1. **Offline Collection**
-   - Turn on airplane mode
-   - Add a collection
-   - Turn off airplane mode
-   - Tap "Sync Data"
+## Ready for Production?
 
-2. **Rate Calculation**
-   - Create collection
-   - Enter quantity and rate
-   - See automatic amount calculation
+When you're ready to deploy:
 
-3. **Payment Tracking**
-   - Add advance payment
-   - Add partial payment
-   - View payment summary
+1. Follow [DEPLOYMENT.md](DEPLOYMENT.md)
+2. Review [SECURITY.md](SECURITY.md)
+3. Update environment variables
+4. Set up SSL/HTTPS
+5. Configure backups
+6. Set up monitoring
 
-4. **Multi-User**
-   - Login as different users
-   - See role-based permissions
+---
 
-## 🆘 Need Help?
+**Happy coding! 🚀**
 
-- Check [Issues](https://github.com/kasunvimarshana/CollectPay/issues)
-- Read [Contributing Guide](CONTRIBUTING.md)
-- Review [Security Policy](SECURITY.md)
-
-Happy collecting! 🎉
+For detailed information, see the main [README.md](README.md)

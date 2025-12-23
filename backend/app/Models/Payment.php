@@ -5,76 +5,49 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Payment extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'client_id',
-        'user_id',
         'supplier_id',
-        'collection_id',
-        'payment_type',
+        'user_id',
         'amount',
-        'payment_date',
+        'payment_type',
         'payment_method',
         'reference_number',
+        'payment_date',
         'notes',
-        'metadata',
-        'synced_at',
+        'device_id',
+        'sync_status',
         'version',
+        'server_timestamp',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'payment_date' => 'datetime',
-        'metadata' => 'array',
-        'synced_at' => 'datetime',
+        'server_timestamp' => 'datetime',
+        'version' => 'integer',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($payment) {
-            if (!$payment->client_id) {
-                $payment->client_id = (string) Str::uuid();
-            }
-        });
-    }
-
-    /**
-     * Get the user who created this payment
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get the supplier for this payment
-     */
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    /**
-     * Get the collection for this payment
-     */
-    public function collection()
+    public function user()
     {
-        return $this->belongsTo(Collection::class);
+        return $this->belongsTo(User::class);
     }
 
-    /**
-     * Mark as synced
-     */
-    public function markAsSynced(): void
+    protected static function boot()
     {
-        $this->synced_at = now();
-        $this->save();
+        parent::boot();
+
+        static::saving(function ($payment) {
+            $payment->version = ($payment->version ?? 0) + 1;
+        });
     }
 }

@@ -10,23 +10,23 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user
-     */
     public function register(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'sometimes|string|in:admin,supervisor,collector',
+            'phone' => 'nullable|string|max:20',
+            'device_id' => 'nullable|string|max:255',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'collector',
+            'phone' => $validated['phone'] ?? null,
+            'device_id' => $validated['device_id'] ?? null,
+            'role' => 'collector',
         ]);
 
         $token = $user->createToken('mobile-app')->plainTextToken;
@@ -37,14 +37,12 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Login user
-     */
     public function login(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
+            'device_id' => 'nullable|string',
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -55,10 +53,14 @@ class AuthController extends Controller
             ]);
         }
 
-        if (!$user->is_active) {
+        if ($user->status !== 'active') {
             throw ValidationException::withMessages([
-                'email' => ['Your account has been deactivated.'],
+                'email' => ['Your account is not active.'],
             ]);
+        }
+
+        if ($request->device_id) {
+            $user->update(['device_id' => $request->device_id]);
         }
 
         $token = $user->createToken('mobile-app')->plainTextToken;
@@ -69,9 +71,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Logout user
-     */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -81,10 +80,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Get current user
-     */
-    public function me(Request $request)
+    public function user(Request $request)
     {
         return response()->json($request->user());
     }
