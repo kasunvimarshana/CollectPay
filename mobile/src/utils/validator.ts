@@ -171,8 +171,14 @@ export class DataValidator {
    * Sanitize string input
    */
   sanitizeString(input: string): string {
-    return input.trim().replace(/[<>]/g, '');
+    // Remove angle brackets and escape HTML entities
+    return input
+      .trim()
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .replace(/\//g, '&#x2F;');
   }
 }
-
 export const dataValidator = new DataValidator();

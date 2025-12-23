@@ -229,20 +229,10 @@ class ValidationService
      */
     public function containsSqlInjection(string $input): bool
     {
-        $sqlKeywords = [
-            'union', 'select', 'insert', 'update', 'delete', 'drop', 'create',
-            'alter', 'exec', 'execute', 'script', '--', '/*', '*/', 'xp_',
-        ];
+        // Use single regex pattern for better performance
+        $pattern = '/\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|xp_|--|\/\*|\*\/)\b/i';
         
-        $lowerInput = strtolower($input);
-        
-        foreach ($sqlKeywords as $keyword) {
-            if (str_contains($lowerInput, $keyword)) {
-                return true;
-            }
-        }
-        
-        return false;
+        return preg_match($pattern, $input) === 1;
     }
     
     /**
@@ -253,19 +243,9 @@ class ValidationService
      */
     public function containsXss(string $input): bool
     {
-        $xssPatterns = [
-            '<script', 'javascript:', 'onerror=', 'onload=', 'onclick=',
-            'onmouseover=', '<iframe', '<object', '<embed',
-        ];
+        // Use single regex pattern for better performance
+        $pattern = '/<script|javascript:|onerror=|onload=|onclick=|onmouseover=|<iframe|<object|<embed/i';
         
-        $lowerInput = strtolower($input);
-        
-        foreach ($xssPatterns as $pattern) {
-            if (str_contains($lowerInput, $pattern)) {
-                return true;
-            }
-        }
-        
-        return false;
+        return preg_match($pattern, $input) === 1;
     }
 }

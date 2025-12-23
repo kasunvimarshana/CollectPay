@@ -31,7 +31,7 @@ class SyncService {
       const validCollections = pendingCollections.filter(collection => {
         const validation = dataValidator.validateCollection(collection);
         if (!validation.valid) {
-          console.warn('Invalid collection data:', validation.errors);
+          errorHandler.logError(validation.errors, 'Collection validation');
           return false;
         }
         return true;
@@ -40,7 +40,7 @@ class SyncService {
       const validPayments = pendingPayments.filter(payment => {
         const validation = dataValidator.validatePayment(payment);
         if (!validation.valid) {
-          console.warn('Invalid payment data:', validation.errors);
+          errorHandler.logError(validation.errors, 'Payment validation');
           return false;
         }
         return true;

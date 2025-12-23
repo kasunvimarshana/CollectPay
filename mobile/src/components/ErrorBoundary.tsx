@@ -57,13 +57,15 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV === 'development';
+
       return (
         <View style={styles.container}>
           <Text style={styles.title}>Oops! Something went wrong</Text>
           <Text style={styles.message}>
             We're sorry for the inconvenience. Please try again.
           </Text>
-          {__DEV__ && this.state.error && (
+          {isDev && this.state.error && (
             <View style={styles.errorDetails}>
               <Text style={styles.errorText}>
                 {this.state.error.toString()}

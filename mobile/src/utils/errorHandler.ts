@@ -122,7 +122,8 @@ class ErrorHandler {
    * Log error for debugging
    */
   logError(error: any, context?: string) {
-    if (__DEV__) {
+    const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV === 'development';
+    if (isDev) {
       console.error(`[${context || 'Error'}]`, error);
     }
     // In production, send to error tracking service (e.g., Sentry)
