@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
@@ -11,43 +12,47 @@ class Payment extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'payment_number',
         'supplier_id',
-        'user_id',
-        'amount',
         'payment_type',
+        'amount',
+        'payment_date',
         'payment_method',
         'reference_number',
-        'payment_date',
         'notes',
+        'processed_by',
+        'client_uuid',
+        'is_synced',
+        'synced_at',
+        'sync_version',
         'device_id',
-        'sync_status',
-        'version',
-        'server_timestamp',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'payment_date' => 'datetime',
-        'server_timestamp' => 'datetime',
-        'version' => 'integer',
+        'synced_at' => 'datetime',
+        'is_synced' => 'boolean',
     ];
-
-    public function supplier()
-    {
-        return $this->belongsTo(Supplier::class);
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 
     protected static function boot()
     {
         parent::boot();
-
-        static::saving(function ($payment) {
-            $payment->version = ($payment->version ?? 0) + 1;
+        
+        static::creating(function ($payment) {
+            if (empty($payment->payment_number)) {
+                $payment->payment_number = 'PAY-' . date('Ymd') . '-' . strtoupper(uniqid());
+            }
         });
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    public function processor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'processed_by');
     }
 }

@@ -1,295 +1,307 @@
-# Quick Start Guide
+# TransacTrack Quick Start Guide
 
-Get TransacTrack up and running in minutes!
+This guide will help you get TransacTrack up and running quickly.
 
 ## Prerequisites
 
-Install the following before you begin:
+### Backend
+- PHP 8.2 or higher
+- Composer 2.x
+- SQLite (included with PHP)
 
-- **Backend**: PHP 8.1+, Composer, MySQL
-- **Mobile**: Node.js 18+, npm, Expo CLI
+### Frontend
+- Node.js 18.x or higher
+- npm or yarn
+- Expo CLI (will be installed automatically)
+- Expo Go app on your mobile device (from App Store or Play Store)
 
-## Quick Setup (Development)
+## Quick Setup (5 Minutes)
 
-### 1. Clone the Repository
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/kasunvimarshana/TransacTrack.git
 cd TransacTrack
 ```
 
-### 2. Backend Setup (5 minutes)
+### Step 2: Setup Backend
 
 ```bash
-# Navigate to backend
 cd backend
-
-# Install dependencies
 composer install
-
-# Setup environment
 cp .env.example .env
-
-# Edit .env with your database credentials
-nano .env  # or use your preferred editor
-
-# Generate application key
 php artisan key:generate
-
-# Create database
-mysql -u root -p -e "CREATE DATABASE transactrack;"
-
-# Run migrations
-php artisan migrate
-
-# Start server
+touch database/database.sqlite
+php artisan migrate --seed
 php artisan serve
 ```
 
-Backend will be available at `http://localhost:8000`
+The backend will be running at `http://localhost:8000`
 
-### 3. Mobile App Setup (3 minutes)
+**Test Accounts Created:**
+- Admin: `admin@transactrack.com` / `password`
+- Manager: `manager@transactrack.com` / `password`
+- Collector: `collector@transactrack.com` / `password`
+
+### Step 3: Setup Frontend
+
+Open a new terminal window:
 
 ```bash
-# Navigate to mobile (in a new terminal)
-cd mobile
-
-# Install dependencies
+cd ../frontend
 npm install
-
-# Start Expo
 npm start
 ```
 
-### 4. Test the Application
+### Step 4: Run on Mobile Device
 
-1. **Scan QR code** with Expo Go app (iOS/Android)
-2. **Register a new user** in the app
-3. **Login** with your credentials
-4. **Explore** the features!
+1. Install "Expo Go" app on your phone:
+   - iOS: App Store
+   - Android: Play Store
 
-## Quick Test Data (Optional)
+2. Scan the QR code shown in the terminal with:
+   - iOS: Camera app
+   - Android: Expo Go app
 
-Create test data via API or directly in database:
+3. **Important**: Configure the API URL for your device:
+   - Edit `frontend/src/utils/config.js`
+   - Replace `localhost` with your computer's IP address
+   - Example: `http://192.168.1.100:8000/api`
 
-### Create a Test User
+### Step 5: Login and Test
 
-```bash
-curl -X POST http://localhost:8000/api/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Test User",
-    "email": "test@example.com",
-    "password": "password",
-    "password_confirmation": "password"
-  }'
-```
+1. Login with one of the test accounts
+2. Try creating a supplier
+3. Record a collection
+4. Process a payment (admin/manager only)
 
-### Login
+## Key Features
 
-```bash
-curl -X POST http://localhost:8000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "password"
-  }'
-```
+### ✅ Offline-First Architecture
+- All data operations work without internet
+- Automatic sync when connection restored
+- Visual indicators for sync status
 
-Copy the token from the response and use it for authenticated requests.
+### ✅ Supplier Management
+- Create and edit supplier profiles
+- View balances and transactions
+- Search and filter suppliers
 
-## Configuration Tips
+### ✅ Collection Tracking
+- Record product collections with multiple units (grams, kg, liters, ml)
+- Automatic rate and amount calculations
+- Link to suppliers and products
 
-### Backend (.env)
+### ✅ Payment Processing
+- Support for advance, partial, and full payments
+- Real-time balance calculations
+- Payment history tracking
 
-Key settings to configure:
+### ✅ Role-Based Access Control
+- **Collector**: Create collections, view suppliers
+- **Manager**: All collector features + payment processing
+- **Admin**: Full system access including rate management
 
-```env
-# Application
-APP_NAME=TransacTrack
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://localhost:8000
+### ✅ Security
+- Token-based authentication
+- Encrypted data storage
+- Audit logging
+- RBAC and ABAC authorization
 
-# Database
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=transactrack
-DB_USERNAME=root
-DB_PASSWORD=your_password
+## Usage Tips
 
-# CORS (for mobile app)
-SANCTUM_STATEFUL_DOMAINS=localhost:3000,localhost:19006
-```
+### 1. Working Offline
+- Turn off WiFi/data to test offline mode
+- Orange dot (●) indicates unsynced items
+- Green/red status dot shows connection state
 
-### Mobile (app.json)
+### 2. Creating Collections
+1. Go to Collections tab
+2. Tap the + button
+3. Select supplier and product
+4. Enter quantity and unit
+5. Rate is automatically fetched
+6. Total amount is calculated
 
-Update API URL:
+### 3. Processing Payments
+1. Go to Payments tab (admin/manager only)
+2. Tap the + button
+3. Select supplier to see current balance
+4. Choose payment type:
+   - **Advance**: Payment before collection
+   - **Partial**: Part payment
+   - **Full**: Settles entire balance
+   - **Adjustment**: Balance corrections
 
-```json
-{
-  "expo": {
-    "extra": {
-      "apiUrl": "http://YOUR_LOCAL_IP:8000/api"
-    }
-  }
-}
-```
+### 4. Managing Suppliers
+1. Go to Suppliers tab
+2. Tap + to create new supplier
+3. Tap supplier card to view details
+4. View balance and transaction history
+5. Edit or delete as needed
 
-**Note**: Use your computer's local IP (e.g., 192.168.1.100) not localhost when testing on a physical device.
-
-## Common Issues
+## Troubleshooting
 
 ### Backend Issues
 
-**Issue**: `php artisan migrate` fails
-- **Solution**: Check database credentials in `.env`
-- **Solution**: Ensure MySQL is running: `sudo systemctl start mysql`
+**"Class not found" errors:**
+```bash
+composer dump-autoload
+```
 
-**Issue**: Permission denied errors
-- **Solution**: Fix storage permissions:
-  ```bash
-  chmod -R 775 storage bootstrap/cache
-  ```
+**Database errors:**
+```bash
+php artisan migrate:fresh --seed
+```
 
-### Mobile Issues
+**Port 8000 in use:**
+```bash
+php artisan serve --port=8001
+```
 
-**Issue**: Cannot connect to API
-- **Solution**: Use your local IP address, not localhost
-- **Solution**: Ensure backend is running
-- **Solution**: Check firewall settings
+### Frontend Issues
 
-**Issue**: Expo app not loading
-- **Solution**: Clear cache: `expo start -c`
-- **Solution**: Delete node_modules and reinstall
+**"Network request failed":**
+- Check backend is running
+- Verify API URL in `src/utils/config.js`
+- Use IP address, not localhost for physical devices
+- Ensure phone and computer on same network
 
-## Next Steps
+**"Database initialization error":**
+- Clear app data and reinstall
+- Check device storage space
 
-1. **Read the Documentation**
-   - [README.md](README.md) - System overview
-   - [API.md](API.md) - API endpoints
-   - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+**"Module not found":**
+```bash
+rm -rf node_modules
+npm install
+```
 
-2. **Explore Features**
-   - Create suppliers
-   - Add products
-   - Record collections
-   - Process payments
-   - Test offline sync
+### Connection Issues
 
-3. **Customize**
-   - Modify user roles
-   - Add custom fields
-   - Extend API endpoints
-   - Customize UI
-
-4. **Deploy to Production**
-   - See [DEPLOYMENT.md](DEPLOYMENT.md)
+**Expo not connecting:**
+- Ensure phone and computer on same WiFi
+- Try disabling firewall temporarily
+- Use tunnel mode: `npx expo start --tunnel`
 
 ## Development Workflow
 
-### Backend Development
-
+### 1. Backend Development
 ```bash
-# Watch for file changes (optional)
-php artisan serve --watch
+cd backend
+php artisan serve
 
 # Run tests
 php artisan test
 
-# Clear cache
-php artisan cache:clear
+# Check code style
+./vendor/bin/pint
+
+# Create migration
+php artisan make:migration create_table_name
 ```
 
-### Mobile Development
-
+### 2. Frontend Development
 ```bash
-# Development
+cd frontend
 npm start
 
+# Clear cache
+npx expo start -c
+
 # Run on specific platform
-npm run ios      # iOS simulator
 npm run android  # Android emulator
-
-# Lint code
-npm run lint
-
-# Run tests
-npm test
+npm run ios      # iOS simulator (macOS only)
+npm run web      # Web browser
 ```
 
-## Default Credentials
+### 3. Testing Sync
+1. Turn off network
+2. Create/edit data
+3. Note orange unsync indicator
+4. Turn on network
+5. Watch automatic sync
 
-After seeding (if you create a seeder):
-- Email: admin@transactrack.com
-- Password: password
+## API Endpoints
 
-**Important**: Change these in production!
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/user` - Get current user
 
-## Getting Help
+### Suppliers
+- `GET /api/suppliers` - List all suppliers
+- `POST /api/suppliers` - Create supplier
+- `GET /api/suppliers/{id}` - Get supplier details
+- `PUT /api/suppliers/{id}` - Update supplier
+- `DELETE /api/suppliers/{id}` - Delete supplier
 
-- **Documentation**: See docs in repository
-- **Issues**: https://github.com/kasunvimarshana/TransacTrack/issues
-- **API**: See [API.md](API.md)
+### Collections
+- `GET /api/collections` - List all collections
+- `POST /api/collections` - Create collection
+- `GET /api/collections/{id}` - Get collection details
+- `GET /api/my-collections` - Get current user's collections
 
-## Quick Reference
+### Payments
+- `GET /api/payments` - List all payments
+- `POST /api/payments` - Create payment (admin/manager)
+- `GET /api/payments/{id}` - Get payment details
 
-### Useful Commands
+### Sync
+- `POST /api/sync/push` - Push local changes
+- `GET /api/sync/pull` - Pull server updates
+- `GET /api/sync/status` - Get sync status
 
-```bash
-# Backend
-php artisan serve              # Start server
-php artisan migrate           # Run migrations
-php artisan migrate:fresh     # Fresh migration
-php artisan db:seed          # Seed database
-php artisan config:cache     # Cache config
-php artisan route:list       # List routes
+## Architecture Overview
 
-# Mobile
-npm start                    # Start Expo
-npm run ios                 # iOS simulator
-npm run android            # Android emulator
-expo start -c              # Clear cache
+```
+┌─────────────────────────────────────┐
+│     React Native / Expo App         │
+│  ┌───────────┐    ┌──────────────┐ │
+│  │  SQLite   │    │   Network    │ │
+│  │ (Offline) │    │  Monitoring  │ │
+│  └─────┬─────┘    └──────┬───────┘ │
+│        │                  │         │
+│        └────►┌───────────┴────┐    │
+│              │   Sync Queue   │    │
+│              └────────┬───────┘    │
+└───────────────────────┼────────────┘
+                        │
+                  ┌─────▼──────┐
+                  │  REST API  │
+                  └─────┬──────┘
+                        │
+┌───────────────────────┼────────────┐
+│      Laravel Backend               │
+│  ┌───────────┐   ┌────┴──────┐    │
+│  │ Sanctum   │◄──┤Controllers│    │
+│  │   Auth    │   └────┬──────┘    │
+│  └───────────┘   ┌────▼──────┐    │
+│  ┌───────────┐   │  Models   │    │
+│  │   RBAC/   │   │(Eloquent) │    │
+│  │   ABAC    │   └────┬──────┘    │
+│  └───────────┘   ┌────▼──────┐    │
+│                  │ Database  │    │
+│                  │(SQLite/SQL)│    │
+│                  └───────────┘    │
+└────────────────────────────────────┘
 ```
 
-### File Structure
+## Next Steps
 
-```
-TransacTrack/
-├── backend/            # Laravel API
-│   ├── app/           # Application code
-│   ├── config/        # Configuration
-│   ├── database/      # Migrations, seeders
-│   └── routes/        # API routes
-├── mobile/            # React Native app
-│   ├── src/          # Application code
-│   ├── App.tsx       # Entry point
-│   └── app.json      # Expo config
-└── docs/             # Documentation
-```
+1. **Explore the App**: Try all features with test data
+2. **Read Full Docs**: Check `/docs` folder for detailed guides
+3. **Customize**: Modify for your specific needs
+4. **Deploy**: Follow production deployment guides
+5. **Contribute**: Submit issues and pull requests
 
-## Tips for Success
+## Support
 
-1. **Start Simple**: Test basic features first
-2. **Check Logs**: Monitor backend logs for errors
-3. **Use Postman**: Test API endpoints independently
-4. **Read Errors**: Error messages are helpful!
-5. **Ask Questions**: Use GitHub issues
+- **Issues**: [GitHub Issues](https://github.com/kasunvimarshana/TransacTrack/issues)
+- **Documentation**: See `/docs` folder
+- **API Docs**: `/docs/API.md`
+- **Architecture**: `/docs/ARCHITECTURE.md`
 
-## Ready for Production?
+## License
 
-When you're ready to deploy:
-
-1. Follow [DEPLOYMENT.md](DEPLOYMENT.md)
-2. Review [SECURITY.md](SECURITY.md)
-3. Update environment variables
-4. Set up SSL/HTTPS
-5. Configure backups
-6. Set up monitoring
-
----
-
-**Happy coding! 🚀**
-
-For detailed information, see the main [README.md](README.md)
+MIT License - See LICENSE file for details

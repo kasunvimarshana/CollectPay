@@ -3,224 +3,301 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\SyncQueue;
 use App\Models\Collection;
 use App\Models\Payment;
-use App\Models\SyncConflict;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SyncController extends Controller
 {
-    public function sync(Request $request)
+    public function push(Request $request)
     {
         $validated = $request->validate([
-            'device_id' => 'required|string',
-            'last_sync_timestamp' => 'nullable|date',
-            'collections' => 'nullable|array',
-            'collections.*.id' => 'nullable|integer',
-            'collections.*.supplier_id' => 'required|integer',
-            'collections.*.product_id' => 'required|integer',
-            'collections.*.quantity' => 'required|numeric',
-            'collections.*.unit' => 'required|in:g,kg,ml,l',
-            'collections.*.rate' => 'required|numeric',
-            'collections.*.collection_date' => 'required|date',
-            'collections.*.version' => 'nullable|integer',
-            'payments' => 'nullable|array',
-            'payments.*.id' => 'nullable|integer',
-            'payments.*.supplier_id' => 'required|integer',
-            'payments.*.amount' => 'required|numeric',
-            'payments.*.payment_type' => 'required|string',
-            'payments.*.payment_method' => 'required|string',
-            'payments.*.payment_date' => 'required|date',
-            'payments.*.version' => 'nullable|integer',
+            'items' => 'required|array',
+            'items.*.client_uuid' => 'required|string',
+            'items.*.entity_type' => 'required|in:collection,payment,supplier',
+            'items.*.operation' => 'required|in:create,update,delete',
+            'items.*.data' => 'required|array',
         ]);
 
-        DB::beginTransaction();
-        try {
-            $syncedCollections = [];
-            $syncedPayments = [];
-            $conflicts = [];
+        $deviceId = $request->header('X-Device-ID', 'unknown');
+        $results = [];
 
-            // Sync collections
-            if (isset($validated['collections'])) {
-                foreach ($validated['collections'] as $collectionData) {
-                    $result = $this->syncCollection($collectionData, $request->user(), $validated['device_id']);
-                    if ($result['status'] === 'conflict') {
-                        $conflicts[] = $result;
-                    } else {
-                        $syncedCollections[] = $result['data'];
-                    }
-                }
-            }
-
-            // Sync payments
-            if (isset($validated['payments'])) {
-                foreach ($validated['payments'] as $paymentData) {
-                    $result = $this->syncPayment($paymentData, $request->user(), $validated['device_id']);
-                    if ($result['status'] === 'conflict') {
-                        $conflicts[] = $result;
-                    } else {
-                        $syncedPayments[] = $result['data'];
-                    }
-                }
-            }
-
-            // Get server updates
-            $lastSync = $validated['last_sync_timestamp'] ?? null;
-            $serverCollections = Collection::where('sync_status', 'synced')
-                ->when($lastSync, fn($q) => $q->where('server_timestamp', '>', $lastSync))
-                ->where('device_id', '!=', $validated['device_id'])
-                ->with(['supplier', 'product', 'user'])
-                ->get();
-
-            $serverPayments = Payment::where('sync_status', 'synced')
-                ->when($lastSync, fn($q) => $q->where('server_timestamp', '>', $lastSync))
-                ->where('device_id', '!=', $validated['device_id'])
-                ->with(['supplier', 'user'])
-                ->get();
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'synced_collections' => $syncedCollections,
-                'synced_payments' => $syncedPayments,
-                'server_collections' => $serverCollections,
-                'server_payments' => $serverPayments,
-                'conflicts' => $conflicts,
-                'sync_timestamp' => now()->toIso8601String(),
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Sync failed: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    private function syncCollection(array $data, $user, string $deviceId)
-    {
-        $data['user_id'] = $user->id;
-        $data['device_id'] = $deviceId;
-
-        if (isset($data['id']) && $data['id']) {
-            $existing = Collection::find($data['id']);
-            
-            if ($existing) {
-                $clientVersion = $data['version'] ?? 1;
+        foreach ($validated['items'] as $item) {
+            try {
+                // Check if already synced
+                $existing = SyncQueue::where('client_uuid', $item['client_uuid'])->first();
                 
-                if ($existing->version > $clientVersion) {
-                    SyncConflict::create([
-                        'entity_type' => 'collection',
-                        'entity_id' => $existing->id,
-                        'device_id' => $deviceId,
-                        'local_data' => $data,
-                        'server_data' => $existing->toArray(),
-                        'conflict_type' => 'version_mismatch',
-                    ]);
-                    
-                    return [
-                        'status' => 'conflict',
-                        'entity_type' => 'collection',
-                        'entity_id' => $existing->id,
-                        'server_data' => $existing,
+                if ($existing && $existing->status === 'completed') {
+                    $results[] = [
+                        'client_uuid' => $item['client_uuid'],
+                        'status' => 'already_synced',
+                        'entity_id' => $existing->entity_id,
                     ];
+                    continue;
                 }
-                
-                $existing->update($data);
-                $existing->sync_status = 'synced';
-                $existing->server_timestamp = now();
-                $existing->save();
-                
-                return ['status' => 'updated', 'data' => $existing];
-            }
-        }
 
-        $collection = Collection::create($data);
-        $collection->sync_status = 'synced';
-        $collection->server_timestamp = now();
-        $collection->save();
+                // Create sync queue item
+                $syncItem = SyncQueue::create([
+                    'entity_type' => $item['entity_type'],
+                    'client_uuid' => $item['client_uuid'],
+                    'device_id' => $deviceId,
+                    'user_id' => $request->user()->id,
+                    'data' => $item['data'],
+                    'operation' => $item['operation'],
+                    'status' => 'pending',
+                ]);
 
-        return ['status' => 'created', 'data' => $collection];
-    }
+                // Process immediately
+                $result = $this->processSyncItem($syncItem);
+                $results[] = $result;
 
-    private function syncPayment(array $data, $user, string $deviceId)
-    {
-        $data['user_id'] = $user->id;
-        $data['device_id'] = $deviceId;
-
-        if (isset($data['id']) && $data['id']) {
-            $existing = Payment::find($data['id']);
-            
-            if ($existing) {
-                $clientVersion = $data['version'] ?? 1;
-                
-                if ($existing->version > $clientVersion) {
-                    SyncConflict::create([
-                        'entity_type' => 'payment',
-                        'entity_id' => $existing->id,
-                        'device_id' => $deviceId,
-                        'local_data' => $data,
-                        'server_data' => $existing->toArray(),
-                        'conflict_type' => 'version_mismatch',
-                    ]);
-                    
-                    return [
-                        'status' => 'conflict',
-                        'entity_type' => 'payment',
-                        'entity_id' => $existing->id,
-                        'server_data' => $existing,
-                    ];
-                }
-                
-                $existing->update($data);
-                $existing->sync_status = 'synced';
-                $existing->server_timestamp = now();
-                $existing->save();
-                
-                return ['status' => 'updated', 'data' => $existing];
-            }
-        }
-
-        $payment = Payment::create($data);
-        $payment->sync_status = 'synced';
-        $payment->server_timestamp = now();
-        $payment->save();
-
-        return ['status' => 'created', 'data' => $payment];
-    }
-
-    public function resolveConflict(Request $request, SyncConflict $conflict)
-    {
-        $validated = $request->validate([
-            'resolution' => 'required|in:use_server,use_client,merge',
-            'resolved_data' => 'required_if:resolution,merge|array',
-        ]);
-
-        $conflict->resolution_status = 'resolved';
-        $conflict->resolved_by = $request->user()->id;
-        $conflict->resolved_at = now();
-        $conflict->resolved_data = $validated['resolved_data'] ?? null;
-        $conflict->save();
-
-        if ($validated['resolution'] === 'use_client' || $validated['resolution'] === 'merge') {
-            $data = $validated['resolution'] === 'merge' 
-                ? $validated['resolved_data'] 
-                : $conflict->local_data;
-            
-            if ($conflict->entity_type === 'collection') {
-                $entity = Collection::find($conflict->entity_id);
-                $entity->update($data);
-            } elseif ($conflict->entity_type === 'payment') {
-                $entity = Payment::find($conflict->entity_id);
-                $entity->update($data);
+            } catch (\Exception $e) {
+                $results[] = [
+                    'client_uuid' => $item['client_uuid'],
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ];
             }
         }
 
         return response()->json([
-            'success' => true,
-            'conflict' => $conflict,
+            'message' => 'Sync completed',
+            'results' => $results,
         ]);
+    }
+
+    public function pull(Request $request)
+    {
+        $lastSync = $request->input('last_sync');
+        $deviceId = $request->header('X-Device-ID');
+
+        $collections = Collection::where('is_synced', true)
+            ->when($lastSync, fn($q) => $q->where('synced_at', '>', $lastSync))
+            ->when($deviceId, fn($q) => $q->where('device_id', '!=', $deviceId))
+            ->with(['supplier', 'product', 'rate'])
+            ->get();
+
+        $payments = Payment::where('is_synced', true)
+            ->when($lastSync, fn($q) => $q->where('synced_at', '>', $lastSync))
+            ->when($deviceId, fn($q) => $q->where('device_id', '!=', $deviceId))
+            ->with('supplier')
+            ->get();
+
+        $suppliers = Supplier::when($lastSync, fn($q) => $q->where('updated_at', '>', $lastSync))
+            ->with('balance')
+            ->get();
+
+        $productRates = \App\Models\ProductRate::where('is_current', true)
+            ->with('product')
+            ->get();
+
+        return response()->json([
+            'collections' => $collections,
+            'payments' => $payments,
+            'suppliers' => $suppliers,
+            'product_rates' => $productRates,
+            'sync_time' => now()->toIso8601String(),
+        ]);
+    }
+
+    public function status(Request $request)
+    {
+        $pending = SyncQueue::where('user_id', $request->user()->id)
+            ->where('status', 'pending')
+            ->count();
+
+        $conflicts = SyncQueue::where('user_id', $request->user()->id)
+            ->where('status', 'conflict')
+            ->count();
+
+        $failed = SyncQueue::where('user_id', $request->user()->id)
+            ->where('status', 'failed')
+            ->count();
+
+        return response()->json([
+            'pending' => $pending,
+            'conflicts' => $conflicts,
+            'failed' => $failed,
+        ]);
+    }
+
+    public function conflicts(Request $request)
+    {
+        $conflicts = SyncQueue::where('user_id', $request->user()->id)
+            ->where('status', 'conflict')
+            ->with('user')
+            ->get();
+
+        return response()->json($conflicts);
+    }
+
+    public function resolveConflict(Request $request, SyncQueue $syncQueue)
+    {
+        $request->validate([
+            'resolution' => 'required|in:use_server,use_client,merge',
+            'merged_data' => 'required_if:resolution,merge|array',
+        ]);
+
+        if ($syncQueue->status !== 'conflict') {
+            return response()->json(['message' => 'Item is not in conflict'], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            if ($request->resolution === 'use_server') {
+                // Keep server data, mark as processed
+                $syncQueue->markAsProcessed($syncQueue->conflict_data['server_entity_id'] ?? null);
+            } else if ($request->resolution === 'use_client') {
+                // Use client data
+                $syncQueue->data = $syncQueue->data;
+                $syncQueue->status = 'pending';
+                $syncQueue->save();
+                $result = $this->processSyncItem($syncQueue);
+            } else {
+                // Use merged data
+                $syncQueue->data = $request->merged_data;
+                $syncQueue->status = 'pending';
+                $syncQueue->save();
+                $result = $this->processSyncItem($syncQueue);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Conflict resolved successfully']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to resolve conflict', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    private function processSyncItem(SyncQueue $syncItem): array
+    {
+        try {
+            DB::beginTransaction();
+
+            $entityId = null;
+
+            switch ($syncItem->entity_type) {
+                case 'collection':
+                    $entityId = $this->processCollection($syncItem);
+                    break;
+                case 'payment':
+                    $entityId = $this->processPayment($syncItem);
+                    break;
+                case 'supplier':
+                    $entityId = $this->processSupplier($syncItem);
+                    break;
+            }
+
+            $syncItem->markAsProcessed($entityId);
+
+            DB::commit();
+
+            return [
+                'client_uuid' => $syncItem->client_uuid,
+                'status' => 'success',
+                'entity_id' => $entityId,
+            ];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $syncItem->markAsFailed($e->getMessage());
+
+            return [
+                'client_uuid' => $syncItem->client_uuid,
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    private function processCollection(SyncQueue $syncItem): int
+    {
+        $data = $syncItem->data;
+
+        if ($syncItem->operation === 'create') {
+            $collection = Collection::create([
+                'supplier_id' => $data['supplier_id'],
+                'product_id' => $data['product_id'],
+                'collector_id' => $syncItem->user_id,
+                'quantity' => $data['quantity'],
+                'unit' => $data['unit'],
+                'rate_id' => $data['rate_id'],
+                'rate_applied' => $data['rate_applied'],
+                'collected_at' => $data['collected_at'],
+                'notes' => $data['notes'] ?? null,
+                'metadata' => $data['metadata'] ?? null,
+                'client_uuid' => $syncItem->client_uuid,
+                'device_id' => $syncItem->device_id,
+                'is_synced' => true,
+                'synced_at' => now(),
+            ]);
+
+            $collection->supplier->balance?->recalculate();
+
+            return $collection->id;
+        }
+
+        return 0;
+    }
+
+    private function processPayment(SyncQueue $syncItem): int
+    {
+        $data = $syncItem->data;
+
+        if ($syncItem->operation === 'create') {
+            $payment = Payment::create([
+                'supplier_id' => $data['supplier_id'],
+                'payment_type' => $data['payment_type'],
+                'amount' => $data['amount'],
+                'payment_date' => $data['payment_date'],
+                'payment_method' => $data['payment_method'] ?? 'cash',
+                'reference_number' => $data['reference_number'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'processed_by' => $syncItem->user_id,
+                'client_uuid' => $syncItem->client_uuid,
+                'device_id' => $syncItem->device_id,
+                'is_synced' => true,
+                'synced_at' => now(),
+            ]);
+
+            $payment->supplier->balance?->recalculate();
+
+            return $payment->id;
+        }
+
+        return 0;
+    }
+
+    private function processSupplier(SyncQueue $syncItem): int
+    {
+        $data = $syncItem->data;
+
+        if ($syncItem->operation === 'create') {
+            $supplier = Supplier::create([
+                'name' => $data['name'],
+                'email' => $data['email'] ?? null,
+                'phone' => $data['phone'] ?? null,
+                'secondary_phone' => $data['secondary_phone'] ?? null,
+                'address' => $data['address'] ?? null,
+                'village' => $data['village'] ?? null,
+                'district' => $data['district'] ?? null,
+                'latitude' => $data['latitude'] ?? null,
+                'longitude' => $data['longitude'] ?? null,
+                'metadata' => $data['metadata'] ?? null,
+                'created_by' => $syncItem->user_id,
+            ]);
+
+            \App\Models\SupplierBalance::create(['supplier_id' => $supplier->id]);
+
+            return $supplier->id;
+        }
+
+        return 0;
     }
 }

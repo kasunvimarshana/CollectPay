@@ -4,41 +4,38 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Collection;
-use App\Models\Product;
+use App\Models\ProductRate;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 
 class CollectionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Collection::with(['supplier', 'product', 'user']);
+        $query = Collection::with(['supplier', 'product', 'collector', 'rate']);
 
-        if ($request->has('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', $request->input('supplier_id'));
         }
 
-        if ($request->has('product_id')) {
-            $query->where('product_id', $request->product_id);
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->input('product_id'));
         }
 
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->user_id);
+        if ($request->filled('collector_id')) {
+            $query->where('collector_id', $request->input('collector_id'));
         }
 
-        if ($request->has('sync_status')) {
-            $query->where('sync_status', $request->sync_status);
+        if ($request->filled('from_date')) {
+            $query->where('collected_at', '>=', $request->input('from_date'));
         }
 
-        if ($request->has('date_from')) {
-            $query->where('collection_date', '>=', $request->date_from);
+        if ($request->filled('to_date')) {
+            $query->where('collected_at', '<=', $request->input('to_date'));
         }
 
-        if ($request->has('date_to')) {
-            $query->where('collection_date', '<=', $request->date_to);
-        }
-
-        $collections = $query->orderBy('collection_date', 'desc')
-            ->paginate($request->get('per_page', 15));
+        $collections = $query->latest('collected_at')
+            ->paginate($request->input('per_page', 15));
 
         return response()->json($collections);
     }
@@ -49,57 +46,100 @@ class CollectionController extends Controller
             'supplier_id' => 'required|exists:suppliers,id',
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|numeric|min:0.001',
-            'unit' => 'required|in:g,kg,ml,l',
-            'rate' => 'nullable|numeric|min:0',
-            'collection_date' => 'required|date',
+            'unit' => 'required|in:gram,kilogram,liter,milliliter',
+            'collected_at' => 'required|date',
             'notes' => 'nullable|string',
+            'metadata' => 'nullable|array',
+            'client_uuid' => 'nullable|string|unique:collections,client_uuid',
             'device_id' => 'nullable|string',
         ]);
 
-        $validated['user_id'] = $request->user()->id;
+        // Get applicable rate
+        $product = \App\Models\Product::findOrFail($validated['product_id']);
+        $rate = $product->getRateForDate($validated['collected_at']);
 
-        if (!isset($validated['rate'])) {
-            $product = Product::find($validated['product_id']);
-            $validated['rate'] = $product->getCurrentRate();
+        if (!$rate) {
+            return response()->json([
+                'message' => 'No rate available for this product at the specified date.'
+            ], 422);
         }
 
-        $collection = Collection::create($validated);
-        $collection->load(['supplier', 'product', 'user']);
+        $validated['collector_id'] = $request->user()->id;
+        $validated['rate_id'] = $rate->id;
+        $validated['rate_applied'] = $rate->rate;
 
-        return response()->json($collection, 201);
+        $collection = Collection::create($validated);
+
+        // Update supplier balance
+        $collection->supplier->balance?->recalculate();
+
+        AuditLog::log('collection', $collection->id, 'created', null, $collection->toArray());
+
+        return response()->json($collection->load(['supplier', 'product', 'collector', 'rate']), 201);
     }
 
     public function show(Collection $collection)
     {
-        $collection->load(['supplier', 'product', 'user']);
-
-        return response()->json($collection);
+        return response()->json($collection->load(['supplier', 'product', 'collector', 'rate']));
     }
 
     public function update(Request $request, Collection $collection)
     {
         $validated = $request->validate([
-            'supplier_id' => 'sometimes|required|exists:suppliers,id',
-            'product_id' => 'sometimes|required|exists:products,id',
-            'quantity' => 'sometimes|required|numeric|min:0.001',
-            'unit' => 'sometimes|required|in:g,kg,ml,l',
-            'rate' => 'sometimes|required|numeric|min:0',
-            'collection_date' => 'sometimes|required|date',
+            'quantity' => 'sometimes|numeric|min:0.001',
+            'unit' => 'sometimes|in:gram,kilogram,liter,milliliter',
+            'collected_at' => 'sometimes|date',
             'notes' => 'nullable|string',
+            'metadata' => 'nullable|array',
         ]);
 
-        $collection->update($validated);
-        $collection->load(['supplier', 'product', 'user']);
+        $oldValues = $collection->toArray();
 
-        return response()->json($collection);
+        // If quantity, unit, or date changed, recalculate rate
+        if (isset($validated['quantity']) || isset($validated['unit']) || isset($validated['collected_at'])) {
+            $collectedAt = $validated['collected_at'] ?? $collection->collected_at;
+            $rate = $collection->product->getRateForDate($collectedAt);
+
+            if (!$rate) {
+                return response()->json([
+                    'message' => 'No rate available for this product at the specified date.'
+                ], 422);
+            }
+
+            $validated['rate_id'] = $rate->id;
+            $validated['rate_applied'] = $rate->rate;
+        }
+
+        $collection->update($validated);
+
+        // Update supplier balance
+        $collection->supplier->balance?->recalculate();
+
+        AuditLog::log('collection', $collection->id, 'updated', $oldValues, $collection->fresh()->toArray());
+
+        return response()->json($collection->fresh()->load(['supplier', 'product', 'collector', 'rate']));
     }
 
     public function destroy(Collection $collection)
     {
+        AuditLog::log('collection', $collection->id, 'deleted', $collection->toArray(), null);
+
+        $supplierId = $collection->supplier_id;
         $collection->delete();
 
-        return response()->json([
-            'message' => 'Collection deleted successfully',
-        ]);
+        // Update supplier balance
+        \App\Models\Supplier::find($supplierId)?->balance?->recalculate();
+
+        return response()->json(['message' => 'Collection deleted successfully']);
+    }
+
+    public function myCollections(Request $request)
+    {
+        $collections = Collection::with(['supplier', 'product', 'rate'])
+            ->where('collector_id', $request->user()->id)
+            ->latest('collected_at')
+            ->paginate($request->input('per_page', 15));
+
+        return response()->json($collections);
     }
 }

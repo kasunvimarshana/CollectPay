@@ -6,6 +6,6 @@ Route::get('/', function () {
     return response()->json([
         'message' => 'TransacTrack API',
         'version' => '1.0.0',
-        'status' => 'active',
+        'status' => 'operational',
     ]);
 });

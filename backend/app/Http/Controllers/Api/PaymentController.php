@@ -4,40 +4,33 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Payment::with(['supplier', 'user']);
+        $query = Payment::with(['supplier', 'processor']);
 
-        if ($request->has('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', $request->input('supplier_id'));
         }
 
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->user_id);
+        if ($request->filled('payment_type')) {
+            $query->where('payment_type', $request->input('payment_type'));
         }
 
-        if ($request->has('payment_type')) {
-            $query->where('payment_type', $request->payment_type);
+        if ($request->filled('from_date')) {
+            $query->where('payment_date', '>=', $request->input('from_date'));
         }
 
-        if ($request->has('sync_status')) {
-            $query->where('sync_status', $request->sync_status);
+        if ($request->filled('to_date')) {
+            $query->where('payment_date', '<=', $request->input('to_date'));
         }
 
-        if ($request->has('date_from')) {
-            $query->where('payment_date', '>=', $request->date_from);
-        }
-
-        if ($request->has('date_to')) {
-            $query->where('payment_date', '<=', $request->date_to);
-        }
-
-        $payments = $query->orderBy('payment_date', 'desc')
-            ->paginate($request->get('per_page', 15));
+        $payments = $query->latest('payment_date')
+            ->paginate($request->input('per_page', 15));
 
         return response()->json($payments);
     }
@@ -46,54 +39,65 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'amount' => 'required|numeric|min:0.01',
-            'payment_type' => 'required|in:advance,partial,full',
-            'payment_method' => 'required|in:cash,bank_transfer,mobile_money,check',
-            'reference_number' => 'nullable|string|max:255',
+            'payment_type' => 'required|in:advance,partial,full,adjustment',
+            'amount' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
+            'payment_method' => 'required|string',
+            'reference_number' => 'nullable|string',
             'notes' => 'nullable|string',
+            'client_uuid' => 'nullable|string|unique:payments,client_uuid',
             'device_id' => 'nullable|string',
         ]);
 
-        $validated['user_id'] = $request->user()->id;
+        $validated['processed_by'] = $request->user()->id;
 
         $payment = Payment::create($validated);
-        $payment->load(['supplier', 'user']);
 
-        return response()->json($payment, 201);
+        // Update supplier balance
+        $payment->supplier->balance?->recalculate();
+
+        AuditLog::log('payment', $payment->id, 'created', null, $payment->toArray());
+
+        return response()->json($payment->load(['supplier', 'processor']), 201);
     }
 
     public function show(Payment $payment)
     {
-        $payment->load(['supplier', 'user']);
-
-        return response()->json($payment);
+        return response()->json($payment->load(['supplier', 'processor']));
     }
 
     public function update(Request $request, Payment $payment)
     {
         $validated = $request->validate([
-            'supplier_id' => 'sometimes|required|exists:suppliers,id',
-            'amount' => 'sometimes|required|numeric|min:0.01',
-            'payment_type' => 'sometimes|required|in:advance,partial,full',
-            'payment_method' => 'sometimes|required|in:cash,bank_transfer,mobile_money,check',
-            'reference_number' => 'nullable|string|max:255',
-            'payment_date' => 'sometimes|required|date',
+            'payment_type' => 'sometimes|in:advance,partial,full,adjustment',
+            'amount' => 'sometimes|numeric|min:0',
+            'payment_date' => 'sometimes|date',
+            'payment_method' => 'sometimes|string',
+            'reference_number' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
 
+        $oldValues = $payment->toArray();
         $payment->update($validated);
-        $payment->load(['supplier', 'user']);
 
-        return response()->json($payment);
+        // Update supplier balance
+        $payment->supplier->balance?->recalculate();
+
+        AuditLog::log('payment', $payment->id, 'updated', $oldValues, $payment->fresh()->toArray());
+
+        return response()->json($payment->fresh()->load(['supplier', 'processor']));
     }
 
     public function destroy(Payment $payment)
     {
+        AuditLog::log('payment', $payment->id, 'deleted', $payment->toArray(), null);
+
+        $supplierId = $payment->supplier_id;
         $payment->delete();
 
-        return response()->json([
-            'message' => 'Payment deleted successfully',
-        ]);
+        // Update supplier balance
+        \App\Models\Supplier::find($supplierId)?->balance?->recalculate();
+
+        return response()->json(['message' => 'Payment deleted successfully']);
     }
 }
