@@ -18,6 +18,9 @@ export default function ProductsScreen() {
             <Text style={styles.cardTitle}>{item.name}</Text>
             {item.description && <Text style={styles.cardText}>{item.description}</Text>}
             <Text style={styles.cardText}>Base Rate: ${item.base_rate}</Text>
+            {item.current_rate && item.current_rate !== item.base_rate && (
+              <Text style={styles.cardTextHighlight}>Current Rate: ${item.current_rate}</Text>
+            )}
             <Text style={styles.cardText}>Unit Type: {item.unit_type}</Text>
             <Text style={styles.cardText}>Status: {item.status}</Text>
           </View>
@@ -67,6 +70,12 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 4,
+  },
+  cardTextHighlight: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
     marginBottom: 4,
   },
   emptyContainer: {

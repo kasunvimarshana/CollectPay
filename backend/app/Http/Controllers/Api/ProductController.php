@@ -24,6 +24,12 @@ class ProductController extends Controller
         $products = $query->orderBy('name')
             ->paginate($request->get('per_page', 15));
 
+        // Add current rate to each product
+        $products->getCollection()->transform(function ($product) {
+            $product->current_rate = $product->getCurrentRate();
+            return $product;
+        });
+
         return response()->json($products);
     }
 

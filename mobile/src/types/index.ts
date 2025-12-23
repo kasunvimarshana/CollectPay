@@ -35,6 +35,19 @@ export interface Product {
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
+  rates?: ProductRate[];
+}
+
+export interface ProductRate {
+  id: number;
+  product_id: number;
+  rate: number;
+  effective_from: string;
+  effective_to?: string;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  creator?: User;
 }
 
 export interface Collection {

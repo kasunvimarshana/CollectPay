@@ -132,6 +132,44 @@ class ApiService {
     return response.data;
   }
 
+  // Product Rates
+  async getProductRates(productId: number, params?: any) {
+    const response = await this.api.get(`/products/${productId}/rates`, { params });
+    return response.data;
+  }
+
+  async getProductRate(productId: number, rateId: number) {
+    const response = await this.api.get(`/products/${productId}/rates/${rateId}`);
+    return response.data;
+  }
+
+  async createProductRate(productId: number, data: any) {
+    const response = await this.api.post(`/products/${productId}/rates`, data);
+    return response.data;
+  }
+
+  async updateProductRate(productId: number, rateId: number, data: any) {
+    const response = await this.api.put(`/products/${productId}/rates/${rateId}`, data);
+    return response.data;
+  }
+
+  async deleteProductRate(productId: number, rateId: number) {
+    const response = await this.api.delete(`/products/${productId}/rates/${rateId}`);
+    return response.data;
+  }
+
+  async getCurrentProductRate(productId: number) {
+    const response = await this.api.get(`/products/${productId}/rates/current`);
+    return response.data;
+  }
+
+  async getProductRateAtDate(productId: number, date: string) {
+    const response = await this.api.get(`/products/${productId}/rates/at-date`, {
+      params: { date }
+    });
+    return response.data;
+  }
+
   // Collections
   async getCollections(params?: any) {
     const response = await this.api.get('/collections', { params });

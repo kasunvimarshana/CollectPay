@@ -7,6 +7,7 @@ import authReducer from './slices/authSlice';
 import appReducer from './slices/appSlice';
 import suppliersReducer from './slices/suppliersSlice';
 import productsReducer from './slices/productsSlice';
+import productRatesReducer from './slices/productRatesSlice';
 import collectionsReducer from './slices/collectionsSlice';
 import paymentsReducer from './slices/paymentsSlice';
 import syncReducer from './slices/syncSlice';
@@ -14,7 +15,7 @@ import syncReducer from './slices/syncSlice';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth', 'app', 'suppliers', 'products', 'collections', 'payments'],
+  whitelist: ['auth', 'app', 'suppliers', 'products', 'productRates', 'collections', 'payments'],
 };
 
 const rootReducer = combineReducers({
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
   app: appReducer,
   suppliers: suppliersReducer,
   products: productsReducer,
+  productRates: productRatesReducer,
   collections: collectionsReducer,
   payments: paymentsReducer,
   sync: syncReducer,

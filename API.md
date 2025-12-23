@@ -280,6 +280,7 @@ Get a paginated list of products.
       "description": "Natural rubber",
       "unit_type": "weight",
       "base_rate": 10.50,
+      "current_rate": 11.00,
       "metadata": {},
       "status": "active",
       "created_at": "2024-01-01T12:00:00Z",
@@ -340,6 +341,157 @@ Get a paginated list of products.
 ### Delete Product
 
 **Endpoint:** `DELETE /products/{id}`
+
+## Product Rate Endpoints
+
+### List Product Rates
+
+Get a paginated list of rates for a specific product.
+
+**Endpoint:** `GET /products/{product_id}/rates`
+
+**Query Parameters:**
+- `active_only` (optional): Filter only active rates (true/false)
+- `per_page` (optional): Results per page
+
+**Response:** `200 OK`
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "product_id": 1,
+      "rate": 11.00,
+      "effective_from": "2024-01-01T00:00:00Z",
+      "effective_to": null,
+      "created_by": 1,
+      "created_at": "2024-01-01T12:00:00Z",
+      "updated_at": "2024-01-01T12:00:00Z",
+      "creator": {
+        "id": 1,
+        "name": "John Doe"
+      }
+    }
+  ],
+  "current_page": 1,
+  "per_page": 15,
+  "total": 5,
+  "last_page": 1
+}
+```
+
+### Get Product Rate
+
+Get details of a specific rate.
+
+**Endpoint:** `GET /products/{product_id}/rates/{rate_id}`
+
+**Response:** `200 OK`
+
+### Create Product Rate
+
+Create a new rate for a product.
+
+**Endpoint:** `POST /products/{product_id}/rates`
+
+**Request Body:**
+```json
+{
+  "rate": 11.50,
+  "effective_from": "2024-02-01",
+  "effective_to": null
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "id": 2,
+  "product_id": 1,
+  "rate": 11.50,
+  "effective_from": "2024-02-01T00:00:00Z",
+  "effective_to": null,
+  "created_by": 1,
+  "created_at": "2024-01-15T12:00:00Z",
+  "updated_at": "2024-01-15T12:00:00Z",
+  "creator": {
+    "id": 1,
+    "name": "John Doe"
+  }
+}
+```
+
+**Note:** The system validates that rate date ranges don't overlap. If an overlapping rate exists, you'll receive a 422 validation error.
+
+### Update Product Rate
+
+Update an existing rate.
+
+**Endpoint:** `PUT /products/{product_id}/rates/{rate_id}`
+
+**Request Body:**
+```json
+{
+  "rate": 12.00,
+  "effective_from": "2024-02-01",
+  "effective_to": "2024-03-31"
+}
+```
+
+**Response:** `200 OK`
+
+### Delete Product Rate
+
+Delete a product rate.
+
+**Endpoint:** `DELETE /products/{product_id}/rates/{rate_id}`
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Product rate deleted successfully"
+}
+```
+
+### Get Current Rate
+
+Get the current active rate for a product.
+
+**Endpoint:** `GET /products/{product_id}/rates/current`
+
+**Response:** `200 OK`
+```json
+{
+  "product_id": 1,
+  "current_rate": 11.00,
+  "base_rate": 10.50
+}
+```
+
+### Get Rate at Specific Date
+
+Get the rate that was effective at a specific date.
+
+**Endpoint:** `GET /products/{product_id}/rates/at-date?date=2024-01-15`
+
+**Query Parameters:**
+- `date` (required): Date in YYYY-MM-DD format
+
+**Response:** `200 OK`
+```json
+{
+  "product_id": 1,
+  "date": "2024-01-15",
+  "rate": 11.00,
+  "rate_record": {
+    "id": 1,
+    "rate": 11.00,
+    "effective_from": "2024-01-01T00:00:00Z",
+    "effective_to": null
+  }
+}
+```
+
 
 ## Collection Endpoints
 

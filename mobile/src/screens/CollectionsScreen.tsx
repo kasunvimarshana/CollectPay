@@ -34,6 +34,11 @@ export default function CollectionsScreen() {
               Quantity: {item.quantity} {item.unit}
             </Text>
             <Text style={styles.cardText}>Rate: ${item.rate}</Text>
+            {item.product?.current_rate && item.product.current_rate !== item.rate && (
+              <Text style={styles.cardTextWarning}>
+                (Current rate: ${item.product.current_rate})
+              </Text>
+            )}
             <Text style={styles.cardAmount}>Total: ${item.total_amount}</Text>
             <Text style={styles.cardDate}>
               {format(new Date(item.collection_date), 'PPp')}
@@ -92,6 +97,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
+  },
+  cardTextWarning: {
+    fontSize: 13,
+    color: '#FF9500',
+    fontStyle: 'italic',
+    marginBottom: 4,
+    marginLeft: 10,
   },
   cardAmount: {
     fontSize: 16,
