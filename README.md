@@ -19,10 +19,11 @@ TrackVault is designed for businesses requiring precise tracking of collections,
 - ✅ **Secure** - End-to-end encryption, token-based auth, RBAC/ABAC
 - ✅ **Clean Architecture** - SOLID, DRY, KISS principles
 
-#### 🆕 Enhanced Features (v2.2.0)
+#### 🆕 Enhanced Features (v2.3.0)
 - ✅ **Date Range Filters** - Filter collections and payments by date with quick presets
 - ✅ **Infinite Scroll Pagination** - Efficient data loading with configurable page sizes
 - ✅ **Offline Support** - Work without internet, automatic sync when connection restored
+- ✅ **Advanced Picker Component** - Search, loading states, and pagination support
 
 ## 🚀 Quick Start
 
@@ -65,6 +66,7 @@ Complete documentation for TrackVault:
 - **[IMPLEMENTATION.md](IMPLEMENTATION.md)** - Complete setup and implementation guide
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - 🚀 Quick reference guide for developers
 - **[SWAGGER.md](SWAGGER.md)** - 🆕 **Interactive API Documentation Guide**
+- **[PICKER_COMPONENT.md](PICKER_COMPONENT.md)** - 🆕 **Enhanced Picker Component Guide**
 
 ### API Documentation
 - **[API.md](API.md)** - Complete REST API reference with examples
@@ -175,7 +177,7 @@ cd frontend && npm test
 - **Modular** - Easy to extend and maintain
 - **Testable** - Designed for comprehensive testing
 
-## ✨ Enhanced Features (v2.2.0)
+## ✨ Enhanced Features (v2.3.0)
 
 ### 📅 Date Range Filters
 Filter collections and payments by specific date ranges with convenient presets:
@@ -208,6 +210,26 @@ Work seamlessly without internet connectivity:
 - Background sync queue management
 - Network status monitoring
 - Visual indicators across all screens
+
+### 🎯 Advanced Picker Component
+Fully-featured picker with enterprise-grade capabilities:
+- **Search Functionality**: Local and remote search support
+- **Loading States**: Initial loading and "load more" indicators
+- **Pagination**: Infinite scroll with automatic loading
+- **Empty States**: Customizable empty and error states
+- **Type Safety**: Full TypeScript support with exported types
+- **Backward Compatible**: Works with all existing implementations
+
+**Features**:
+- Client-side and server-side search
+- Async data loading with progress indicators
+- Configurable page sizes and load more thresholds
+- Smart filtering and deduplication
+- Error handling and validation support
+
+**Usage**: Collections, Payments, Product Rates, and custom forms
+
+See **[PICKER_COMPONENT.md](PICKER_COMPONENT.md)** for complete documentation and usage examples.
 
 For detailed implementation information, see [FUTURE_ENHANCEMENTS_COMPLETE.md](FUTURE_ENHANCEMENTS_COMPLETE.md) and [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 

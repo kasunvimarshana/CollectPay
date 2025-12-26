@@ -1,6 +1,7 @@
 export { default as Button } from './Button';
 export { default as Input } from './Input';
 export { default as Picker } from './Picker';
+export type { PickerOption } from './Picker';
 export { default as DatePicker } from './DatePicker';
 export { default as DateRangePicker } from './DateRangePicker';
 export { default as FloatingActionButton } from './FloatingActionButton';
