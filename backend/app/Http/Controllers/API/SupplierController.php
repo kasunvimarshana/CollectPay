@@ -26,8 +26,19 @@ class SupplierController extends Controller
             $query->where('is_active', $request->is_active);
         }
 
+        // Server-side sorting
+        $sortBy = $request->get('sort_by', 'name');
+        $sortOrder = $request->get('sort_order', 'asc');
+        
+        // Validate sort parameters
+        $allowedSortFields = ['name', 'code', 'created_at', 'updated_at'];
+        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'name';
+        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'asc';
+        
+        $query->orderBy($sortBy, $sortOrder);
+
         $perPage = $request->get('per_page', 15);
-        $suppliers = $query->orderBy('name')->paginate($perPage);
+        $suppliers = $query->paginate($perPage);
 
         // Include balance information if requested
         if ($request->get('include_balance', false)) {

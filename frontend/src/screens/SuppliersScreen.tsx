@@ -62,7 +62,9 @@ const SuppliersScreen = () => {
       const params: any = { 
         page: pageToLoad, 
         per_page: pagination.perPage, 
-        include_balance: true 
+        include_balance: true,
+        sort_by: sortBy === 'balance' ? 'name' : sortBy, // Backend doesn't support balance sort yet
+        sort_order: sortOrder,
       };
       if (searchQuery.trim()) {
         params.search = searchQuery.trim();
@@ -73,31 +75,19 @@ const SuppliersScreen = () => {
       const response = await supplierService.getAll(params);
       let data = response.data || [];
       
-      // Client-side sorting
-      data = data.sort((a: Supplier, b: Supplier) => {
-        let compareA, compareB;
-        
-        switch (sortBy) {
-          case 'name':
-            compareA = a.name.toLowerCase();
-            compareB = b.name.toLowerCase();
-            break;
-          case 'code':
-            compareA = a.code.toLowerCase();
-            compareB = b.code.toLowerCase();
-            break;
-          case 'balance':
-            compareA = typeof a.balance === 'number' ? a.balance : 0;
-            compareB = typeof b.balance === 'number' ? b.balance : 0;
-            break;
-        }
-        
-        if (sortOrder === 'asc') {
-          return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
-        } else {
-          return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
-        }
-      });
+      // Client-side sorting for balance only (backend doesn't support it)
+      if (sortBy === 'balance') {
+        data = data.sort((a: Supplier, b: Supplier) => {
+          const compareA = typeof a.balance === 'number' ? a.balance : 0;
+          const compareB = typeof b.balance === 'number' ? b.balance : 0;
+          
+          if (sortOrder === 'asc') {
+            return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
+          } else {
+            return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
+          }
+        });
+      }
       
       if (loadMore) {
         pagination.appendItems(data);

@@ -25,8 +25,19 @@ class ProductRateController extends Controller
             $query->where('is_active', $request->is_active);
         }
 
+        // Server-side sorting
+        $sortBy = $request->get('sort_by', 'effective_date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        
+        // Validate sort parameters
+        $allowedSortFields = ['effective_date', 'rate', 'unit', 'created_at', 'updated_at'];
+        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'effective_date';
+        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
+        
+        $query->orderBy($sortBy, $sortOrder);
+
         $perPage = $request->get('per_page', 15);
-        $rates = $query->orderBy('effective_date', 'desc')->paginate($perPage);
+        $rates = $query->paginate($perPage);
 
         return response()->json($rates);
     }

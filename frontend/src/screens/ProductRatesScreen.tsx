@@ -13,9 +13,10 @@ import { productService, productRateService, Product, ProductRate, CreateProduct
 import { FloatingActionButton, FormModal, Input, Button, Picker, DatePicker } from '../components';
 import { UNIT_OPTIONS } from '../utils/constants';
 import { formatDate, formatDateForInput } from '../utils/formatters';
+import { usePagination } from '../hooks/usePagination';
 
 const ProductRatesScreen = () => {
-  const [rates, setRates] = useState<ProductRate[]>([]);
+  const pagination = usePagination<ProductRate>({ initialPerPage: 25 });
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -25,6 +26,8 @@ const ProductRatesScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProduct, setFilterProduct] = useState<number | undefined>(undefined);
   const [filterUnit, setFilterUnit] = useState<string | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<'effective_date' | 'rate' | 'unit'>('effective_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   // Form state
   const [formData, setFormData] = useState({
@@ -41,33 +44,88 @@ const ProductRatesScreen = () => {
     loadData();
   }, []);
 
+  // Debounce filters
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadRates();
+      pagination.reset();
+      loadRates(false);
     }, 500);
     return () => clearTimeout(timer);
-  }, [filterProduct, filterUnit]);
+  }, [filterProduct, filterUnit, searchQuery]);
+
+  // Reload when sort changes
+  useEffect(() => {
+    if (!isLoading) {
+      pagination.reset();
+      loadRates(false);
+    }
+  }, [sortBy, sortOrder]);
+
+  // Reload when page size changes
+  useEffect(() => {
+    if (!isLoading) {
+      pagination.reset();
+      loadRates(false);
+    }
+  }, [pagination.perPage]);
 
   const loadData = async () => {
-    await Promise.all([loadRates(), loadProducts()]);
+    await Promise.all([loadRates(false), loadProducts()]);
   };
 
-  const loadRates = async () => {
+  const loadRates = async (loadMore: boolean = false) => {
     try {
-      const params: any = { per_page: 100 };
+      if (loadMore) {
+        pagination.setIsLoadingMore(true);
+      }
+      
+      const pageToLoad = loadMore ? pagination.page + 1 : 1;
+      const params: any = { 
+        page: pageToLoad,
+        per_page: pagination.perPage,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      };
+      
       if (filterProduct) {
         params.product_id = filterProduct;
       }
       if (filterUnit) {
         params.unit = filterUnit;
       }
+      
       const response = await productRateService.getAll(params);
-      setRates(response.data || []);
+      let data = response.data || [];
+      
+      // Client-side search on product name
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        data = data.filter((rate: ProductRate) => {
+          const productName = rate.product?.name?.toLowerCase() || '';
+          return productName.includes(query);
+        });
+      }
+      
+      if (loadMore) {
+        pagination.appendItems(data);
+      } else {
+        pagination.setItems(data);
+      }
+      
+      pagination.setHasMore(data.length >= pagination.perPage);
     } catch (error) {
       Alert.alert('Error', 'Failed to load product rates');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      pagination.setIsLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (pagination.hasMore && !pagination.isLoadingMore) {
+      pagination.loadMore();
+      loadRates(true);
     }
   };
 
@@ -252,7 +310,18 @@ const ProductRatesScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Product Rates</Text>
-        <Text style={styles.count}>{rates.length} total</Text>
+        <Text style={styles.count}>{pagination.items.length} loaded</Text>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by product name..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          clearButtonMode="while-editing"
+        />
       </View>
 
       {/* Filters */}
@@ -291,15 +360,91 @@ const ProductRatesScreen = () => {
         </View>
       </View>
 
+      {/* Sort Options */}
+      <View style={styles.sortContainer}>
+        <Text style={styles.sortLabel}>Sort by:</Text>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'effective_date' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'effective_date') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('effective_date');
+              setSortOrder('desc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'effective_date' && styles.sortButtonTextActive]}>
+            Date {sortBy === 'effective_date' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'rate' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'rate') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('rate');
+              setSortOrder('desc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'rate' && styles.sortButtonTextActive]}>
+            Rate {sortBy === 'rate' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'unit' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'unit') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('unit');
+              setSortOrder('asc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'unit' && styles.sortButtonTextActive]}>
+            Unit {sortBy === 'unit' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Page Size Selector */}
+      <View style={styles.pageSizeRow}>
+        <Text style={styles.sortLabel}>Items per page:</Text>
+        {[25, 50, 100].map((size) => (
+          <TouchableOpacity
+            key={size}
+            style={[styles.pageSizeButton, pagination.perPage === size && styles.sortButtonActive]}
+            onPress={() => pagination.setPerPage(size)}
+          >
+            <Text style={[styles.sortButtonText, pagination.perPage === size && styles.sortButtonTextActive]}>
+              {size}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <FlatList
-        data={rates}
+        data={pagination.items}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderRate}
         contentContainerStyle={styles.list}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No product rates found</Text>
+        }
+        ListFooterComponent={
+          pagination.isLoadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.loadingMoreText}>Loading more...</Text>
+            </View>
+          ) : null
         }
       />
       <FloatingActionButton onPress={openCreateModal} />
@@ -535,6 +680,80 @@ const styles = StyleSheet.create({
   },
   buttonHalf: {
     flex: 1,
+  },
+  searchContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  searchInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  sortLabel: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
+  },
+  sortButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  sortButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  sortButtonText: {
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sortButtonTextActive: {
+    color: '#fff',
+  },
+  pageSizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  pageSizeButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  loadingMore: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 10,
+  },
+  loadingMoreText: {
+    color: '#007AFF',
+    fontSize: 14,
   },
 });
 

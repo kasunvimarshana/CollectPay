@@ -16,10 +16,10 @@ import { formatDate, formatAmount } from '../utils/formatters';
 import { FloatingActionButton, FormModal, Input, Button, Picker } from '../components';
 import DateRangePicker, { DateRange } from '../components/DateRangePicker';
 import { UNIT_OPTIONS } from '../utils/constants';
+import { usePagination } from '../hooks/usePagination';
 
 const CollectionsScreen = () => {
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [filteredCollections, setFilteredCollections] = useState<Collection[]>([]);
+  const pagination = usePagination<Collection>({ initialPerPage: 25 });
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,7 +28,7 @@ const CollectionsScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'date' | 'supplier' | 'product' | 'amount' | 'quantity'>('date');
+  const [sortBy, setSortBy] = useState<'collection_date' | 'quantity' | 'total_amount'>('collection_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: '', endDate: '' });
   
@@ -50,99 +50,89 @@ const CollectionsScreen = () => {
     loadProducts();
   }, []);
 
-  // Debounce search
+  // Debounce search and date range changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Trigger filtering
-      filterAndSortCollections();
+      pagination.reset();
+      loadCollections(false);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery, dateRange]);
   
-  // Re-sort when sort changes or collections change
+  // Reload when sort changes
   useEffect(() => {
-    if (!isLoading && collections.length > 0) {
-      filterAndSortCollections();
+    if (!isLoading) {
+      pagination.reset();
+      loadCollections(false);
     }
-  }, [sortBy, sortOrder, collections]);
+  }, [sortBy, sortOrder]);
 
-  const filterAndSortCollections = () => {
-    let filtered = [...(collections as Collection[])];
-    
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((collection) => {
-        const supplierName = collection.supplier?.name?.toLowerCase() || '';
-        const productName = collection.product?.name?.toLowerCase() || '';
-        const collectorName = collection.user?.name?.toLowerCase() || '';
-        return (
-          supplierName.includes(query) ||
-          productName.includes(query) ||
-          collectorName.includes(query)
-        );
-      });
+  // Reload when page size changes
+  useEffect(() => {
+    if (!isLoading) {
+      pagination.reset();
+      loadCollections(false);
     }
-    
-    // Apply date range filter
-    if (dateRange.startDate && dateRange.endDate) {
-      filtered = filtered.filter((collection) => {
-        const collectionDate = collection.collection_date;
-        return collectionDate >= dateRange.startDate && collectionDate <= dateRange.endDate;
-      });
-    }
-    
-    // Apply sorting
-    filtered.sort((a: Collection, b: Collection) => {
-      let compareA, compareB;
-      
-      switch (sortBy) {
-        case 'date':
-          compareA = new Date(a.collection_date).getTime();
-          compareB = new Date(b.collection_date).getTime();
-          break;
-        case 'supplier':
-          compareA = a.supplier?.name?.toLowerCase() || '';
-          compareB = b.supplier?.name?.toLowerCase() || '';
-          break;
-        case 'product':
-          compareA = a.product?.name?.toLowerCase() || '';
-          compareB = b.product?.name?.toLowerCase() || '';
-          break;
-        case 'amount':
-          compareA = typeof a.total_amount === 'number' ? a.total_amount : 0;
-          compareB = typeof b.total_amount === 'number' ? b.total_amount : 0;
-          break;
-        case 'quantity':
-          compareA = typeof a.quantity === 'number' ? a.quantity : 0;
-          compareB = typeof b.quantity === 'number' ? b.quantity : 0;
-          break;
-        default:
-          compareA = 0;
-          compareB = 0;
-      }
-      
-      if (sortOrder === 'asc') {
-        return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
-      } else {
-        return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
-      }
-    });
-    
-    setFilteredCollections(filtered);
-  };
+  }, [pagination.perPage]);
 
-  const loadCollections = async () => {
+  const loadCollections = async (loadMore: boolean = false) => {
     try {
-      const response = await collectionService.getAll({ per_page: 50 });
-      const data = response.data || [];
-      setCollections(data);
-      setFilteredCollections(data);
+      if (loadMore) {
+        pagination.setIsLoadingMore(true);
+      }
+      
+      const pageToLoad = loadMore ? pagination.page + 1 : 1;
+      const params: any = {
+        page: pageToLoad,
+        per_page: pagination.perPage,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      };
+      
+      // Add date range filter
+      if (dateRange.startDate && dateRange.endDate) {
+        params.from_date = dateRange.startDate;
+        params.to_date = dateRange.endDate;
+      }
+      
+      const response = await collectionService.getAll(params);
+      let data = response.data || [];
+      
+      // Client-side search filter (since backend doesn't have full-text search on relations)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        data = data.filter((collection: Collection) => {
+          const supplierName = collection.supplier?.name?.toLowerCase() || '';
+          const productName = collection.product?.name?.toLowerCase() || '';
+          const collectorName = collection.user?.name?.toLowerCase() || '';
+          return (
+            supplierName.includes(query) ||
+            productName.includes(query) ||
+            collectorName.includes(query)
+          );
+        });
+      }
+      
+      if (loadMore) {
+        pagination.appendItems(data);
+      } else {
+        pagination.setItems(data);
+      }
+      
+      pagination.setHasMore(data.length >= pagination.perPage);
     } catch (error) {
       Alert.alert('Error', 'Failed to load collections');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      pagination.setIsLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (pagination.hasMore && !pagination.isLoadingMore) {
+      pagination.loadMore();
+      loadCollections(true);
     }
   };
 
@@ -341,7 +331,7 @@ const CollectionsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Collections</Text>
-        <Text style={styles.count}>{filteredCollections.length} total</Text>
+        <Text style={styles.count}>{pagination.items.length} loaded</Text>
       </View>
       
       {/* Search Bar */}
@@ -376,61 +366,87 @@ const CollectionsScreen = () => {
       <View style={styles.sortContainer}>
         <Text style={styles.sortLabel}>Sort by:</Text>
         <TouchableOpacity
-          style={[styles.sortButton, sortBy === 'date' && styles.sortButtonActive]}
+          style={[styles.sortButton, sortBy === 'collection_date' && styles.sortButtonActive]}
           onPress={() => {
-            if (sortBy === 'date') {
+            if (sortBy === 'collection_date') {
               setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
             } else {
-              setSortBy('date');
+              setSortBy('collection_date');
               setSortOrder('desc');
             }
           }}
         >
-          <Text style={[styles.sortButtonText, sortBy === 'date' && styles.sortButtonTextActive]}>
-            Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+          <Text style={[styles.sortButtonText, sortBy === 'collection_date' && styles.sortButtonTextActive]}>
+            Date {sortBy === 'collection_date' && (sortOrder === 'asc' ? '↑' : '↓')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.sortButton, sortBy === 'supplier' && styles.sortButtonActive]}
+          style={[styles.sortButton, sortBy === 'quantity' && styles.sortButtonActive]}
           onPress={() => {
-            if (sortBy === 'supplier') {
+            if (sortBy === 'quantity') {
               setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
             } else {
-              setSortBy('supplier');
-              setSortOrder('asc');
-            }
-          }}
-        >
-          <Text style={[styles.sortButtonText, sortBy === 'supplier' && styles.sortButtonTextActive]}>
-            Supplier {sortBy === 'supplier' && (sortOrder === 'asc' ? '↑' : '↓')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.sortButton, sortBy === 'amount' && styles.sortButtonActive]}
-          onPress={() => {
-            if (sortBy === 'amount') {
-              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-            } else {
-              setSortBy('amount');
+              setSortBy('quantity');
               setSortOrder('desc');
             }
           }}
         >
-          <Text style={[styles.sortButtonText, sortBy === 'amount' && styles.sortButtonTextActive]}>
-            Amount {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
+          <Text style={[styles.sortButtonText, sortBy === 'quantity' && styles.sortButtonTextActive]}>
+            Quantity {sortBy === 'quantity' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'total_amount' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'total_amount') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('total_amount');
+              setSortOrder('desc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'total_amount' && styles.sortButtonTextActive]}>
+            Amount {sortBy === 'total_amount' && (sortOrder === 'asc' ? '↑' : '↓')}
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Page Size Selector */}
+      <View style={styles.pageSizeRow}>
+        <Text style={styles.sortLabel}>Items per page:</Text>
+        {[25, 50, 100].map((size) => (
+          <TouchableOpacity
+            key={size}
+            style={[styles.pageSizeButton, pagination.perPage === size && styles.sortButtonActive]}
+            onPress={() => pagination.setPerPage(size)}
+          >
+            <Text style={[styles.sortButtonText, pagination.perPage === size && styles.sortButtonTextActive]}>
+              {size}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       
       <FlatList
-        data={filteredCollections}
+        data={pagination.items}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderCollection}
         contentContainerStyle={styles.list}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No collections found</Text>
+        }
+        ListFooterComponent={
+          pagination.isLoadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.loadingMoreText}>Loading more...</Text>
+            </View>
+          ) : null
         }
       />
       <FloatingActionButton onPress={openCreateModal} />
@@ -699,6 +715,32 @@ const styles = StyleSheet.create({
   },
   buttonHalf: {
     flex: 1,
+  },
+  pageSizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  pageSizeButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  loadingMore: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 10,
+  },
+  loadingMoreText: {
+    color: '#007AFF',
+    fontSize: 14,
   },
 });
 

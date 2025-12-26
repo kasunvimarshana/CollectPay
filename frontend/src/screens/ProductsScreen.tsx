@@ -12,9 +12,10 @@ import {
 import { productService, Product, CreateProductRequest, UpdateProductRequest } from '../api/product';
 import { FloatingActionButton, FormModal, Input, Button, Picker } from '../components';
 import { UNIT_OPTIONS } from '../utils/constants';
+import { usePagination } from '../hooks/usePagination';
 
 const ProductsScreen = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const pagination = usePagination<Product>({ initialPerPage: 25 });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -39,10 +40,11 @@ const ProductsScreen = () => {
     loadProducts();
   }, []);
 
-  // Debounce search
+  // Debounce search and filter changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadProducts();
+      pagination.reset();
+      loadProducts(false);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery, filterActive]);
@@ -50,50 +52,63 @@ const ProductsScreen = () => {
   // Reload when sort changes
   useEffect(() => {
     if (!isLoading) {
-      loadProducts();
+      pagination.reset();
+      loadProducts(false);
     }
   }, [sortBy, sortOrder]);
 
-  const loadProducts = async () => {
+  // Reload when page size changes
+  useEffect(() => {
+    if (!isLoading) {
+      pagination.reset();
+      loadProducts(false);
+    }
+  }, [pagination.perPage]);
+
+  const loadProducts = async (loadMore: boolean = false) => {
     try {
-      const params: any = { per_page: 50 };
+      if (loadMore) {
+        pagination.setIsLoadingMore(true);
+      }
+      
+      const pageToLoad = loadMore ? pagination.page + 1 : 1;
+      const params: any = { 
+        page: pageToLoad,
+        per_page: pagination.perPage,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      };
+      
       if (searchQuery.trim()) {
         params.search = searchQuery.trim();
       }
       if (filterActive !== undefined) {
         params.is_active = filterActive;
       }
+      
       const response = await productService.getAll(params);
-      let data = response.data || [];
+      const data = response.data || [];
       
-      // Client-side sorting
-      data = data.sort((a: Product, b: Product) => {
-        let compareA, compareB;
-        
-        switch (sortBy) {
-          case 'name':
-            compareA = a.name.toLowerCase();
-            compareB = b.name.toLowerCase();
-            break;
-          case 'code':
-            compareA = a.code.toLowerCase();
-            compareB = b.code.toLowerCase();
-            break;
-        }
-        
-        if (sortOrder === 'asc') {
-          return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
-        } else {
-          return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
-        }
-      });
+      if (loadMore) {
+        pagination.appendItems(data);
+      } else {
+        pagination.setItems(data);
+      }
       
-      setProducts(data);
+      pagination.setHasMore(data.length >= pagination.perPage);
     } catch (error) {
       Alert.alert('Error', 'Failed to load products');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      pagination.setIsLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (pagination.hasMore && !pagination.isLoadingMore) {
+      pagination.loadMore();
+      loadProducts(true);
     }
   };
 
@@ -265,7 +280,7 @@ const ProductsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Products</Text>
-        <Text style={styles.count}>{products.length} total</Text>
+        <Text style={styles.count}>{pagination.items.length} loaded</Text>
       </View>
       
       {/* Search Bar */}
@@ -343,17 +358,43 @@ const ProductsScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Page Size Selector */}
+        <View style={styles.pageSizeRow}>
+          <Text style={styles.sortLabel}>Items per page:</Text>
+          {[25, 50, 100].map((size) => (
+            <TouchableOpacity
+              key={size}
+              style={[styles.pageSizeButton, pagination.perPage === size && styles.sortButtonActive]}
+              onPress={() => pagination.setPerPage(size)}
+            >
+              <Text style={[styles.sortButtonText, pagination.perPage === size && styles.sortButtonTextActive]}>
+                {size}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
       
       <FlatList
-        data={products}
+        data={pagination.items}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderProduct}
         contentContainerStyle={styles.list}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No products found</Text>
+        }
+        ListFooterComponent={
+          pagination.isLoadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.loadingMoreText}>Loading more...</Text>
+            </View>
+          ) : null
         }
       />
       <FloatingActionButton onPress={openCreateModal} />
@@ -515,6 +556,32 @@ const styles = StyleSheet.create({
   },
   sortButtonTextActive: {
     color: '#fff',
+  },
+  pageSizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  pageSizeButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  loadingMore: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 10,
+  },
+  loadingMoreText: {
+    color: '#007AFF',
+    fontSize: 14,
   },
   list: {
     padding: 15,

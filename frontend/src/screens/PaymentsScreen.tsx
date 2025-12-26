@@ -15,12 +15,12 @@ import { formatDate, formatAmount } from '../utils/formatters';
 import { FloatingActionButton, FormModal, Input, Button, Picker } from '../components';
 import DateRangePicker, { DateRange } from '../components/DateRangePicker';
 import { PAYMENT_TYPE_OPTIONS, PAYMENT_METHOD_OPTIONS } from '../utils/constants';
+import { usePagination } from '../hooks/usePagination';
 
 type PaymentType = 'advance' | 'partial' | 'full';
 
 const PaymentsScreen = () => {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
+  const pagination = usePagination<Payment>({ initialPerPage: 25 });
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -29,7 +29,7 @@ const PaymentsScreen = () => {
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPaymentType, setFilterPaymentType] = useState<PaymentType | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'supplier' | 'amount' | 'type'>('date');
+  const [sortBy, setSortBy] = useState<'payment_date' | 'amount' | 'payment_type'>('payment_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: '', endDate: '' });
   
@@ -51,98 +51,96 @@ const PaymentsScreen = () => {
     loadSuppliers();
   }, []);
 
-  // Debounce search
+  // Debounce search, filters, and date range
   useEffect(() => {
     const timer = setTimeout(() => {
-      filterAndSortPayments();
+      pagination.reset();
+      loadPayments(false);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery, filterPaymentType, dateRange]);
   
-  // Re-sort when sort changes or payments change
+  // Reload when sort changes
   useEffect(() => {
-    if (!isLoading && payments.length > 0) {
-      filterAndSortPayments();
+    if (!isLoading) {
+      pagination.reset();
+      loadPayments(false);
     }
-  }, [sortBy, sortOrder, payments]);
+  }, [sortBy, sortOrder]);
 
-  const filterAndSortPayments = () => {
-    let filtered = [...(payments as Payment[])];
-    
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((payment) => {
-        const supplierName = payment.supplier?.name?.toLowerCase() || '';
-        const referenceNumber = payment.reference_number?.toLowerCase() || '';
-        const processorName = payment.user?.name?.toLowerCase() || '';
-        return (
-          supplierName.includes(query) ||
-          referenceNumber.includes(query) ||
-          processorName.includes(query)
-        );
-      });
+  // Reload when page size changes
+  useEffect(() => {
+    if (!isLoading) {
+      pagination.reset();
+      loadPayments(false);
     }
-    
-    // Apply payment type filter
-    if (filterPaymentType !== 'all') {
-      filtered = filtered.filter((payment) => payment.payment_type === filterPaymentType);
-    }
-    
-    // Apply date range filter
-    if (dateRange.startDate && dateRange.endDate) {
-      filtered = filtered.filter((payment) => {
-        const paymentDate = payment.payment_date;
-        return paymentDate >= dateRange.startDate && paymentDate <= dateRange.endDate;
-      });
-    }
-    
-    // Apply sorting
-    filtered.sort((a: Payment, b: Payment) => {
-      let compareA, compareB;
-      
-      switch (sortBy) {
-        case 'date':
-          compareA = new Date(a.payment_date).getTime();
-          compareB = new Date(b.payment_date).getTime();
-          break;
-        case 'supplier':
-          compareA = a.supplier?.name?.toLowerCase() || '';
-          compareB = b.supplier?.name?.toLowerCase() || '';
-          break;
-        case 'amount':
-          compareA = typeof a.amount === 'number' ? a.amount : 0;
-          compareB = typeof b.amount === 'number' ? b.amount : 0;
-          break;
-        case 'type':
-          compareA = a.payment_type?.toLowerCase() || '';
-          compareB = b.payment_type?.toLowerCase() || '';
-          break;
-        default:
-          compareA = 0;
-          compareB = 0;
-      }
-      
-      if (sortOrder === 'asc') {
-        return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
-      } else {
-        return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
-      }
-    });
-    
-    setFilteredPayments(filtered);
-  };
+  }, [pagination.perPage]);
 
-  const loadPayments = async () => {
+  const loadPayments = async (loadMore: boolean = false) => {
     try {
-      const response = await paymentService.getAll({ per_page: 50 });
-      const data = response.data || [];
-      setPayments(data);
-      setFilteredPayments(data);
+      if (loadMore) {
+        pagination.setIsLoadingMore(true);
+      }
+      
+      const pageToLoad = loadMore ? pagination.page + 1 : 1;
+      const params: any = {
+        page: pageToLoad,
+        per_page: pagination.perPage,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      };
+      
+      // Add date range filter
+      if (dateRange.startDate && dateRange.endDate) {
+        params.from_date = dateRange.startDate;
+        params.to_date = dateRange.endDate;
+      }
+      
+      // Add payment type filter
+      if (filterPaymentType !== 'all') {
+        params.payment_type = filterPaymentType;
+      }
+      
+      const response = await paymentService.getAll(params);
+      let data = response.data || [];
+      
+      // Client-side search filter (for supplier/reference/processor names)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        data = data.filter((payment: Payment) => {
+          const supplierName = payment.supplier?.name?.toLowerCase() || '';
+          const referenceNumber = payment.reference_number?.toLowerCase() || '';
+          const processorName = payment.user?.name?.toLowerCase() || '';
+          return (
+            supplierName.includes(query) ||
+            referenceNumber.includes(query) ||
+            processorName.includes(query)
+          );
+        });
+      }
+      
+      if (loadMore) {
+        pagination.appendItems(data);
+      } else {
+        pagination.setItems(data);
+      }
+      
+      pagination.setHasMore(data.length >= pagination.perPage);
     } catch (error) {
       Alert.alert('Error', 'Failed to load payments');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
+      pagination.setIsLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (pagination.hasMore && !pagination.isLoadingMore) {
+      pagination.loadMore();
+      loadPayments(true);
+    }
+  };
       setIsRefreshing(false);
     }
   };
@@ -357,7 +355,7 @@ const PaymentsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Payments</Text>
-        <Text style={styles.count}>{filteredPayments.length} total</Text>
+        <Text style={styles.count}>{pagination.items.length} loaded</Text>
       </View>
       
       {/* Search Bar */}
@@ -428,33 +426,18 @@ const PaymentsScreen = () => {
       <View style={styles.sortContainer}>
         <Text style={styles.sortLabel}>Sort by:</Text>
         <TouchableOpacity
-          style={[styles.sortButton, sortBy === 'date' && styles.sortButtonActive]}
+          style={[styles.sortButton, sortBy === 'payment_date' && styles.sortButtonActive]}
           onPress={() => {
-            if (sortBy === 'date') {
+            if (sortBy === 'payment_date') {
               setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
             } else {
-              setSortBy('date');
+              setSortBy('payment_date');
               setSortOrder('desc');
             }
           }}
         >
-          <Text style={[styles.sortButtonText, sortBy === 'date' && styles.sortButtonTextActive]}>
-            Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.sortButton, sortBy === 'supplier' && styles.sortButtonActive]}
-          onPress={() => {
-            if (sortBy === 'supplier') {
-              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-            } else {
-              setSortBy('supplier');
-              setSortOrder('asc');
-            }
-          }}
-        >
-          <Text style={[styles.sortButtonText, sortBy === 'supplier' && styles.sortButtonTextActive]}>
-            Supplier {sortBy === 'supplier' && (sortOrder === 'asc' ? '↑' : '↓')}
+          <Text style={[styles.sortButtonText, sortBy === 'payment_date' && styles.sortButtonTextActive]}>
+            Date {sortBy === 'payment_date' && (sortOrder === 'asc' ? '↑' : '↓')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -472,17 +455,58 @@ const PaymentsScreen = () => {
             Amount {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'payment_type' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'payment_type') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('payment_type');
+              setSortOrder('asc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'payment_type' && styles.sortButtonTextActive]}>
+            Type {sortBy === 'payment_type' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Page Size Selector */}
+      <View style={styles.pageSizeRow}>
+        <Text style={styles.sortLabel}>Items per page:</Text>
+        {[25, 50, 100].map((size) => (
+          <TouchableOpacity
+            key={size}
+            style={[styles.pageSizeButton, pagination.perPage === size && styles.sortButtonActive]}
+            onPress={() => pagination.setPerPage(size)}
+          >
+            <Text style={[styles.sortButtonText, pagination.perPage === size && styles.sortButtonTextActive]}>
+              {size}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
       
       <FlatList
-        data={filteredPayments}
+        data={pagination.items}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderPayment}
         contentContainerStyle={styles.list}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No payments found</Text>
+        }
+        ListFooterComponent={
+          pagination.isLoadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.loadingMoreText}>Loading more...</Text>
+            </View>
+          ) : null
         }
       />
       <FloatingActionButton onPress={openCreateModal} />
@@ -800,6 +824,35 @@ const styles = StyleSheet.create({
   },
   buttonHalf: {
     flex: 1,
+  },
+  pageSizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  pageSizeButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  loadingMore: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 10,
+  },
+  loadingMoreText: {
+    color: '#007AFF',
+    fontSize: 14,
   },
 });
 

@@ -30,8 +30,19 @@ class CollectionController extends Controller
             $query->where('collection_date', '<=', $request->to_date);
         }
 
+        // Server-side sorting
+        $sortBy = $request->get('sort_by', 'collection_date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        
+        // Validate sort parameters
+        $allowedSortFields = ['collection_date', 'quantity', 'total_amount', 'created_at', 'updated_at'];
+        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'collection_date';
+        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
+        
+        $query->orderBy($sortBy, $sortOrder);
+
         $perPage = $request->get('per_page', 15);
-        $collections = $query->orderBy('collection_date', 'desc')->paginate($perPage);
+        $collections = $query->paginate($perPage);
 
         return response()->json($collections);
     }

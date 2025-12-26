@@ -30,8 +30,19 @@ class PaymentController extends Controller
             $query->where('payment_date', '<=', $request->to_date);
         }
 
+        // Server-side sorting
+        $sortBy = $request->get('sort_by', 'payment_date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        
+        // Validate sort parameters
+        $allowedSortFields = ['payment_date', 'amount', 'payment_type', 'created_at', 'updated_at'];
+        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'payment_date';
+        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
+        
+        $query->orderBy($sortBy, $sortOrder);
+
         $perPage = $request->get('per_page', 15);
-        $payments = $query->orderBy('payment_date', 'desc')->paginate($perPage);
+        $payments = $query->paginate($perPage);
 
         return response()->json($payments);
     }

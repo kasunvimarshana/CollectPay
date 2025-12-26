@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../contexts/AuthContext';
 import { ActivityIndicator, View } from 'react-native';
+import { OfflineIndicator } from '../components';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -19,14 +20,17 @@ const Tab = createBottomTabNavigator();
 
 const MainTabs = () => {
   return (
-    <Tab.Navigator>
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Suppliers" component={SuppliersScreen} />
-      <Tab.Screen name="Products" component={ProductsScreen} />
-      <Tab.Screen name="Rates" component={ProductRatesScreen} />
-      <Tab.Screen name="Collections" component={CollectionsScreen} />
-      <Tab.Screen name="Payments" component={PaymentsScreen} />
-    </Tab.Navigator>
+    <>
+      <OfflineIndicator />
+      <Tab.Navigator>
+        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Suppliers" component={SuppliersScreen} />
+        <Tab.Screen name="Products" component={ProductsScreen} />
+        <Tab.Screen name="Rates" component={ProductRatesScreen} />
+        <Tab.Screen name="Collections" component={CollectionsScreen} />
+        <Tab.Screen name="Payments" component={PaymentsScreen} />
+      </Tab.Navigator>
+    </>
   );
 };
 
