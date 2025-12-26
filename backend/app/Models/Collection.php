@@ -2,22 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Collection extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'collection_number',
         'supplier_id',
         'product_id',
-        'user_id',
-        'product_rate_id',
+        'collector_id',
         'collection_date',
         'quantity',
         'unit',
+        'rate_id',
         'rate_applied',
         'total_amount',
         'notes',
@@ -33,48 +34,108 @@ class Collection extends Model
         'metadata' => 'array',
     ];
 
-    public function supplier(): BelongsTo
+    /**
+     * Get the supplier for this collection
+     */
+    public function supplier()
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function product(): BelongsTo
+    /**
+     * Get the product for this collection
+     */
+    public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function user(): BelongsTo
+    /**
+     * Get the collector (user) for this collection
+     */
+    public function collector()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'collector_id');
     }
 
-    public function productRate(): BelongsTo
+    /**
+     * Get the rate used for this collection
+     */
+    public function rate()
     {
-        return $this->belongsTo(ProductRate::class);
+        return $this->belongsTo(ProductRate::class, 'rate_id');
     }
 
+    /**
+     * Get all payments allocated to this collection
+     */
+    public function payments()
+    {
+        return $this->belongsToMany(Payment::class, 'collection_payment')
+            ->withPivot('allocated_amount')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get audit logs for this collection
+     */
+    public function auditLogs()
+    {
+        return $this->hasMany(CollectionAuditLog::class);
+    }
+
+    /**
+     * Calculate total amount based on quantity and rate
+     */
+    public function calculateTotalAmount()
+    {
+        return $this->quantity * $this->rate_applied;
+    }
+
+    /**
+     * Get total allocated payments for this collection
+     */
+    public function totalAllocatedPayments()
+    {
+        return $this->payments()->sum('collection_payment.allocated_amount');
+    }
+
+    /**
+     * Get outstanding amount for this collection
+     */
+    public function outstandingAmount()
+    {
+        return $this->total_amount - $this->totalAllocatedPayments();
+    }
+
+    /**
+     * Boot method to handle events
+     */
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($collection) {
-            if (!$collection->rate_applied && $collection->product_id && $collection->unit) {
-                $rate = Product::find($collection->product_id)
-                    ->getCurrentRate($collection->unit, $collection->collection_date);
-                if ($rate) {
-                    $collection->rate_applied = $rate->rate;
-                    $collection->product_rate_id = $rate->id;
-                }
+            // Generate collection number if not provided
+            if (empty($collection->collection_number)) {
+                $collection->collection_number = 'COL-' . date('Ymd') . '-' . str_pad(
+                    self::whereDate('created_at', now()->toDateString())->count() + 1,
+                    5,
+                    '0',
+                    STR_PAD_LEFT
+                );
             }
-            
-            if ($collection->quantity && $collection->rate_applied) {
-                $collection->total_amount = $collection->quantity * $collection->rate_applied;
+
+            // Calculate total amount
+            if (empty($collection->total_amount) && !empty($collection->quantity) && !empty($collection->rate_applied)) {
+                $collection->total_amount = $collection->calculateTotalAmount();
             }
         });
 
         static::updating(function ($collection) {
-            if ($collection->quantity && $collection->rate_applied) {
-                $collection->total_amount = $collection->quantity * $collection->rate_applied;
+            // Recalculate total amount if quantity or rate changed
+            if ($collection->isDirty(['quantity', 'rate_applied'])) {
+                $collection->total_amount = $collection->calculateTotalAmount();
             }
         });
     }

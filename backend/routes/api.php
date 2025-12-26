@@ -1,36 +1,35 @@
 <?php
 
-use App\Http\Controllers\API\AuthController;
-use App\Http\Controllers\API\SupplierController;
-use App\Http\Controllers\API\ProductController;
-use App\Http\Controllers\API\ProductRateController;
-use App\Http\Controllers\API\CollectionController;
-use App\Http\Controllers\API\PaymentController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'user']);
 
     // Supplier routes
     Route::apiResource('suppliers', SupplierController::class);
+    Route::get('suppliers/{id}/balance', [SupplierController::class, 'balance']);
 
     // Product routes
     Route::apiResource('products', ProductController::class);
-
-    // Product rate routes
-    Route::apiResource('product-rates', ProductRateController::class);
+    Route::get('products/{id}/current-rates', [ProductController::class, 'getCurrentRates']);
+    Route::post('products/{id}/rates', [ProductController::class, 'addRate']);
 
     // Collection routes
     Route::apiResource('collections', CollectionController::class);
 
     // Payment routes
     Route::apiResource('payments', PaymentController::class);
-    Route::get('/suppliers/{supplierId}/balance', [PaymentController::class, 'getSupplierBalance']);
+    Route::post('payments/{id}/approve', [PaymentController::class, 'approve']);
 });

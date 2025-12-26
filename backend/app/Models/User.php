@@ -2,21 +2,21 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, SoftDeletes, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
@@ -30,7 +30,7 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -52,23 +52,59 @@ class User extends Authenticatable
         ];
     }
 
-    public function collections()
+    /**
+     * Check if user has a specific role
+     */
+    public function hasRole(string $role): bool
     {
-        return $this->hasMany(Collection::class);
+        return $this->role === $role;
     }
 
-    public function payments()
+    /**
+     * Check if user has any of the given roles
+     */
+    public function hasAnyRole(array $roles): bool
     {
-        return $this->hasMany(Payment::class);
+        return in_array($this->role, $roles);
     }
 
+    /**
+     * Check if user has a specific permission
+     */
     public function hasPermission(string $permission): bool
     {
-        if ($this->role === 'admin') {
-            return true;
-        }
+        return in_array($permission, $this->permissions ?? []);
+    }
 
-        $permissions = $this->permissions ?? [];
-        return in_array($permission, $permissions);
+    /**
+     * Collections created by this user
+     */
+    public function collections()
+    {
+        return $this->hasMany(Collection::class, 'collector_id');
+    }
+
+    /**
+     * Payments made by this user
+     */
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'paid_by');
+    }
+
+    /**
+     * Suppliers created by this user
+     */
+    public function createdSuppliers()
+    {
+        return $this->hasMany(Supplier::class, 'created_by');
+    }
+
+    /**
+     * Products created by this user
+     */
+    public function createdProducts()
+    {
+        return $this->hasMany(Product::class, 'created_by');
     }
 }

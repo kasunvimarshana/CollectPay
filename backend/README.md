@@ -1,31 +1,13 @@
-# TrackVault Backend API
+# Collectix Backend
 
-Laravel 11 backend API for the TrackVault Data Collection and Payment Management System.
+Laravel-based backend for the Data Collection and Payment Management System.
 
-## Overview
-
-This backend provides a RESTful API for managing:
-- Users with role-based access control (Admin, Collector, Finance)
-- Suppliers with detailed profiles
-- Products with versioned rates and multi-unit support
-- Collections with automated rate application
-- Payments with automated calculations
-
-## Features
-
-- **Authentication**: Laravel Sanctum token-based authentication
-- **Authorization**: Role-based (RBAC) and attribute-based (ABAC) access control
-- **Data Integrity**: Version-based concurrency control to prevent conflicts
-- **Multi-unit Support**: Handle quantities in different units (kg, g, liters, etc.)
-- **Rate Versioning**: Historical rate preservation with automatic application
-- **Automated Calculations**: Automatic payment calculations based on collections and rates
-- **Audit Trail**: Soft deletes and version tracking for all entities
-
-## Prerequisites
+## Requirements
 
 - PHP 8.2 or higher
 - Composer
-- SQLite (default) or MySQL/PostgreSQL
+- MySQL 8.0 or PostgreSQL 13+
+- Laravel 11.x
 
 ## Installation
 
@@ -44,24 +26,21 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-4. Run database migrations:
+4. Configure database in `.env` file
+
+5. Run migrations:
 ```bash
 php artisan migrate
 ```
 
-5. Seed the database with sample users:
+6. (Optional) Seed database:
 ```bash
 php artisan db:seed
 ```
 
-This creates three default users:
-- Admin: `admin@trackvault.com` / `password`
-- Collector: `collector@trackvault.com` / `password`
-- Finance: `finance@trackvault.com` / `password`
-
 ## Running the Application
 
-Start the development server:
+Development server:
 ```bash
 php artisan serve
 ```
@@ -72,119 +51,73 @@ The API will be available at `http://localhost:8000/api`
 
 ### Authentication
 
-**Register**
-```
-POST /api/auth/register
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password",
-  "password_confirmation": "password",
-  "role": "collector"
-}
-```
+- `POST /api/register` - Register new user
+- `POST /api/login` - Login user
+- `POST /api/logout` - Logout user (requires auth)
+- `GET /api/user` - Get authenticated user (requires auth)
 
-**Login**
-```
-POST /api/auth/login
-{
-  "email": "admin@trackvault.com",
-  "password": "password"
-}
-```
+### Suppliers
 
-**Logout**
-```
-POST /api/auth/logout
-Headers: Authorization: Bearer {token}
-```
-
-**Get Current User**
-```
-GET /api/auth/me
-Headers: Authorization: Bearer {token}
-```
-
-### Resources
-
-All resource endpoints require authentication via `Authorization: Bearer {token}` header.
-
-**Suppliers**
-- `GET /api/suppliers` - List suppliers
+- `GET /api/suppliers` - List all suppliers
 - `POST /api/suppliers` - Create supplier
-- `GET /api/suppliers/{id}` - Get supplier
+- `GET /api/suppliers/{id}` - Get supplier details
 - `PUT /api/suppliers/{id}` - Update supplier
 - `DELETE /api/suppliers/{id}` - Delete supplier
+- `GET /api/suppliers/{id}/balance` - Get supplier balance
 
-**Products**
-- `GET /api/products` - List products
+### Products
+
+- `GET /api/products` - List all products
 - `POST /api/products` - Create product
-- `GET /api/products/{id}` - Get product
+- `GET /api/products/{id}` - Get product details
 - `PUT /api/products/{id}` - Update product
 - `DELETE /api/products/{id}` - Delete product
+- `GET /api/products/{id}/current-rates` - Get current rates
+- `POST /api/products/{id}/rates` - Add new rate
 
-**Product Rates**
-- `GET /api/product-rates` - List rates
-- `POST /api/product-rates` - Create rate
-- `GET /api/product-rates/{id}` - Get rate
-- `PUT /api/product-rates/{id}` - Update rate
-- `DELETE /api/product-rates/{id}` - Delete rate
+### Collections
 
-**Collections**
-- `GET /api/collections` - List collections
+- `GET /api/collections` - List all collections
 - `POST /api/collections` - Create collection
-- `GET /api/collections/{id}` - Get collection
+- `GET /api/collections/{id}` - Get collection details
 - `PUT /api/collections/{id}` - Update collection
 - `DELETE /api/collections/{id}` - Delete collection
 
-**Payments**
-- `GET /api/payments` - List payments
+### Payments
+
+- `GET /api/payments` - List all payments
 - `POST /api/payments` - Create payment
-- `GET /api/payments/{id}` - Get payment
+- `GET /api/payments/{id}` - Get payment details
 - `PUT /api/payments/{id}` - Update payment
 - `DELETE /api/payments/{id}` - Delete payment
-- `GET /api/suppliers/{id}/balance` - Get supplier balance
+- `POST /api/payments/{id}/approve` - Approve payment
 
-## Database Schema
+## Security Features
 
-### Key Tables
+- Laravel Sanctum for API authentication
+- Role-Based Access Control (RBAC)
+- Encrypted data storage
+- HTTPS support
+- Optimistic locking for concurrent updates
+- Audit logging for all operations
 
-- **users**: System users with roles and permissions
-- **suppliers**: Supplier profiles with contact information
-- **products**: Products with multi-unit support
-- **product_rates**: Versioned rates for products by unit and date
-- **collections**: Daily collection records with quantities and calculated amounts
-- **payments**: Payment records (advance, partial, full)
+## Architecture
 
-### Version Control
+The backend follows Clean Architecture principles with:
 
-All entities include a `version` field for optimistic locking to prevent concurrent update conflicts.
+- **Models**: Domain entities with business logic
+- **Controllers**: API request handling
+- **Services**: Business logic layer (to be implemented)
+- **Migrations**: Database schema versioning
+- **Audit Logs**: Complete transaction history
 
 ## Testing
 
-Run the test suite:
+Run tests:
 ```bash
 php artisan test
 ```
 
-## Architecture
-
-The backend follows Clean Architecture principles:
-- **Models**: Domain entities with business logic
-- **Controllers**: API endpoints with validation
-- **Migrations**: Database schema definitions
-- **Policies**: Authorization rules (future implementation)
-
-## Security
-
-- API authentication via Laravel Sanctum tokens
-- Password hashing with bcrypt
-- HTTPS required for production
-- Role-based access control
-- Version-based concurrency control
-- Input validation on all endpoints
-
 ## License
 
-MIT License
-
+MIT

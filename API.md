@@ -1,32 +1,25 @@
-# API Documentation - TrackVault
+# Collectix API Documentation
 
-Complete REST API reference for TrackVault backend.
+Version: 1.0  
+Base URL: `http://localhost:8000/api`  
+Authentication: Bearer Token (Laravel Sanctum)
 
-## Base URL
+## Table of Contents
 
-```
-Development: http://localhost:8000/api
-Production: https://api.trackvault.com/api
-```
-
-## Authentication
-
-All endpoints except `/auth/register` and `/auth/login` require authentication.
-
-**Authorization Header:**
-```
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
+1. [Authentication](#authentication)
+2. [Suppliers](#suppliers)
+3. [Products](#products)
+4. [Collections](#collections)
+5. [Payments](#payments)
+6. [Error Handling](#error-handling)
 
 ---
 
-## Authentication Endpoints
+## Authentication
 
 ### Register User
 
-Create a new user account.
-
-**Endpoint:** `POST /auth/register`
+**Endpoint:** `POST /register`
 
 **Request Body:**
 ```json
@@ -39,7 +32,7 @@ Create a new user account.
 }
 ```
 
-**Response:** `201 Created`
+**Response (201):**
 ```json
 {
   "user": {
@@ -47,51 +40,43 @@ Create a new user account.
     "name": "John Doe",
     "email": "john@example.com",
     "role": "collector",
-    "is_active": true,
-    "created_at": "2025-12-25T10:00:00.000000Z",
-    "updated_at": "2025-12-25T10:00:00.000000Z"
+    "is_active": true
   },
-  "token": "1|abc123..."
+  "token": "1|abc123def456..."
 }
 ```
 
 ### Login
 
-Authenticate and receive access token.
-
-**Endpoint:** `POST /auth/login`
+**Endpoint:** `POST /login`
 
 **Request Body:**
 ```json
 {
-  "email": "admin@trackvault.com",
-  "password": "password"
+  "email": "john@example.com",
+  "password": "password123"
 }
 ```
 
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "user": {
     "id": 1,
-    "name": "Admin User",
-    "email": "admin@trackvault.com",
-    "role": "admin",
-    "is_active": true
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "collector"
   },
-  "token": "1|abc123..."
+  "token": "1|abc123def456..."
 }
 ```
 
 ### Logout
 
-Revoke current access token.
+**Endpoint:** `POST /logout`  
+**Authentication:** Required
 
-**Endpoint:** `POST /auth/logout`
-
-**Headers:** `Authorization: Bearer {token}`
-
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "message": "Logged out successfully"
@@ -100,22 +85,19 @@ Revoke current access token.
 
 ### Get Current User
 
-Retrieve authenticated user details.
+**Endpoint:** `GET /user`  
+**Authentication:** Required
 
-**Endpoint:** `GET /auth/me`
-
-**Headers:** `Authorization: Bearer {token}`
-
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
-  "id": 1,
-  "name": "Admin User",
-  "email": "admin@trackvault.com",
-  "role": "admin",
-  "is_active": true,
-  "created_at": "2025-12-25T10:00:00.000000Z",
-  "updated_at": "2025-12-25T10:00:00.000000Z"
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "collector",
+    "permissions": ["collections.create", "collections.read"]
+  }
 }
 ```
 
@@ -125,106 +107,102 @@ Retrieve authenticated user details.
 
 ### List Suppliers
 
-**Endpoint:** `GET /suppliers`
+**Endpoint:** `GET /suppliers`  
+**Authentication:** Required
 
 **Query Parameters:**
-- `search` (optional): Search by name, code, or email
-- `is_active` (optional): Filter by active status (true/false)
-- `per_page` (optional): Results per page (default: 15, max: 100)
-- `page` (optional): Page number
+- `is_active` (boolean): Filter by active status
+- `search` (string): Search by name or code
+- `region` (string): Filter by region
+- `per_page` (integer): Results per page (default: 15)
+- `page` (integer): Page number
 
-**Example:** `GET /suppliers?search=Green&is_active=true&per_page=20`
-
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "data": [
     {
       "id": 1,
-      "name": "Green Valley Farms",
-      "code": "SUP-001",
-      "address": "123 Valley Road, Kandy",
+      "code": "SUP001",
+      "name": "ABC Suppliers",
       "phone": "+94771234567",
-      "email": "greenvalley@example.com",
+      "email": "abc@example.com",
+      "address": "123 Main St, City",
+      "region": "Western",
       "is_active": true,
-      "version": 1,
-      "created_at": "2025-12-25T10:00:00.000000Z",
-      "updated_at": "2025-12-25T10:00:00.000000Z"
+      "created_at": "2024-01-01T00:00:00.000000Z",
+      "updated_at": "2024-01-01T00:00:00.000000Z"
     }
   ],
   "current_page": 1,
-  "per_page": 20,
-  "total": 1
+  "last_page": 5,
+  "per_page": 15,
+  "total": 75
 }
 ```
 
 ### Get Supplier
 
-Retrieve single supplier with balance information.
+**Endpoint:** `GET /suppliers/{id}`  
+**Authentication:** Required
 
-**Endpoint:** `GET /suppliers/{id}`
-
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "id": 1,
-  "name": "Green Valley Farms",
-  "code": "SUP-001",
-  "address": "123 Valley Road, Kandy",
+  "code": "SUP001",
+  "name": "ABC Suppliers",
   "phone": "+94771234567",
-  "email": "greenvalley@example.com",
+  "email": "abc@example.com",
+  "address": "123 Main St, City",
+  "region": "Western",
   "is_active": true,
-  "version": 1,
-  "total_collections": 17580.00,
-  "total_payments": 5000.00,
-  "balance": 12580.00,
-  "collections": [...],
-  "payments": [...]
+  "total_collections": 15000.00,
+  "total_payments": 12000.00,
+  "outstanding_balance": 3000.00,
+  "collections": [],
+  "payments": []
 }
 ```
 
 ### Create Supplier
 
-**Endpoint:** `POST /suppliers`
+**Endpoint:** `POST /suppliers`  
+**Authentication:** Required
 
 **Request Body:**
 ```json
 {
-  "name": "New Supplier",
-  "code": "SUP-004",
-  "address": "Address here",
+  "code": "SUP001",
+  "name": "ABC Suppliers",
   "phone": "+94771234567",
-  "email": "newsupplier@example.com",
+  "email": "abc@example.com",
+  "address": "123 Main St, City",
+  "region": "Western",
+  "metadata": {
+    "notes": "Premium supplier"
+  },
   "is_active": true
 }
 ```
 
-**Response:** `201 Created`
+**Response (201):** Same as Get Supplier
 
 ### Update Supplier
 
-**Endpoint:** `PUT /suppliers/{id}`
+**Endpoint:** `PUT /suppliers/{id}`  
+**Authentication:** Required
 
-**Request Body:**
-```json
-{
-  "name": "Updated Supplier Name",
-  "code": "SUP-004",
-  "version": 1
-}
-```
+**Request Body:** Same as Create Supplier (all fields optional)
 
-**Response:** `200 OK`
-
-**Note:** Version field is required for optimistic locking. If version mismatch occurs, returns 500 error.
+**Response (200):** Same as Get Supplier
 
 ### Delete Supplier
 
-Soft delete a supplier.
+**Endpoint:** `DELETE /suppliers/{id}`  
+**Authentication:** Required
 
-**Endpoint:** `DELETE /suppliers/{id}`
-
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "message": "Supplier deleted successfully"
@@ -233,16 +211,20 @@ Soft delete a supplier.
 
 ### Get Supplier Balance
 
-**Endpoint:** `GET /suppliers/{id}/balance`
+**Endpoint:** `GET /suppliers/{id}/balance`  
+**Authentication:** Required
 
-**Response:** `200 OK`
+**Query Parameters:**
+- `start_date` (date): Start date for calculation
+- `end_date` (date): End date for calculation
+
+**Response (200):**
 ```json
 {
-  "supplier_id": 1,
-  "supplier_name": "Green Valley Farms",
-  "total_collections": 17580.00,
-  "total_payments": 5000.00,
-  "balance": 12580.00
+  "supplier": {...},
+  "total_collections": 15000.00,
+  "total_payments": 12000.00,
+  "outstanding_balance": 3000.00
 }
 ```
 
@@ -252,28 +234,36 @@ Soft delete a supplier.
 
 ### List Products
 
-**Endpoint:** `GET /products`
+**Endpoint:** `GET /products`  
+**Authentication:** Required
 
 **Query Parameters:**
-- `search` (optional): Search by name or code
-- `is_active` (optional): Filter by active status
-- `per_page` (optional): Results per page
-- `page` (optional): Page number
+- `is_active` (boolean): Filter by active status
+- `search` (string): Search by name or code
+- `per_page` (integer): Results per page
 
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "data": [
     {
       "id": 1,
+      "code": "PROD001",
       "name": "Tea Leaves",
-      "code": "PROD-001",
-      "description": "Fresh tea leaves",
-      "default_unit": "kg",
+      "description": "Premium tea leaves",
+      "base_unit": "kg",
       "supported_units": ["kg", "g"],
       "is_active": true,
-      "version": 1,
-      "rates": [...]
+      "active_rates": [
+        {
+          "id": 1,
+          "unit": "kg",
+          "rate": 250.00,
+          "effective_from": "2024-01-01",
+          "effective_to": null,
+          "is_active": true
+        }
+      ]
     }
   ]
 }
@@ -281,26 +271,34 @@ Soft delete a supplier.
 
 ### Get Product
 
-**Endpoint:** `GET /products/{id}`
+**Endpoint:** `GET /products/{id}`  
+**Authentication:** Required
 
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "id": 1,
+  "code": "PROD001",
   "name": "Tea Leaves",
-  "code": "PROD-001",
-  "description": "Fresh tea leaves",
-  "default_unit": "kg",
+  "description": "Premium tea leaves",
+  "base_unit": "kg",
   "supported_units": ["kg", "g"],
   "is_active": true,
-  "version": 1,
   "rates": [
     {
       "id": 1,
       "unit": "kg",
-      "rate": 120.00,
-      "effective_date": "2025-11-25",
-      "end_date": null,
+      "rate": 250.00,
+      "effective_from": "2024-01-01",
+      "effective_to": "2024-06-30",
+      "is_active": false
+    },
+    {
+      "id": 2,
+      "unit": "kg",
+      "rate": 275.00,
+      "effective_from": "2024-07-01",
+      "effective_to": null,
       "is_active": true
     }
   ]
@@ -309,123 +307,72 @@ Soft delete a supplier.
 
 ### Create Product
 
-**Endpoint:** `POST /products`
+**Endpoint:** `POST /products`  
+**Authentication:** Required
 
 **Request Body:**
 ```json
 {
-  "name": "New Product",
-  "code": "PROD-004",
-  "description": "Product description",
-  "default_unit": "kg",
+  "code": "PROD001",
+  "name": "Tea Leaves",
+  "description": "Premium tea leaves",
+  "base_unit": "kg",
   "supported_units": ["kg", "g"],
   "is_active": true
 }
 ```
 
-**Response:** `201 Created`
+**Response (201):** Same as Get Product
 
-### Update Product
+### Get Current Rates
 
-**Endpoint:** `PUT /products/{id}`
-
-**Request Body:**
-```json
-{
-  "name": "Updated Product",
-  "code": "PROD-004",
-  "default_unit": "kg",
-  "version": 1
-}
-```
-
-**Response:** `200 OK`
-
-### Delete Product
-
-**Endpoint:** `DELETE /products/{id}`
-
-**Response:** `200 OK`
-
----
-
-## Product Rates
-
-### List Product Rates
-
-**Endpoint:** `GET /product-rates`
+**Endpoint:** `GET /products/{id}/current-rates`  
+**Authentication:** Required
 
 **Query Parameters:**
-- `product_id` (optional): Filter by product
-- `unit` (optional): Filter by unit
-- `is_active` (optional): Filter by active status
-- `per_page` (optional): Results per page
-- `page` (optional): Page number
+- `date` (date): Date for rate lookup (default: today)
 
-**Response:** `200 OK`
+**Response (200):**
 ```json
-{
-  "data": [
-    {
-      "id": 1,
-      "product_id": 1,
-      "unit": "kg",
-      "rate": 120.00,
-      "effective_date": "2025-11-25",
-      "end_date": null,
-      "is_active": true,
-      "version": 1,
-      "product": {...}
-    }
-  ]
-}
+[
+  {
+    "id": 2,
+    "unit": "kg",
+    "rate": 275.00,
+    "effective_from": "2024-07-01",
+    "effective_to": null,
+    "is_active": true
+  }
+]
 ```
 
-### Get Product Rate
+### Add Product Rate
 
-**Endpoint:** `GET /product-rates/{id}`
-
-**Response:** `200 OK`
-
-### Create Product Rate
-
-**Endpoint:** `POST /product-rates`
+**Endpoint:** `POST /products/{id}/rates`  
+**Authentication:** Required
 
 **Request Body:**
 ```json
 {
+  "unit": "kg",
+  "rate": 275.00,
+  "effective_from": "2024-07-01",
+  "effective_to": null
+}
+```
+
+**Response (201):**
+```json
+{
+  "id": 2,
   "product_id": 1,
   "unit": "kg",
-  "rate": 125.00,
-  "effective_date": "2025-12-26",
-  "end_date": null,
+  "rate": 275.00,
+  "effective_from": "2024-07-01",
+  "effective_to": null,
   "is_active": true
 }
 ```
-
-**Response:** `201 Created`
-
-**Note:** The system automatically applies the correct rate based on `effective_date` and `end_date` when creating collections.
-
-### Update Product Rate
-
-**Endpoint:** `PUT /product-rates/{id}`
-
-**Request Body:**
-```json
-{
-  "rate": 130.00,
-  "version": 1
-}
-```
-
-**Response:** `200 OK`
-
-### Delete Product Rate
-
-**Endpoint:** `DELETE /product-rates/{id}`
-
-**Response:** `200 OK`
 
 ---
 
@@ -433,113 +380,85 @@ Soft delete a supplier.
 
 ### List Collections
 
-**Endpoint:** `GET /collections`
+**Endpoint:** `GET /collections`  
+**Authentication:** Required
 
 **Query Parameters:**
-- `supplier_id` (optional): Filter by supplier
-- `product_id` (optional): Filter by product
-- `from_date` (optional): Filter from date (YYYY-MM-DD)
-- `to_date` (optional): Filter to date (YYYY-MM-DD)
-- `per_page` (optional): Results per page
-- `page` (optional): Page number
+- `supplier_id` (integer): Filter by supplier
+- `product_id` (integer): Filter by product
+- `collector_id` (integer): Filter by collector
+- `start_date` (date): Start date range
+- `end_date` (date): End date range
+- `per_page` (integer): Results per page
 
-**Example:** `GET /collections?supplier_id=1&from_date=2025-12-01&to_date=2025-12-31`
-
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "data": [
     {
       "id": 1,
-      "supplier_id": 1,
-      "product_id": 1,
-      "user_id": 2,
-      "product_rate_id": 1,
-      "collection_date": "2025-12-05",
-      "quantity": 45.5,
+      "collection_number": "COL-20240101-00001",
+      "supplier": {
+        "id": 1,
+        "name": "ABC Suppliers"
+      },
+      "product": {
+        "id": 1,
+        "name": "Tea Leaves"
+      },
+      "collector": {
+        "id": 1,
+        "name": "John Doe"
+      },
+      "collection_date": "2024-01-15",
+      "quantity": 50.500,
       "unit": "kg",
-      "rate_applied": 120.00,
-      "total_amount": 5460.00,
-      "notes": "Morning collection",
-      "version": 1,
-      "supplier": {...},
-      "product": {...},
-      "user": {...},
-      "productRate": {...}
+      "rate_applied": 250.00,
+      "total_amount": 12625.00,
+      "version": 1
     }
   ]
 }
 ```
 
-### Get Collection
-
-**Endpoint:** `GET /collections/{id}`
-
-**Response:** `200 OK`
-
 ### Create Collection
 
-System automatically applies the correct rate and calculates total amount.
-
-**Endpoint:** `POST /collections`
+**Endpoint:** `POST /collections`  
+**Authentication:** Required
 
 **Request Body:**
 ```json
 {
   "supplier_id": 1,
   "product_id": 1,
-  "collection_date": "2025-12-25",
+  "collection_date": "2024-01-15",
   "quantity": 50.5,
   "unit": "kg",
-  "notes": "Afternoon collection"
+  "notes": "First collection of the month"
 }
 ```
 
-**Response:** `201 Created`
-```json
-{
-  "id": 7,
-  "supplier_id": 1,
-  "product_id": 1,
-  "user_id": 2,
-  "product_rate_id": 1,
-  "collection_date": "2025-12-25",
-  "quantity": 50.5,
-  "unit": "kg",
-  "rate_applied": 120.00,
-  "total_amount": 6060.00,
-  "notes": "Afternoon collection",
-  "version": 1
-}
-```
+**Response (201):** Same as List Collections item
 
-**Automatic Calculations:**
-- `rate_applied`: Fetched from product_rates based on collection_date
-- `product_rate_id`: Set to the matching rate
-- `total_amount`: Calculated as `quantity * rate_applied`
-- `user_id`: Set to authenticated user
+**Note:** Rate is automatically applied based on collection_date
 
 ### Update Collection
 
-**Endpoint:** `PUT /collections/{id}`
+**Endpoint:** `PUT /collections/{id}`  
+**Authentication:** Required
 
 **Request Body:**
 ```json
 {
   "quantity": 55.0,
+  "notes": "Updated quantity",
   "version": 1
 }
 ```
 
-**Response:** `200 OK`
+**Response (200):** Updated collection
 
-**Note:** Changing quantity recalculates `total_amount`. Changing product/unit/date refetches rate.
-
-### Delete Collection
-
-**Endpoint:** `DELETE /collections/{id}`
-
-**Response:** `200 OK`
+**Note:** Version field is required for optimistic locking
 
 ---
 
@@ -547,125 +466,135 @@ System automatically applies the correct rate and calculates total amount.
 
 ### List Payments
 
-**Endpoint:** `GET /payments`
+**Endpoint:** `GET /payments`  
+**Authentication:** Required
 
 **Query Parameters:**
-- `supplier_id` (optional): Filter by supplier
-- `payment_type` (optional): Filter by type (advance/partial/full)
-- `from_date` (optional): Filter from date
-- `to_date` (optional): Filter to date
-- `per_page` (optional): Results per page
-- `page` (optional): Page number
+- `supplier_id` (integer): Filter by supplier
+- `payment_type` (string): advance, partial, final
+- `start_date` (date): Start date range
+- `end_date` (date): End date range
 
-**Response:** `200 OK`
+**Response (200):**
 ```json
 {
   "data": [
     {
       "id": 1,
-      "supplier_id": 1,
-      "user_id": 3,
-      "payment_date": "2025-12-10",
-      "amount": 5000.00,
+      "payment_number": "PAY-20240115-00001",
+      "supplier": {
+        "id": 1,
+        "name": "ABC Suppliers"
+      },
       "payment_type": "advance",
-      "payment_method": "Cash",
-      "reference_number": "PAY-001",
-      "notes": "Advance payment",
-      "version": 1,
-      "supplier": {...},
-      "user": {...}
+      "amount": 5000.00,
+      "payment_date": "2024-01-15",
+      "payment_method": "bank_transfer",
+      "reference_number": "TXN123456"
     }
   ]
 }
 ```
 
-### Get Payment
-
-**Endpoint:** `GET /payments/{id}`
-
-**Response:** `200 OK`
-
 ### Create Payment
 
-**Endpoint:** `POST /payments`
+**Endpoint:** `POST /payments`  
+**Authentication:** Required
 
 **Request Body:**
 ```json
 {
   "supplier_id": 1,
-  "payment_date": "2025-12-25",
-  "amount": 3000.00,
   "payment_type": "partial",
-  "payment_method": "Bank Transfer",
-  "reference_number": "PAY-004",
-  "notes": "Partial payment for December"
+  "amount": 5000.00,
+  "payment_date": "2024-01-15",
+  "payment_method": "bank_transfer",
+  "reference_number": "TXN123456",
+  "notes": "Partial payment",
+  "collection_allocations": [
+    {
+      "collection_id": 1,
+      "amount": 3000.00
+    },
+    {
+      "collection_id": 2,
+      "amount": 2000.00
+    }
+  ]
 }
 ```
 
-**Payment Types:**
-- `advance`: Payment before collections
-- `partial`: Partial payment against balance
-- `full`: Full settlement of balance
+**Response (201):** Payment with collections
 
-**Response:** `201 Created`
+### Approve Payment
 
-### Update Payment
+**Endpoint:** `POST /payments/{id}/approve`  
+**Authentication:** Required (finance/admin role)
 
-**Endpoint:** `PUT /payments/{id}`
-
-**Request Body:**
+**Response (200):**
 ```json
 {
-  "amount": 3500.00,
-  "version": 1
+  "id": 1,
+  "approved_by": {
+    "id": 2,
+    "name": "Finance User"
+  },
+  ...
 }
 ```
-
-**Response:** `200 OK`
-
-### Delete Payment
-
-**Endpoint:** `DELETE /payments/{id}`
-
-**Response:** `200 OK`
 
 ---
 
-## Error Responses
+## Error Handling
 
-### 401 Unauthorized
+### Error Response Format
 
+```json
+{
+  "message": "Error description",
+  "errors": {
+    "field_name": [
+      "Validation error message"
+    ]
+  }
+}
+```
+
+### HTTP Status Codes
+
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request
+- `401` - Unauthorized
+- `403` - Forbidden
+- `404` - Not Found
+- `422` - Validation Error
+- `500` - Server Error
+
+### Common Errors
+
+**Validation Error (422):**
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": ["The email field is required."],
+    "password": ["The password must be at least 8 characters."]
+  }
+}
+```
+
+**Unauthorized (401):**
 ```json
 {
   "message": "Unauthenticated."
 }
 ```
 
-### 404 Not Found
-
+**Optimistic Lock Error:**
 ```json
 {
-  "message": "Resource not found."
-}
-```
-
-### 422 Validation Error
-
-```json
-{
-  "message": "The given data was invalid.",
-  "errors": {
-    "email": ["The email field is required."],
-    "quantity": ["The quantity must be at least 0.001."]
-  }
-}
-```
-
-### 500 Version Mismatch
-
-```json
-{
-  "message": "Version mismatch. Please refresh and try again."
+  "message": "Collection has been modified by another user. Please refresh and try again."
 }
 ```
 
@@ -673,123 +602,16 @@ System automatically applies the correct rate and calculates total amount.
 
 ## Rate Limiting
 
-**Default**: 60 requests per minute per IP address
+- **General API**: 60 requests per minute
+- **Authentication**: 10 requests per minute
 
-**Headers:**
-```
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 59
-```
+Exceeded limits return `429 Too Many Requests`
 
----
+## Versioning
 
-## Pagination
+Current API version: v1  
+All endpoints are prefixed with `/api`
 
-All list endpoints return paginated results:
+## Support
 
-```json
-{
-  "data": [...],
-  "current_page": 1,
-  "per_page": 15,
-  "total": 50,
-  "last_page": 4,
-  "from": 1,
-  "to": 15
-}
-```
-
----
-
-## Data Types
-
-### Supplier
-```typescript
-{
-  id: number;
-  name: string;
-  code: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  metadata?: object;
-  is_active: boolean;
-  version: number;
-  created_at: string;
-  updated_at: string;
-}
-```
-
-### Product
-```typescript
-{
-  id: number;
-  name: string;
-  code: string;
-  description?: string;
-  default_unit: string;
-  supported_units: string[];
-  metadata?: object;
-  is_active: boolean;
-  version: number;
-  created_at: string;
-  updated_at: string;
-}
-```
-
-### Collection
-```typescript
-{
-  id: number;
-  supplier_id: number;
-  product_id: number;
-  user_id: number;
-  product_rate_id: number;
-  collection_date: string; // YYYY-MM-DD
-  quantity: number;
-  unit: string;
-  rate_applied: number;
-  total_amount: number;
-  notes?: string;
-  metadata?: object;
-  version: number;
-  created_at: string;
-  updated_at: string;
-}
-```
-
-### Payment
-```typescript
-{
-  id: number;
-  supplier_id: number;
-  user_id: number;
-  payment_date: string; // YYYY-MM-DD
-  amount: number;
-  payment_type: 'advance' | 'partial' | 'full';
-  payment_method?: string;
-  reference_number?: string;
-  notes?: string;
-  metadata?: object;
-  version: number;
-  created_at: string;
-  updated_at: string;
-}
-```
-
----
-
-## Best Practices
-
-1. **Always include version field** when updating to prevent concurrent modification issues
-2. **Use pagination** for large datasets to improve performance
-3. **Filter by date range** for collections and payments to reduce payload size
-4. **Cache responses** when appropriate (e.g., product lists)
-5. **Handle 401 errors** by refreshing token or redirecting to login
-6. **Retry on 500 errors** with exponential backoff
-7. **Validate data client-side** before sending to reduce API calls
-
----
-
-**Version**: 1.0
-**Last Updated**: 2025-12-25
+For API support or issues, please contact the development team or create an issue on GitHub.

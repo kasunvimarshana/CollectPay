@@ -2,23 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supplier extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name',
         'code',
-        'address',
+        'name',
         'phone',
         'email',
+        'address',
+        'region',
         'metadata',
         'is_active',
-        'version',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
@@ -26,28 +28,79 @@ class Supplier extends Model
         'is_active' => 'boolean',
     ];
 
-    public function collections(): HasMany
+    /**
+     * Get the user who created this supplier
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the user who last updated this supplier
+     */
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * Get all collections for this supplier
+     */
+    public function collections()
     {
         return $this->hasMany(Collection::class);
     }
 
-    public function payments(): HasMany
+    /**
+     * Get all payments for this supplier
+     */
+    public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
-    public function getTotalCollectionsAmount(): float
+    /**
+     * Calculate total collections amount for this supplier
+     */
+    public function totalCollections($startDate = null, $endDate = null)
     {
-        return $this->collections()->sum('total_amount');
+        $query = $this->collections();
+        
+        if ($startDate) {
+            $query->where('collection_date', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $query->where('collection_date', '<=', $endDate);
+        }
+        
+        return $query->sum('total_amount');
     }
 
-    public function getTotalPaymentsAmount(): float
+    /**
+     * Calculate total payments made to this supplier
+     */
+    public function totalPayments($startDate = null, $endDate = null)
     {
-        return $this->payments()->sum('amount');
+        $query = $this->payments();
+        
+        if ($startDate) {
+            $query->where('payment_date', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $query->where('payment_date', '<=', $endDate);
+        }
+        
+        return $query->sum('amount');
     }
 
-    public function getBalanceAmount(): float
+    /**
+     * Calculate outstanding balance for this supplier
+     */
+    public function outstandingBalance($startDate = null, $endDate = null)
     {
-        return $this->getTotalCollectionsAmount() - $this->getTotalPaymentsAmount();
+        return $this->totalCollections($startDate, $endDate) - $this->totalPayments($startDate, $endDate);
     }
 }

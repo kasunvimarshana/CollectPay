@@ -2,54 +2,102 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name',
         'code',
+        'name',
         'description',
-        'default_unit',
+        'base_unit',
         'supported_units',
-        'metadata',
         'is_active',
-        'version',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
         'supported_units' => 'array',
-        'metadata' => 'array',
         'is_active' => 'boolean',
     ];
 
-    public function rates(): HasMany
+    /**
+     * Get the user who created this product
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the user who last updated this product
+     */
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * Get all rates for this product
+     */
+    public function rates()
     {
         return $this->hasMany(ProductRate::class);
     }
 
-    public function collections(): HasMany
+    /**
+     * Get active rates for this product
+     */
+    public function activeRates()
+    {
+        return $this->hasMany(ProductRate::class)->where('is_active', true);
+    }
+
+    /**
+     * Get all collections for this product
+     */
+    public function collections()
     {
         return $this->hasMany(Collection::class);
     }
 
-    public function getCurrentRate(string $unit, string $date = null): ?ProductRate
+    /**
+     * Get the current rate for a specific unit
+     */
+    public function getCurrentRate($unit, $date = null)
     {
-        $date = $date ?? now()->format('Y-m-d');
+        $date = $date ?? now()->toDateString();
         
         return $this->rates()
             ->where('unit', $unit)
-            ->where('effective_date', '<=', $date)
-            ->where(function ($query) use ($date) {
-                $query->whereNull('end_date')
-                    ->orWhere('end_date', '>=', $date);
-            })
             ->where('is_active', true)
-            ->orderBy('effective_date', 'desc')
+            ->where('effective_from', '<=', $date)
+            ->where(function ($query) use ($date) {
+                $query->whereNull('effective_to')
+                      ->orWhere('effective_to', '>=', $date);
+            })
+            ->orderBy('effective_from', 'desc')
+            ->first();
+    }
+
+    /**
+     * Get historical rate for a specific date and unit
+     */
+    public function getRateForDate($unit, $date)
+    {
+        return $this->rates()
+            ->where('unit', $unit)
+            ->where('effective_from', '<=', $date)
+            ->where(function ($query) use ($date) {
+                $query->whereNull('effective_to')
+                      ->orWhere('effective_to', '>=', $date);
+            })
+            ->orderBy('effective_from', 'desc')
             ->first();
     }
 }
