@@ -7,16 +7,19 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { collectionService, Collection, CreateCollectionRequest, UpdateCollectionRequest } from '../api/collection';
 import { supplierService, Supplier } from '../api/supplier';
 import { productService, Product } from '../api/product';
 import { formatDate, formatAmount } from '../utils/formatters';
 import { FloatingActionButton, FormModal, Input, Button, Picker } from '../components';
+import DateRangePicker, { DateRange } from '../components/DateRangePicker';
 import { UNIT_OPTIONS } from '../utils/constants';
 
 const CollectionsScreen = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [filteredCollections, setFilteredCollections] = useState<Collection[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +27,10 @@ const CollectionsScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'supplier' | 'product' | 'amount' | 'quantity'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: '', endDate: '' });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -43,10 +50,94 @@ const CollectionsScreen = () => {
     loadProducts();
   }, []);
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Trigger filtering
+      filterAndSortCollections();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, dateRange]);
+  
+  // Re-sort when sort changes or collections change
+  useEffect(() => {
+    if (!isLoading && collections.length > 0) {
+      filterAndSortCollections();
+    }
+  }, [sortBy, sortOrder, collections]);
+
+  const filterAndSortCollections = () => {
+    let filtered = [...(collections as Collection[])];
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((collection) => {
+        const supplierName = collection.supplier?.name?.toLowerCase() || '';
+        const productName = collection.product?.name?.toLowerCase() || '';
+        const collectorName = collection.user?.name?.toLowerCase() || '';
+        return (
+          supplierName.includes(query) ||
+          productName.includes(query) ||
+          collectorName.includes(query)
+        );
+      });
+    }
+    
+    // Apply date range filter
+    if (dateRange.startDate && dateRange.endDate) {
+      filtered = filtered.filter((collection) => {
+        const collectionDate = collection.collection_date;
+        return collectionDate >= dateRange.startDate && collectionDate <= dateRange.endDate;
+      });
+    }
+    
+    // Apply sorting
+    filtered.sort((a: Collection, b: Collection) => {
+      let compareA, compareB;
+      
+      switch (sortBy) {
+        case 'date':
+          compareA = new Date(a.collection_date).getTime();
+          compareB = new Date(b.collection_date).getTime();
+          break;
+        case 'supplier':
+          compareA = a.supplier?.name?.toLowerCase() || '';
+          compareB = b.supplier?.name?.toLowerCase() || '';
+          break;
+        case 'product':
+          compareA = a.product?.name?.toLowerCase() || '';
+          compareB = b.product?.name?.toLowerCase() || '';
+          break;
+        case 'amount':
+          compareA = typeof a.total_amount === 'number' ? a.total_amount : 0;
+          compareB = typeof b.total_amount === 'number' ? b.total_amount : 0;
+          break;
+        case 'quantity':
+          compareA = typeof a.quantity === 'number' ? a.quantity : 0;
+          compareB = typeof b.quantity === 'number' ? b.quantity : 0;
+          break;
+        default:
+          compareA = 0;
+          compareB = 0;
+      }
+      
+      if (sortOrder === 'asc') {
+        return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
+      } else {
+        return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
+      }
+    });
+    
+    setFilteredCollections(filtered);
+  };
+
   const loadCollections = async () => {
     try {
       const response = await collectionService.getAll({ per_page: 50 });
-      setCollections(response.data || []);
+      const data = response.data || [];
+      setCollections(data);
+      setFilteredCollections(data);
     } catch (error) {
       Alert.alert('Error', 'Failed to load collections');
     } finally {
@@ -250,10 +341,89 @@ const CollectionsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Collections</Text>
-        <Text style={styles.count}>{collections.length} total</Text>
+        <Text style={styles.count}>{filteredCollections.length} total</Text>
       </View>
+      
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by supplier, product, or collector..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          clearButtonMode="while-editing"
+        />
+      </View>
+      
+      {/* Date Range Filter */}
+      <View style={styles.dateRangeContainer}>
+        <DateRangePicker
+          label="Filter by Date Range"
+          value={dateRange}
+          onChange={setDateRange}
+        />
+        {(dateRange.startDate || dateRange.endDate) && (
+          <TouchableOpacity
+            style={styles.clearFilterButton}
+            onPress={() => setDateRange({ startDate: '', endDate: '' })}
+          >
+            <Text style={styles.clearFilterText}>Clear Filter</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      {/* Sort Options */}
+      <View style={styles.sortContainer}>
+        <Text style={styles.sortLabel}>Sort by:</Text>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'date' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'date') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('date');
+              setSortOrder('desc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'date' && styles.sortButtonTextActive]}>
+            Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'supplier' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'supplier') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('supplier');
+              setSortOrder('asc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'supplier' && styles.sortButtonTextActive]}>
+            Supplier {sortBy === 'supplier' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'amount' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'amount') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('amount');
+              setSortOrder('desc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'amount' && styles.sortButtonTextActive]}>
+            Amount {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
       <FlatList
-        data={collections}
+        data={filteredCollections}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderCollection}
         contentContainerStyle={styles.list}
@@ -369,6 +539,70 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 5,
+  },
+  searchContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  searchInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  dateRangeContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  clearFilterButton: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+  },
+  clearFilterText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sortContainer: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    padding: 10,
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  sortLabel: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
+  },
+  sortButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  sortButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  sortButtonText: {
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sortButtonTextActive: {
+    color: '#fff',
   },
   list: {
     padding: 15,

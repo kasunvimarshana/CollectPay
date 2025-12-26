@@ -12,9 +12,10 @@ import {
 import { supplierService, Supplier, CreateSupplierRequest, UpdateSupplierRequest } from '../api/supplier';
 import { FloatingActionButton, FormModal, Input, Button } from '../components';
 import { EMAIL_REGEX } from '../utils/constants';
+import { usePagination } from '../hooks/usePagination';
 
 const SuppliersScreen = () => {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const pagination = usePagination<Supplier>({ initialPerPage: 25 });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -55,9 +56,14 @@ const SuppliersScreen = () => {
     }
   }, [sortBy, sortOrder]);
 
-  const loadSuppliers = async () => {
+  const loadSuppliers = async (loadMore: boolean = false) => {
     try {
-      const params: any = { per_page: 50, include_balance: true };
+      const pageToLoad = loadMore ? pagination.page + 1 : 1;
+      const params: any = { 
+        page: pageToLoad, 
+        per_page: pagination.perPage, 
+        include_balance: true 
+      };
       if (searchQuery.trim()) {
         params.search = searchQuery.trim();
       }
@@ -93,18 +99,34 @@ const SuppliersScreen = () => {
         }
       });
       
-      setSuppliers(data);
+      if (loadMore) {
+        pagination.appendItems(data);
+      } else {
+        pagination.setItems(data);
+      }
+      
+      // Update hasMore based on response
+      pagination.setHasMore(data.length >= pagination.perPage);
     } catch (error) {
       Alert.alert('Error', 'Failed to load suppliers');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      pagination.setIsLoadingMore(false);
     }
   };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    loadSuppliers();
+    pagination.reset();
+    loadSuppliers(false);
+  };
+
+  const handleLoadMore = () => {
+    if (pagination.hasMore && !pagination.isLoadingMore && !isLoading && !isRefreshing) {
+      pagination.loadMore();
+      loadSuppliers(true);
+    }
   };
 
   const resetForm = () => {
@@ -277,8 +299,36 @@ const SuppliersScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Suppliers</Text>
-        <Text style={styles.count}>{suppliers.length} total</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>Suppliers</Text>
+          <View style={styles.pageSizeContainer}>
+            <Text style={styles.pageSizeLabel}>Per page:</Text>
+            {[25, 50, 100].map((size) => (
+              <TouchableOpacity
+                key={size}
+                style={[
+                  styles.pageSizeButton,
+                  pagination.perPage === size && styles.pageSizeButtonActive,
+                ]}
+                onPress={() => {
+                  pagination.setPerPage(size);
+                  pagination.reset();
+                  loadSuppliers(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.pageSizeButtonText,
+                    pagination.perPage === size && styles.pageSizeButtonTextActive,
+                  ]}
+                >
+                  {size}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+        <Text style={styles.count}>{pagination.items.length} loaded</Text>
       </View>
       
       {/* Search Bar */}
@@ -371,12 +421,22 @@ const SuppliersScreen = () => {
       </View>
       
       <FlatList
-        data={suppliers}
+        data={pagination.items}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderSupplier}
         contentContainerStyle={styles.list}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          pagination.isLoadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.loadingMoreText}>Loading more...</Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <Text style={styles.emptyText}>No suppliers found</Text>
         }
@@ -465,15 +525,63 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
   },
+  pageSizeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  pageSizeLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 5,
+  },
+  pageSizeButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    minWidth: 35,
+    alignItems: 'center',
+  },
+  pageSizeButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  pageSizeButtonText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  pageSizeButtonTextActive: {
+    color: '#fff',
+  },
   count: {
     fontSize: 14,
     color: '#666',
     marginTop: 5,
+  },
+  loadingMore: {
+    paddingVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    color: '#666',
   },
   searchContainer: {
     backgroundColor: '#fff',

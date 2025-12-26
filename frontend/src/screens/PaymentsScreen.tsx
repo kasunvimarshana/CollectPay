@@ -7,23 +7,31 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { paymentService, Payment, CreatePaymentRequest, UpdatePaymentRequest } from '../api/payment';
 import { supplierService, Supplier } from '../api/supplier';
 import { formatDate, formatAmount } from '../utils/formatters';
 import { FloatingActionButton, FormModal, Input, Button, Picker } from '../components';
+import DateRangePicker, { DateRange } from '../components/DateRangePicker';
 import { PAYMENT_TYPE_OPTIONS, PAYMENT_METHOD_OPTIONS } from '../utils/constants';
 
 type PaymentType = 'advance' | 'partial' | 'full';
 
 const PaymentsScreen = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPaymentType, setFilterPaymentType] = useState<PaymentType | 'all'>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'supplier' | 'amount' | 'type'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: '', endDate: '' });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -43,10 +51,94 @@ const PaymentsScreen = () => {
     loadSuppliers();
   }, []);
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      filterAndSortPayments();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, filterPaymentType, dateRange]);
+  
+  // Re-sort when sort changes or payments change
+  useEffect(() => {
+    if (!isLoading && payments.length > 0) {
+      filterAndSortPayments();
+    }
+  }, [sortBy, sortOrder, payments]);
+
+  const filterAndSortPayments = () => {
+    let filtered = [...(payments as Payment[])];
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((payment) => {
+        const supplierName = payment.supplier?.name?.toLowerCase() || '';
+        const referenceNumber = payment.reference_number?.toLowerCase() || '';
+        const processorName = payment.user?.name?.toLowerCase() || '';
+        return (
+          supplierName.includes(query) ||
+          referenceNumber.includes(query) ||
+          processorName.includes(query)
+        );
+      });
+    }
+    
+    // Apply payment type filter
+    if (filterPaymentType !== 'all') {
+      filtered = filtered.filter((payment) => payment.payment_type === filterPaymentType);
+    }
+    
+    // Apply date range filter
+    if (dateRange.startDate && dateRange.endDate) {
+      filtered = filtered.filter((payment) => {
+        const paymentDate = payment.payment_date;
+        return paymentDate >= dateRange.startDate && paymentDate <= dateRange.endDate;
+      });
+    }
+    
+    // Apply sorting
+    filtered.sort((a: Payment, b: Payment) => {
+      let compareA, compareB;
+      
+      switch (sortBy) {
+        case 'date':
+          compareA = new Date(a.payment_date).getTime();
+          compareB = new Date(b.payment_date).getTime();
+          break;
+        case 'supplier':
+          compareA = a.supplier?.name?.toLowerCase() || '';
+          compareB = b.supplier?.name?.toLowerCase() || '';
+          break;
+        case 'amount':
+          compareA = typeof a.amount === 'number' ? a.amount : 0;
+          compareB = typeof b.amount === 'number' ? b.amount : 0;
+          break;
+        case 'type':
+          compareA = a.payment_type?.toLowerCase() || '';
+          compareB = b.payment_type?.toLowerCase() || '';
+          break;
+        default:
+          compareA = 0;
+          compareB = 0;
+      }
+      
+      if (sortOrder === 'asc') {
+        return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
+      } else {
+        return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
+      }
+    });
+    
+    setFilteredPayments(filtered);
+  };
+
   const loadPayments = async () => {
     try {
       const response = await paymentService.getAll({ per_page: 50 });
-      setPayments(response.data || []);
+      const data = response.data || [];
+      setPayments(data);
+      setFilteredPayments(data);
     } catch (error) {
       Alert.alert('Error', 'Failed to load payments');
     } finally {
@@ -265,10 +357,125 @@ const PaymentsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Payments</Text>
-        <Text style={styles.count}>{payments.length} total</Text>
+        <Text style={styles.count}>{filteredPayments.length} total</Text>
       </View>
+      
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by supplier, reference, or processor..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          clearButtonMode="while-editing"
+        />
+      </View>
+      
+      {/* Date Range Filter */}
+      <View style={styles.dateRangeContainer}>
+        <DateRangePicker
+          label="Filter by Date Range"
+          value={dateRange}
+          onChange={setDateRange}
+        />
+        {(dateRange.startDate || dateRange.endDate) && (
+          <TouchableOpacity
+            style={styles.clearFilterButton}
+            onPress={() => setDateRange({ startDate: '', endDate: '' })}
+          >
+            <Text style={styles.clearFilterText}>Clear Filter</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      {/* Filter Buttons */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterButton, filterPaymentType === 'all' && styles.filterButtonActive]}
+          onPress={() => setFilterPaymentType('all')}
+        >
+          <Text style={[styles.filterButtonText, filterPaymentType === 'all' && styles.filterButtonTextActive]}>
+            All
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, filterPaymentType === 'advance' && styles.filterButtonActive]}
+          onPress={() => setFilterPaymentType('advance')}
+        >
+          <Text style={[styles.filterButtonText, filterPaymentType === 'advance' && styles.filterButtonTextActive]}>
+            Advance
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, filterPaymentType === 'partial' && styles.filterButtonActive]}
+          onPress={() => setFilterPaymentType('partial')}
+        >
+          <Text style={[styles.filterButtonText, filterPaymentType === 'partial' && styles.filterButtonTextActive]}>
+            Partial
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, filterPaymentType === 'full' && styles.filterButtonActive]}
+          onPress={() => setFilterPaymentType('full')}
+        >
+          <Text style={[styles.filterButtonText, filterPaymentType === 'full' && styles.filterButtonTextActive]}>
+            Full
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Sort Options */}
+      <View style={styles.sortContainer}>
+        <Text style={styles.sortLabel}>Sort by:</Text>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'date' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'date') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('date');
+              setSortOrder('desc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'date' && styles.sortButtonTextActive]}>
+            Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'supplier' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'supplier') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('supplier');
+              setSortOrder('asc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'supplier' && styles.sortButtonTextActive]}>
+            Supplier {sortBy === 'supplier' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'amount' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'amount') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('amount');
+              setSortOrder('desc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'amount' && styles.sortButtonTextActive]}>
+            Amount {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
       <FlatList
-        data={payments}
+        data={filteredPayments}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderPayment}
         contentContainerStyle={styles.list}
@@ -387,6 +594,98 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 5,
+  },
+  searchContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  searchInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  dateRangeContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  clearFilterButton: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+  },
+  clearFilterText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  filterContainer: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    padding: 10,
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  filterButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+  },
+  sortContainer: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    padding: 10,
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  sortLabel: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
+  },
+  sortButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  sortButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  sortButtonText: {
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sortButtonTextActive: {
+    color: '#fff',
   },
   list: {
     padding: 15,
