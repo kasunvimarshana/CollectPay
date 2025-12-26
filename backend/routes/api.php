@@ -6,6 +6,7 @@ use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ProductRateController;
 use App\Http\Controllers\API\CollectionController;
 use App\Http\Controllers\API\PaymentController;
+use App\Http\Controllers\API\SyncController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -33,4 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Payment routes
     Route::apiResource('payments', PaymentController::class);
     Route::get('/suppliers/{supplierId}/balance', [PaymentController::class, 'getSupplierBalance']);
+
+    // Sync routes
+    Route::post('/sync', [SyncController::class, 'sync']);
+    Route::get('/sync/pending', [SyncController::class, 'getPendingOperations']);
 });

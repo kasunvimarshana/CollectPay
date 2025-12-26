@@ -28,11 +28,11 @@ const OfflineIndicator: React.FC = () => {
         (current, total) => {
           setSyncProgress({ current, total });
         },
-        (successful, failed) => {
+        (successful, failed, conflicts) => {
           setIsSyncing(false);
           setSyncProgress({ current: 0, total: 0 });
           updateQueueCount();
-          showSyncResults(successful, failed);
+          showSyncResults(successful, failed, conflicts);
         }
       );
     } catch (error) {

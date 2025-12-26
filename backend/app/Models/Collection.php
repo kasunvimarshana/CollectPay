@@ -23,6 +23,8 @@ class Collection extends Model
         'notes',
         'metadata',
         'version',
+        'device_id',
+        'sync_metadata',
     ];
 
     protected $casts = [
@@ -31,6 +33,7 @@ class Collection extends Model
         'rate_applied' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'metadata' => 'array',
+        'sync_metadata' => 'array',
     ];
 
     public function supplier(): BelongsTo

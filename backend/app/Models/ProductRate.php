@@ -20,6 +20,8 @@ class ProductRate extends Model
         'is_active',
         'metadata',
         'version',
+        'device_id',
+        'sync_metadata',
     ];
 
     protected $casts = [
@@ -28,6 +30,7 @@ class ProductRate extends Model
         'end_date' => 'date',
         'is_active' => 'boolean',
         'metadata' => 'array',
+        'sync_metadata' => 'array',
     ];
 
     public function product(): BelongsTo

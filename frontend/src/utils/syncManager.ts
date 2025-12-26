@@ -6,12 +6,11 @@ import {
   setLastSyncTime,
   QueuedOperation,
 } from '../utils/offlineStorage';
-import { supplierService } from '../api/supplier';
-import { productService } from '../api/product';
-import { collectionService } from '../api/collection';
-import { paymentService } from '../api/payment';
+import { getDeviceId } from '../utils/deviceManager';
+import apiClient from '../api/client';
 
 const MAX_RETRY_COUNT = 3;
+const BATCH_SIZE = 10; // Process operations in batches
 
 /**
  * Offline Sync Manager
@@ -19,48 +18,37 @@ const MAX_RETRY_COUNT = 3;
  */
 
 /**
- * Process a single queued operation
+ * Process a batch of queued operations using the sync API
  */
-async function processOperation(operation: QueuedOperation): Promise<boolean> {
+async function processBatch(operations: QueuedOperation[], deviceId: string): Promise<Map<string, any>> {
   try {
-    let service;
-    switch (operation.entity) {
-      case 'supplier':
-        service = supplierService;
-        break;
-      case 'product':
-        service = productService;
-        break;
-      case 'collection':
-        service = collectionService;
-        break;
-      case 'payment':
-        service = paymentService;
-        break;
-      default:
-        console.error(`Unknown entity type: ${operation.entity}`);
-        return false;
+    // Prepare operations for sync API
+    const syncOperations = operations.map(op => ({
+      local_id: op.local_id || op.id,
+      entity: op.entity,
+      operation: op.type,
+      data: op.data,
+      timestamp: op.timestamp,
+    }));
+
+    // Call batch sync endpoint
+    const response = await apiClient.post('/sync', {
+      device_id: deviceId,
+      operations: syncOperations,
+    });
+
+    // Map results by local_id
+    const resultsMap = new Map();
+    if (response.data && response.data.results) {
+      response.data.results.forEach((result: any) => {
+        resultsMap.set(result.local_id, result);
+      });
     }
 
-    switch (operation.type) {
-      case 'create':
-        await service.create(operation.data);
-        break;
-      case 'update':
-        await service.update(operation.data.id, operation.data);
-        break;
-      case 'delete':
-        await service.delete(operation.data.id);
-        break;
-      default:
-        console.error(`Unknown operation type: ${operation.type}`);
-        return false;
-    }
-
-    return true;
+    return resultsMap;
   } catch (error) {
-    console.error(`Error processing operation ${operation.id}:`, error);
-    return false;
+    console.error('Error processing batch:', error);
+    throw error;
   }
 }
 
@@ -69,38 +57,105 @@ async function processOperation(operation: QueuedOperation): Promise<boolean> {
  */
 export async function syncOfflineOperations(
   onProgress?: (current: number, total: number) => void,
-  onComplete?: (successful: number, failed: number) => void
+  onComplete?: (successful: number, failed: number, conflicts: number) => void
 ): Promise<void> {
   const queue = await getSyncQueue();
 
   if (queue.length === 0) {
-    onComplete?.(0, 0);
+    onComplete?.(0, 0, 0);
     return;
   }
 
+  const deviceId = await getDeviceId();
   let successful = 0;
   let failed = 0;
+  let conflicts = 0;
+  let processed = 0;
 
-  for (let i = 0; i < queue.length; i++) {
-    const operation = queue[i];
-    onProgress?.(i + 1, queue.length);
+  // Filter operations that haven't exceeded retry count
+  const validOperations = queue.filter(op => op.retryCount < MAX_RETRY_COUNT);
+  const exceededOperations = queue.filter(op => op.retryCount >= MAX_RETRY_COUNT);
 
-    // Check if max retry count exceeded
-    if (operation.retryCount >= MAX_RETRY_COUNT) {
-      console.warn(`Operation ${operation.id} exceeded max retry count, removing from queue`);
-      await removeFromSyncQueue(operation.id);
-      failed++;
-      continue;
-    }
+  // Remove operations that exceeded retry count
+  for (const operation of exceededOperations) {
+    await removeFromSyncQueue(operation.id);
+    failed++;
+  }
 
-    const success = await processOperation(operation);
+  // Process operations in batches
+  for (let i = 0; i < validOperations.length; i += BATCH_SIZE) {
+    const batch = validOperations.slice(i, i + BATCH_SIZE);
+    
+    try {
+      const resultsMap = await processBatch(batch, deviceId);
 
-    if (success) {
-      await removeFromSyncQueue(operation.id);
-      successful++;
-    } else {
-      await updateOperationRetryCount(operation.id);
-      failed++;
+      // Process results
+      for (const operation of batch) {
+        processed++;
+        onProgress?.(processed, validOperations.length);
+
+        const result = resultsMap.get(operation.local_id || operation.id);
+
+        if (!result) {
+          // No result for this operation, mark as failed
+          await updateOperationRetryCount(operation.id);
+          failed++;
+          continue;
+        }
+
+        switch (result.status) {
+          case 'success':
+          case 'duplicate':
+            // Successfully synced or already exists
+            await removeFromSyncQueue(operation.id);
+            successful++;
+            break;
+
+          case 'conflict':
+            // Version conflict - needs manual resolution
+            await removeFromSyncQueue(operation.id);
+            conflicts++;
+            
+            // Show conflict alert
+            Alert.alert(
+              'Sync Conflict',
+              `A conflict was detected for ${operation.entity}. The server has newer data.`,
+              [
+                {
+                  text: 'Use Server Data',
+                  onPress: () => {
+                    // Server data wins - operation is already removed
+                  },
+                },
+                {
+                  text: 'Review Later',
+                  style: 'cancel',
+                },
+              ]
+            );
+            break;
+
+          case 'not_found':
+            // Entity not found on server - remove from queue
+            await removeFromSyncQueue(operation.id);
+            failed++;
+            break;
+
+          case 'error':
+          default:
+            // Failed to process - increment retry count
+            await updateOperationRetryCount(operation.id);
+            failed++;
+            break;
+        }
+      }
+    } catch (error) {
+      console.error('Error processing batch:', error);
+      // Mark all operations in batch as failed
+      for (const operation of batch) {
+        await updateOperationRetryCount(operation.id);
+        failed++;
+      }
     }
   }
 
@@ -109,17 +164,23 @@ export async function syncOfflineOperations(
     await setLastSyncTime();
   }
 
-  onComplete?.(successful, failed);
+  onComplete?.(successful, failed, conflicts);
 }
 
 /**
  * Show sync results to user
  */
-export function showSyncResults(successful: number, failed: number): void {
-  if (successful > 0 && failed === 0) {
+export function showSyncResults(successful: number, failed: number, conflicts: number = 0): void {
+  if (successful > 0 && failed === 0 && conflicts === 0) {
     Alert.alert(
       'Sync Complete',
       `Successfully synchronized ${successful} operation(s).`,
+      [{ text: 'OK' }]
+    );
+  } else if (conflicts > 0) {
+    Alert.alert(
+      'Sync Completed with Conflicts',
+      `Synchronized ${successful} operation(s). ${conflicts} conflict(s) detected. ${failed > 0 ? `${failed} operation(s) failed and will be retried later.` : ''}`,
       [{ text: 'OK' }]
     );
   } else if (successful > 0 && failed > 0) {

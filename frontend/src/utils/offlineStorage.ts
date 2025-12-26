@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getDeviceId } from './deviceManager';
 
 /**
  * Offline Storage Manager
@@ -17,11 +18,13 @@ const STORAGE_KEYS = {
 
 export interface QueuedOperation {
   id: string;
+  local_id: string; // Unique ID for this operation
   type: 'create' | 'update' | 'delete';
   entity: 'supplier' | 'product' | 'collection' | 'payment' | 'product_rate';
   data: any;
   timestamp: string;
   retryCount: number;
+  deviceId?: string;
 }
 
 /**
@@ -61,14 +64,30 @@ export async function clearCache(key: string): Promise<void> {
 
 /**
  * Add operation to sync queue
+ * Note: deviceId is generated inside the function to ensure it's always fetched fresh from storage
  */
-export async function addToSyncQueue(operation: Omit<QueuedOperation, 'id'>): Promise<void> {
+export async function addToSyncQueue(operation: Omit<QueuedOperation, 'id' | 'local_id' | 'deviceId'>): Promise<void> {
   try {
     const queue = await getSyncQueue();
+    const deviceId = await getDeviceId();
+    const localId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     const newOperation: QueuedOperation = {
       ...operation,
       id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      local_id: localId,
+      deviceId,
     };
+    
+    // Add device_id and local_id to operation data for tracking
+    if (newOperation.type === 'create' || newOperation.type === 'update') {
+      newOperation.data = {
+        ...newOperation.data,
+        device_id: deviceId,
+        local_id: localId,
+      };
+    }
+    
     queue.push(newOperation);
     await AsyncStorage.setItem(STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(queue));
   } catch (error) {

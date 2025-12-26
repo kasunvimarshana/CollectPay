@@ -19,10 +19,13 @@ class Supplier extends Model
         'metadata',
         'is_active',
         'version',
+        'device_id',
+        'sync_metadata',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'sync_metadata' => 'array',
         'is_active' => 'boolean',
     ];
 

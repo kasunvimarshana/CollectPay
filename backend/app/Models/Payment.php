@@ -21,12 +21,15 @@ class Payment extends Model
         'notes',
         'metadata',
         'version',
+        'device_id',
+        'sync_metadata',
     ];
 
     protected $casts = [
         'payment_date' => 'date',
         'amount' => 'decimal:2',
         'metadata' => 'array',
+        'sync_metadata' => 'array',
     ];
 
     public function supplier(): BelongsTo
