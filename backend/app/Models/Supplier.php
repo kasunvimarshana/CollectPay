@@ -5,35 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Supplier extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'code',
+        'uuid',
         'name',
-        'address',
+        'contact_person',
         'phone',
         'email',
-        'credit_limit',
-        'current_balance',
+        'address',
+        'registration_number',
         'metadata',
         'is_active',
         'created_by',
         'updated_by',
-        'last_sync_at',
         'version',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'is_active' => 'boolean',
-        'credit_limit' => 'decimal:2',
-        'current_balance' => 'decimal:2',
-        'last_sync_at' => 'datetime',
         'version' => 'integer',
     ];
 
@@ -41,61 +36,94 @@ class Supplier extends Model
         'deleted_at',
     ];
 
-    // Relationships
-    public function collections(): HasMany
-    {
-        return $this->hasMany(Collection::class);
-    }
-
-    public function payments(): HasMany
-    {
-        return $this->hasMany(Payment::class);
-    }
-
-    public function rates(): HasMany
-    {
-        return $this->hasMany(Rate::class);
-    }
-
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updater(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
-
-    // Business Logic
-    public function updateBalance(float $amount): void
-    {
-        $this->current_balance = bcadd($this->current_balance, $amount, 2);
-        $this->save();
-    }
-
-    public function calculateBalance(): float
-    {
-        $totalCollections = $this->collections()
-            ->where('sync_status', 'synced')
-            ->sum('amount');
-            
-        $totalPayments = $this->payments()
-            ->where('sync_status', 'synced')
-            ->sum('amount');
-            
-        return bcsub($totalCollections, $totalPayments, 2);
-    }
-
-    // Version control for optimistic locking
     protected static function boot()
     {
         parent::boot();
 
-        static::saving(function ($model) {
-            if ($model->isDirty() && !$model->wasRecentlyCreated) {
-                $model->version++;
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
             }
         });
+
+        static::updating(function ($model) {
+            $model->version++;
+        });
+    }
+
+    // Relationships
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'rates')
+            ->withPivot(['rate', 'effective_from', 'effective_to', 'is_active'])
+            ->withTimestamps();
+    }
+
+    public function rates()
+    {
+        return $this->hasMany(Rate::class);
+    }
+
+    public function collections()
+    {
+        return $this->hasMany(Collection::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // Scopes
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    // Helpers
+    public function getTotalCollections($startDate = null, $endDate = null)
+    {
+        $query = $this->collections();
+        
+        if ($startDate) {
+            $query->where('collection_date', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $query->where('collection_date', '<=', $endDate);
+        }
+        
+        return $query->sum('total_amount');
+    }
+
+    public function getTotalPayments($startDate = null, $endDate = null)
+    {
+        $query = $this->payments();
+        
+        if ($startDate) {
+            $query->where('payment_date', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $query->where('payment_date', '<=', $endDate);
+        }
+        
+        return $query->sum('amount');
+    }
+
+    public function getBalance($startDate = null, $endDate = null)
+    {
+        return $this->getTotalCollections($startDate, $endDate) - 
+               $this->getTotalPayments($startDate, $endDate);
     }
 }

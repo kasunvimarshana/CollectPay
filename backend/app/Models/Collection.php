@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class Collection extends Model
@@ -21,22 +20,23 @@ class Collection extends Model
         'quantity',
         'unit',
         'rate_applied',
-        'amount',
+        'total_amount',
         'notes',
-        'collector_id',
+        'is_synced',
+        'synced_at',
+        'collected_by',
         'created_by',
         'updated_by',
-        'last_sync_at',
         'version',
-        'sync_status',
     ];
 
     protected $casts = [
         'collection_date' => 'date',
         'quantity' => 'decimal:3',
         'rate_applied' => 'decimal:2',
-        'amount' => 'decimal:2',
-        'last_sync_at' => 'datetime',
+        'total_amount' => 'decimal:2',
+        'is_synced' => 'boolean',
+        'synced_at' => 'datetime',
         'version' => 'integer',
     ];
 
@@ -53,46 +53,49 @@ class Collection extends Model
                 $model->uuid = (string) Str::uuid();
             }
             
-            // Auto-calculate amount if not provided
-            if (!$model->amount && $model->quantity && $model->rate_applied) {
-                $model->amount = bcmul($model->quantity, $model->rate_applied, 2);
+            // Auto-calculate total if not provided
+            if ($model->quantity && $model->rate_applied && !$model->total_amount) {
+                $model->total_amount = $model->quantity * $model->rate_applied;
             }
         });
 
-        static::saving(function ($model) {
-            if ($model->isDirty() && !$model->wasRecentlyCreated) {
-                $model->version++;
+        static::updating(function ($model) {
+            $model->version++;
+            
+            // Recalculate total if quantity or rate changes
+            if ($model->isDirty(['quantity', 'rate_applied'])) {
+                $model->total_amount = $model->quantity * $model->rate_applied;
             }
         });
     }
 
     // Relationships
-    public function supplier(): BelongsTo
+    public function supplier()
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function product(): BelongsTo
+    public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function rate(): BelongsTo
+    public function rate()
     {
         return $this->belongsTo(Rate::class);
     }
 
-    public function collector(): BelongsTo
+    public function collector()
     {
-        return $this->belongsTo(User::class, 'collector_id');
+        return $this->belongsTo(User::class, 'collected_by');
     }
 
-    public function creator(): BelongsTo
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater(): BelongsTo
+    public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
@@ -100,21 +103,25 @@ class Collection extends Model
     // Scopes
     public function scopeSynced($query)
     {
-        return $query->where('sync_status', 'synced');
+        return $query->where('is_synced', true);
     }
 
     public function scopePending($query)
     {
-        return $query->where('sync_status', 'pending');
+        return $query->where('is_synced', false);
     }
 
-    public function scopeForSupplier($query, int $supplierId)
+    public function scopeByDateRange($query, $startDate, $endDate)
     {
-        return $query->where('supplier_id', $supplierId);
+        return $query->whereBetween('collection_date', [$startDate, $endDate]);
     }
 
-    public function scopeForDateRange($query, string $from, string $to)
+    // Helpers
+    public function markAsSynced()
     {
-        return $query->whereBetween('collection_date', [$from, $to]);
+        $this->update([
+            'is_synced' => true,
+            'synced_at' => now(),
+        ]);
     }
 }

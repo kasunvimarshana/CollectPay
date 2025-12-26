@@ -2,226 +2,232 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Collection;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
-class CollectionController extends Controller
+class CollectionController extends ApiController
 {
+    /**
+     * Get all collections
+     */
     public function index(Request $request)
     {
-        $query = Collection::with(['supplier', 'product', 'rate', 'collector']);
+        $query = Collection::query()
+            ->with(['supplier', 'product', 'rate', 'collector']);
 
         if ($request->has('supplier_id')) {
-            $query->forSupplier($request->supplier_id);
+            $query->where('supplier_id', $request->supplier_id);
         }
 
         if ($request->has('product_id')) {
             $query->where('product_id', $request->product_id);
         }
 
-        if ($request->has('from_date') && $request->has('to_date')) {
-            $query->forDateRange($request->from_date, $request->to_date);
+        if ($request->has('is_synced')) {
+            $query->where('is_synced', $request->boolean('is_synced'));
         }
 
-        if ($request->has('collector_id')) {
-            $query->where('collector_id', $request->collector_id);
+        if ($request->has('start_date')) {
+            $query->where('collection_date', '>=', $request->start_date);
         }
 
-        if ($request->has('sync_status')) {
-            $query->where('sync_status', $request->sync_status);
+        if ($request->has('end_date')) {
+            $query->where('collection_date', '<=', $request->end_date);
         }
 
-        $collections = $query->orderBy('collection_date', 'desc')
-            ->paginate($request->per_page ?? 50);
+        $perPage = $request->get('per_page', 50);
+        $collections = $query->orderBy('collection_date', 'desc')->paginate($perPage);
 
-        return response()->json([
-            'success' => true,
-            'collections' => $collections,
-        ]);
+        return $this->success($collections);
     }
 
+    /**
+     * Get single collection
+     */
+    public function show($id)
+    {
+        $collection = Collection::with([
+            'supplier',
+            'product',
+            'rate',
+            'collector',
+            'creator'
+        ])->find($id);
+
+        if (!$collection) {
+            return $this->notFound('Collection not found');
+        }
+
+        return $this->success($collection);
+    }
+
+    /**
+     * Create new collection
+     */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'uuid' => 'nullable|string|unique:collections,uuid',
+        $validated = $request->validate([
+            'uuid' => 'sometimes|uuid|unique:collections,uuid',
             'supplier_id' => 'required|exists:suppliers,id',
             'product_id' => 'required|exists:products,id',
             'collection_date' => 'required|date',
             'quantity' => 'required|numeric|min:0.001',
-            'rate_applied' => 'nullable|numeric|min:0',
+            'unit' => 'required|string|max:20',
+            'rate_applied' => 'sometimes|numeric|min:0',
+            'notes' => 'nullable|string',
+            'is_synced' => 'sometimes|boolean',
+            'version' => 'sometimes|integer',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+        if (isset($validated['uuid'])) {
+            $existing = Collection::where('uuid', $validated['uuid'])->first();
+            if ($existing) {
+                if (isset($validated['version']) && $existing->version != $validated['version']) {
+                    return $this->conflict([
+                        'server_version' => $existing->version,
+                        'server_data' => $existing->load(['supplier', 'product']),
+                    ], 'Version conflict detected');
+                }
+                return $this->update($request, $existing->id);
+            }
         }
 
         DB::beginTransaction();
         try {
-            $product = Product::findOrFail($request->product_id);
-            
-            // Get current rate if not provided
-            if (!$request->has('rate_applied')) {
+            // Get the current rate if not provided
+            if (!isset($validated['rate_applied'])) {
+                $product = Product::find($validated['product_id']);
                 $rate = $product->getCurrentRate(
-                    $request->supplier_id,
-                    $request->collection_date
+                    $validated['supplier_id'],
+                    $validated['collection_date']
                 );
-                
+
                 if (!$rate) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No active rate found for this product and date',
-                    ], 422);
+                    DB::rollBack();
+                    return $this->error('No active rate found for this product and supplier on the collection date', 422);
                 }
-                
-                $rateApplied = $rate->rate;
-                $rateId = $rate->id;
-            } else {
-                $rateApplied = $request->rate_applied;
-                $rateId = $request->rate_id ?? null;
+
+                $validated['rate_applied'] = $rate->rate;
+                $validated['rate_id'] = $rate->id;
             }
 
-            $amount = bcmul($request->quantity, $rateApplied, 2);
+            // Calculate total amount
+            $validated['total_amount'] = $validated['quantity'] * $validated['rate_applied'];
+            $validated['collected_by'] = $request->user()->id;
+            $validated['created_by'] = $request->user()->id;
 
-            $collection = Collection::create([
-                'uuid' => $request->uuid,
-                'supplier_id' => $request->supplier_id,
-                'product_id' => $request->product_id,
-                'rate_id' => $rateId,
-                'collection_date' => $request->collection_date,
-                'quantity' => $request->quantity,
-                'unit' => $product->unit,
-                'rate_applied' => $rateApplied,
-                'amount' => $amount,
-                'notes' => $request->notes,
-                'collector_id' => auth()->id(),
-                'created_by' => auth()->id(),
-                'updated_by' => auth()->id(),
-                'sync_status' => 'synced',
-            ]);
-
-            // Update supplier balance
-            $collection->supplier->updateBalance($amount);
+            $collection = Collection::create($validated);
 
             DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Collection created successfully',
-                'collection' => $collection->load(['supplier', 'product', 'rate']),
-            ], 201);
+            return $this->success(
+                $collection->load(['supplier', 'product', 'rate']),
+                'Collection created successfully',
+                201
+            );
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create collection',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->error('Failed to create collection: ' . $e->getMessage(), 500);
         }
     }
 
-    public function show($id)
-    {
-        $collection = Collection::with(['supplier', 'product', 'rate', 'collector'])->findOrFail($id);
-
-        return response()->json([
-            'success' => true,
-            'collection' => $collection,
-        ]);
-    }
-
+    /**
+     * Update collection
+     */
     public function update(Request $request, $id)
     {
-        $collection = Collection::findOrFail($id);
+        $collection = Collection::find($id);
 
-        $validator = Validator::make($request->all(), [
-            'quantity' => 'sometimes|numeric|min:0.001',
+        if (!$collection) {
+            return $this->notFound('Collection not found');
+        }
+
+        $validated = $request->validate([
+            'supplier_id' => 'sometimes|exists:suppliers,id',
+            'product_id' => 'sometimes|exists:products,id',
             'collection_date' => 'sometimes|date',
+            'quantity' => 'sometimes|numeric|min:0.001',
+            'unit' => 'sometimes|string|max:20',
+            'rate_applied' => 'sometimes|numeric|min:0',
             'notes' => 'nullable|string',
+            'is_synced' => 'sometimes|boolean',
+            'version' => 'sometimes|integer',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+        if (isset($validated['version']) && $collection->version != $validated['version']) {
+            return $this->conflict([
+                'server_version' => $collection->version,
+                'server_data' => $collection->load(['supplier', 'product']),
+            ], 'Version conflict detected');
         }
 
         DB::beginTransaction();
         try {
-            // Revert old amount from supplier balance
-            $collection->supplier->updateBalance(-$collection->amount);
-
-            // Update collection
-            if ($request->has('quantity')) {
-                $newAmount = bcmul($request->quantity, $collection->rate_applied, 2);
-                $collection->quantity = $request->quantity;
-                $collection->amount = $newAmount;
-            }
-
-            if ($request->has('collection_date')) {
-                $collection->collection_date = $request->collection_date;
-            }
-
-            if ($request->has('notes')) {
-                $collection->notes = $request->notes;
-            }
-
-            $collection->updated_by = auth()->id();
-            $collection->save();
-
-            // Apply new amount to supplier balance
-            $collection->supplier->updateBalance($collection->amount);
+            $validated['updated_by'] = $request->user()->id;
+            $collection->update($validated);
 
             DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Collection updated successfully',
-                'collection' => $collection->fresh()->load(['supplier', 'product', 'rate']),
-            ]);
+            return $this->success(
+                $collection->load(['supplier', 'product', 'rate']),
+                'Collection updated successfully'
+            );
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update collection',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->error('Failed to update collection: ' . $e->getMessage(), 500);
         }
     }
 
+    /**
+     * Delete collection
+     */
     public function destroy($id)
     {
-        $collection = Collection::findOrFail($id);
+        $collection = Collection::find($id);
 
-        DB::beginTransaction();
-        try {
-            // Revert amount from supplier balance
-            $collection->supplier->updateBalance(-$collection->amount);
-
-            $collection->updated_by = auth()->id();
-            $collection->save();
-            $collection->delete();
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Collection deleted successfully',
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete collection',
-                'error' => $e->getMessage(),
-            ], 500);
+        if (!$collection) {
+            return $this->notFound('Collection not found');
         }
+
+        try {
+            $collection->delete();
+            return $this->success(null, 'Collection deleted successfully');
+        } catch (\Exception $e) {
+            return $this->error('Failed to delete collection: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get summary statistics
+     */
+    public function summary(Request $request)
+    {
+        $query = Collection::query();
+
+        if ($request->has('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->has('start_date')) {
+            $query->where('collection_date', '>=', $request->start_date);
+        }
+
+        if ($request->has('end_date')) {
+            $query->where('collection_date', '<=', $request->end_date);
+        }
+
+        $summary = [
+            'total_collections' => $query->count(),
+            'total_amount' => $query->sum('total_amount'),
+            'synced_count' => (clone $query)->where('is_synced', true)->count(),
+            'pending_count' => (clone $query)->where('is_synced', false)->count(),
+            'by_product' => (clone $query)
+                ->select('product_id', DB::raw('SUM(quantity) as total_quantity'), DB::raw('SUM(total_amount) as total_amount'))
+                ->with('product:id,name,unit')
+                ->groupBy('product_id')
+                ->get(),
+        ];
+
+        return $this->success($summary);
     }
 }

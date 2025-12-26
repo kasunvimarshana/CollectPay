@@ -1,137 +1,516 @@
-# CollectPay API Documentation
+# PayTrack API Documentation
 
 ## Base URL
 ```
-Production: https://api.yourdomain.com/api/v1
+Production: https://api.paytrack.com/api/v1
 Development: http://localhost:8000/api/v1
 ```
 
 ## Authentication
 
-All protected endpoints require a JWT token in the Authorization header:
+All authenticated endpoints require a Bearer token in the Authorization header:
 ```
-Authorization: Bearer {token}
-```
-
-### POST /auth/register
-Register a new user account.
-
-**Request:**
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "SecurePass123",
-  "password_confirmation": "SecurePass123",
-  "role": "collector"
-}
+Authorization: Bearer {your_token_here}
 ```
 
-**Response (201):**
+## Response Format
+
+### Success Response
 ```json
 {
   "success": true,
-  "message": "User registered successfully",
-  "user": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "collector",
-    "permissions": [],
-    "is_active": true,
-    "created_at": "2024-01-15T10:00:00Z",
-    "updated_at": "2024-01-15T10:00:00Z"
-  },
-  "token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+  "message": "Operation successful",
+  "data": { ... }
 }
 ```
 
-### POST /auth/login
-Login with email and password.
-
-**Request:**
+### Error Response
 ```json
 {
-  "email": "john@example.com",
-  "password": "SecurePass123"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "user": {...},
-  "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "expires_in": 3600
-}
-```
-
-### GET /auth/me
-Get current authenticated user.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "user": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "collector",
-    "permissions": [],
-    "is_active": true
+  "success": false,
+  "message": "Error message",
+  "errors": {
+    "field": ["Error description"]
   }
 }
 ```
 
-### POST /auth/refresh
-Refresh JWT token.
-
-**Response (200):**
+### Conflict Response (409)
 ```json
 {
-  "success": true,
-  "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "expires_in": 3600
+  "success": false,
+  "message": "Conflict detected",
+  "conflict": true,
+  "data": {
+    "server_version": 5,
+    "server_data": { ... }
+  }
 }
 ```
 
-### POST /auth/logout
-Logout and invalidate token.
+## Authentication Endpoints
 
-**Response (200):**
-```json
+### Register
+```http
+POST /register
+Content-Type: application/json
+
 {
-  "success": true,
-  "message": "Logout successful"
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "password_confirmation": "password123",
+  "role": "collector"
 }
 ```
 
-## Synchronization
-
-### POST /sync
-Full bidirectional synchronization (push + pull).
-
-**Request:**
+**Response**: 201 Created
 ```json
 {
-  "device_id": "550e8400-e29b-41d4-a716-446655440000",
-  "last_sync_at": "2024-01-15T09:00:00Z",
-  "entity_types": ["suppliers", "products", "rates", "collections", "payments"],
-  "batch": [
+  "success": true,
+  "message": "User registered successfully",
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "collector"
+    },
+    "token": "1|abc123...",
+    "token_type": "Bearer"
+  }
+}
+```
+
+### Login
+```http
+POST /login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123",
+  "device_id": "optional-device-uuid"
+}
+```
+
+**Response**: 200 OK
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": { ... },
+    "token": "1|abc123...",
+    "token_type": "Bearer"
+  }
+}
+```
+
+### Logout
+```http
+POST /logout
+Authorization: Bearer {token}
+```
+
+**Response**: 200 OK
+
+### Get Current User
+```http
+GET /me
+Authorization: Bearer {token}
+```
+
+**Response**: 200 OK
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "collector"
+  }
+}
+```
+
+## Supplier Endpoints
+
+### List Suppliers
+```http
+GET /suppliers
+Authorization: Bearer {token}
+Query Parameters:
+  - is_active: boolean (optional)
+  - search: string (optional)
+  - per_page: number (default: 50, max: 100)
+  - page: number (default: 1)
+```
+
+**Response**: 200 OK
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 1,
+        "uuid": "...",
+        "name": "Supplier Name",
+        "contact_person": "Contact Person",
+        "phone": "+1234567890",
+        "email": "supplier@example.com",
+        "is_active": true,
+        "version": 1
+      }
+    ],
+    "meta": {
+      "current_page": 1,
+      "per_page": 50,
+      "total": 100,
+      "last_page": 2
+    }
+  }
+}
+```
+
+### Get Supplier
+```http
+GET /suppliers/{id}
+Authorization: Bearer {token}
+```
+
+**Response**: 200 OK
+
+### Create Supplier
+```http
+POST /suppliers
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "uuid": "optional-uuid",
+  "name": "Supplier Name",
+  "contact_person": "Contact Person",
+  "phone": "+1234567890",
+  "email": "supplier@example.com",
+  "address": "123 Main St",
+  "registration_number": "REG123",
+  "is_active": true,
+  "version": 1
+}
+```
+
+**Response**: 201 Created
+
+### Update Supplier
+```http
+PUT /suppliers/{id}
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "Updated Name",
+  "version": 1
+}
+```
+
+**Response**: 200 OK (or 409 Conflict if version mismatch)
+
+### Delete Supplier
+```http
+DELETE /suppliers/{id}
+Authorization: Bearer {token}
+```
+
+**Response**: 200 OK
+
+### Get Supplier Balance
+```http
+GET /suppliers/{id}/balance
+Authorization: Bearer {token}
+Query Parameters:
+  - start_date: date (optional)
+  - end_date: date (optional)
+```
+
+**Response**: 200 OK
+```json
+{
+  "success": true,
+  "data": {
+    "supplier": { ... },
+    "total_collections": 10000.00,
+    "total_payments": 7000.00,
+    "balance": 3000.00,
+    "recent_collections": [ ... ],
+    "recent_payments": [ ... ]
+  }
+}
+```
+
+## Product Endpoints
+
+### List Products
+```http
+GET /products
+Authorization: Bearer {token}
+Query Parameters:
+  - is_active: boolean
+  - search: string
+  - category: string
+  - per_page: number
+  - page: number
+```
+
+### Get Product
+```http
+GET /products/{id}
+Authorization: Bearer {token}
+```
+
+### Create Product
+```http
+POST /products
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "uuid": "optional-uuid",
+  "name": "Product Name",
+  "code": "PROD001",
+  "description": "Product description",
+  "unit": "kg",
+  "category": "Category Name",
+  "is_active": true,
+  "version": 1
+}
+```
+
+### Update Product
+```http
+PUT /products/{id}
+Authorization: Bearer {token}
+```
+
+### Delete Product
+```http
+DELETE /products/{id}
+Authorization: Bearer {token}
+```
+
+### Get Current Rate
+```http
+GET /products/{id}/current-rate
+Authorization: Bearer {token}
+Query Parameters:
+  - supplier_id: number (required)
+  - date: date (optional, defaults to today)
+```
+
+## Rate Endpoints
+
+### List Rates
+```http
+GET /rates
+Authorization: Bearer {token}
+Query Parameters:
+  - supplier_id: number
+  - product_id: number
+  - is_active: boolean
+  - current_only: boolean
+  - date: date (for current_only)
+```
+
+### Create Rate
+```http
+POST /rates
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "uuid": "optional-uuid",
+  "supplier_id": 1,
+  "product_id": 1,
+  "rate": 25.50,
+  "effective_from": "2024-01-01",
+  "effective_to": "2024-12-31",
+  "is_active": true,
+  "notes": "Optional notes",
+  "version": 1
+}
+```
+
+### Get Rate History
+```http
+GET /rates/history
+Authorization: Bearer {token}
+Query Parameters:
+  - supplier_id: number (required)
+  - product_id: number (required)
+```
+
+## Collection Endpoints
+
+### List Collections
+```http
+GET /collections
+Authorization: Bearer {token}
+Query Parameters:
+  - supplier_id: number
+  - product_id: number
+  - is_synced: boolean
+  - start_date: date
+  - end_date: date
+```
+
+### Create Collection
+```http
+POST /collections
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "uuid": "optional-uuid",
+  "supplier_id": 1,
+  "product_id": 1,
+  "collection_date": "2024-01-15",
+  "quantity": 50.5,
+  "unit": "kg",
+  "rate_applied": 25.00,
+  "notes": "Optional notes",
+  "version": 1
+}
+```
+
+**Note**: If `rate_applied` is not provided, the system will automatically fetch the current rate for the supplier-product combination on the collection date.
+
+### Get Collection Summary
+```http
+GET /collections/summary
+Authorization: Bearer {token}
+Query Parameters:
+  - supplier_id: number
+  - start_date: date
+  - end_date: date
+```
+
+**Response**: 200 OK
+```json
+{
+  "success": true,
+  "data": {
+    "total_collections": 50,
+    "total_amount": 125000.00,
+    "synced_count": 45,
+    "pending_count": 5,
+    "by_product": [
+      {
+        "product_id": 1,
+        "product": { "name": "Product Name", "unit": "kg" },
+        "total_quantity": 500.5,
+        "total_amount": 12512.50
+      }
+    ]
+  }
+}
+```
+
+## Payment Endpoints
+
+### List Payments
+```http
+GET /payments
+Authorization: Bearer {token}
+Query Parameters:
+  - supplier_id: number
+  - payment_type: string (advance, partial, full, adjustment)
+  - is_synced: boolean
+  - start_date: date
+  - end_date: date
+```
+
+### Create Payment
+```http
+POST /payments
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "uuid": "optional-uuid",
+  "supplier_id": 1,
+  "payment_date": "2024-01-15",
+  "amount": 5000.00,
+  "payment_type": "partial",
+  "payment_method": "bank_transfer",
+  "reference_number": "TXN12345",
+  "notes": "Optional notes",
+  "version": 1
+}
+```
+
+### Calculate Allocation
+```http
+POST /payments/calculate-allocation
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "supplier_id": 1,
+  "amount": 5000.00,
+  "payment_date": "2024-01-15"
+}
+```
+
+**Response**: 200 OK
+```json
+{
+  "success": true,
+  "data": {
+    "supplier_id": 1,
+    "supplier_name": "Supplier Name",
+    "total_collected": 15000.00,
+    "total_paid": 10000.00,
+    "current_balance": 5000.00,
+    "payment_amount": 5000.00,
+    "remaining_balance": 0.00,
+    "collections": [ ... ]
+  }
+}
+```
+
+### Get Payment Summary
+```http
+GET /payments/summary
+Authorization: Bearer {token}
+Query Parameters:
+  - supplier_id: number
+  - start_date: date
+  - end_date: date
+```
+
+## Sync Endpoints
+
+### Push Changes
+```http
+POST /sync/push
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "device_id": "device-uuid",
+  "changes": [
     {
       "entity_type": "collections",
       "operation": "create",
       "data": {
-        "uuid": "123e4567-e89b-12d3-a456-426614174000",
+        "uuid": "collection-uuid",
         "supplier_id": 1,
         "product_id": 1,
         "collection_date": "2024-01-15",
-        "quantity": 10.5,
-        "rate_applied": 5.00,
+        "quantity": 50.5,
         "unit": "kg",
+        "rate_applied": 25.00,
         "version": 1
       }
     }
@@ -139,463 +518,135 @@ Full bidirectional synchronization (push + pull).
 }
 ```
 
-**Response (200):**
+**Response**: 200 OK (or 207 Multi-Status with conflicts)
 ```json
 {
   "success": true,
-  "message": "Full sync completed",
-  "push_results": {
-    "success": [...],
-    "conflicts": [...],
-    "errors": [...]
-  },
-  "pull_changes": {
-    "suppliers": [...],
-    "products": [...],
-    "rates": [...],
-    "collections": [...],
-    "payments": [...]
-  },
-  "sync_timestamp": "2024-01-15T10:00:00Z"
-}
-```
-
-### POST /sync/push
-Push local changes to server.
-
-**Request:**
-```json
-{
-  "device_id": "550e8400-e29b-41d4-a716-446655440000",
-  "batch": [
-    {
-      "entity_type": "collections",
-      "operation": "create",
-      "data": {...}
-    }
-  ]
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Sync push completed",
+  "message": "Sync completed",
   "results": {
     "success": [
       {
         "status": "success",
-        "message": "Created successfully",
-        "entity": {...}
+        "operation": "created",
+        "entity_type": "collections",
+        "uuid": "collection-uuid",
+        "data": { ... }
       }
     ],
     "conflicts": [],
     "errors": []
   },
-  "summary": {
-    "total": 1,
-    "success": 1,
-    "conflicts": 0,
-    "errors": 0
-  }
+  "timestamp": "2024-01-15T12:00:00Z"
 }
 ```
 
-### POST /sync/pull
-Pull server changes to local.
+### Pull Changes
+```http
+POST /sync/pull
+Authorization: Bearer {token}
+Content-Type: application/json
 
-**Request:**
-```json
 {
-  "device_id": "550e8400-e29b-41d4-a716-446655440000",
-  "last_sync_at": "2024-01-15T09:00:00Z",
-  "entity_types": ["suppliers", "products", "collections"]
+  "device_id": "device-uuid",
+  "last_sync": "2024-01-01T00:00:00Z",
+  "entities": ["suppliers", "products", "rates", "collections", "payments"]
 }
 ```
 
-**Response (200):**
+**Response**: 200 OK
 ```json
 {
   "success": true,
-  "message": "Sync pull completed",
-  "changes": {
-    "suppliers": [...],
-    "products": [...],
-    "collections": [...]
+  "data": {
+    "suppliers": [ ... ],
+    "products": [ ... ],
+    "rates": [ ... ],
+    "collections": [ ... ],
+    "payments": [ ... ]
   },
-  "sync_timestamp": "2024-01-15T10:00:00Z"
+  "timestamp": "2024-01-15T12:00:00Z",
+  "has_more": false
 }
 ```
 
-### GET /sync/status
-Check sync status and server availability.
-
-**Query Parameters:**
-- `device_id` (required): Device identifier
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "server_time": "2024-01-15T10:00:00Z",
-  "status": "online"
-}
+### Get Sync Status
+```http
+GET /sync/status
+Authorization: Bearer {token}
+Query Parameters:
+  - device_id: string (optional)
 ```
 
-## Suppliers
-
-### GET /suppliers
-List all suppliers.
-
-**Query Parameters:**
-- `search` (optional): Search term for name, code, or phone
-- `is_active` (optional): Filter by active status (1 or 0)
-- `per_page` (optional): Items per page (default: 50)
-- `page` (optional): Page number
-
-**Response (200):**
+**Response**: 200 OK
 ```json
 {
   "success": true,
-  "suppliers": {
-    "data": [
-      {
-        "id": 1,
-        "code": "SUP001",
-        "name": "ABC Suppliers",
-        "address": "123 Main St",
-        "phone": "+1234567890",
-        "email": "abc@example.com",
-        "credit_limit": 10000.00,
-        "current_balance": 2500.50,
-        "is_active": true,
-        "version": 1,
-        "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-15T10:00:00Z"
-      }
-    ],
-    "current_page": 1,
-    "total": 100
+  "data": {
+    "pending": 5,
+    "failed": 1,
+    "conflicts": 0,
+    "last_sync": "2024-01-15T11:00:00Z",
+    "recent_logs": [ ... ]
   }
 }
 ```
 
-### POST /suppliers
-Create a new supplier.
+## Error Codes
 
-**Request:**
-```json
-{
-  "code": "SUP002",
-  "name": "XYZ Suppliers",
-  "address": "456 Market St",
-  "phone": "+0987654321",
-  "email": "xyz@example.com",
-  "credit_limit": 15000.00,
-  "is_active": true
-}
-```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "message": "Supplier created successfully",
-  "supplier": {...}
-}
-```
-
-### GET /suppliers/{id}
-Get supplier details.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "supplier": {
-    "id": 1,
-    "code": "SUP001",
-    "name": "ABC Suppliers",
-    ...,
-    "collections": [...],
-    "payments": [...],
-    "rates": [...]
-  }
-}
-```
-
-### PUT /suppliers/{id}
-Update supplier.
-
-**Request:**
-```json
-{
-  "name": "ABC Suppliers Ltd",
-  "phone": "+1234567891"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Supplier updated successfully",
-  "supplier": {...}
-}
-```
-
-### DELETE /suppliers/{id}
-Delete supplier (soft delete).
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Supplier deleted successfully"
-}
-```
-
-### GET /suppliers/{id}/balance
-Get supplier balance calculation.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "supplier_id": 1,
-  "current_balance": 2500.50,
-  "calculated_balance": 2500.50
-}
-```
-
-## Products
-
-### GET /products
-List all products.
-
-**Query Parameters:**
-- `search` (optional): Search term
-- `category` (optional): Filter by category
-- `is_active` (optional): Filter by status
-- `per_page` (optional): Items per page
-- `page` (optional): Page number
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "products": {
-    "data": [
-      {
-        "id": 1,
-        "code": "MILK",
-        "name": "Fresh Milk",
-        "description": "Farm fresh milk",
-        "unit": "liters",
-        "category": "Dairy",
-        "is_active": true,
-        "version": 1
-      }
-    ]
-  }
-}
-```
-
-### POST /products
-Create a new product.
-
-**Request:**
-```json
-{
-  "code": "MILK",
-  "name": "Fresh Milk",
-  "description": "Farm fresh milk",
-  "unit": "liters",
-  "category": "Dairy",
-  "is_active": true
-}
-```
-
-### GET /products/{id}/current-rate
-Get current rate for product.
-
-**Query Parameters:**
-- `supplier_id` (optional): Supplier-specific rate
-- `date` (optional): Date for rate lookup (YYYY-MM-DD)
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "product_id": 1,
-  "rate": {
-    "id": 10,
-    "product_id": 1,
-    "supplier_id": null,
-    "rate": 5.50,
-    "effective_from": "2024-01-01",
-    "effective_to": null,
-    "is_active": true
-  }
-}
-```
-
-## Collections
-
-### GET /collections
-List collections.
-
-**Query Parameters:**
-- `supplier_id` (optional): Filter by supplier
-- `product_id` (optional): Filter by product
-- `from_date` (optional): Start date
-- `to_date` (optional): End date
-- `collector_id` (optional): Filter by collector
-- `sync_status` (optional): Filter by sync status
-- `per_page` (optional): Items per page
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "collections": {
-    "data": [
-      {
-        "id": 1,
-        "uuid": "123e4567-e89b-12d3-a456-426614174000",
-        "supplier_id": 1,
-        "product_id": 1,
-        "rate_id": 10,
-        "collection_date": "2024-01-15",
-        "quantity": 10.5,
-        "unit": "liters",
-        "rate_applied": 5.50,
-        "amount": 57.75,
-        "notes": null,
-        "sync_status": "synced",
-        "version": 1,
-        "supplier": {...},
-        "product": {...}
-      }
-    ]
-  }
-}
-```
-
-### POST /collections
-Create a new collection.
-
-**Request:**
-```json
-{
-  "uuid": "123e4567-e89b-12d3-a456-426614174000",
-  "supplier_id": 1,
-  "product_id": 1,
-  "collection_date": "2024-01-15",
-  "quantity": 10.5,
-  "notes": "Morning collection"
-}
-```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "message": "Collection created successfully",
-  "collection": {
-    "id": 1,
-    "uuid": "123e4567-e89b-12d3-a456-426614174000",
-    "rate_applied": 5.50,
-    "amount": 57.75,
-    ...
-  }
-}
-```
-
-## Error Responses
-
-### 400 Bad Request
-```json
-{
-  "success": false,
-  "message": "Bad request"
-}
-```
-
-### 401 Unauthorized
-```json
-{
-  "success": false,
-  "message": "Invalid credentials"
-}
-```
-
-### 403 Forbidden
-```json
-{
-  "success": false,
-  "message": "Account is inactive"
-}
-```
-
-### 404 Not Found
-```json
-{
-  "success": false,
-  "message": "Resource not found"
-}
-```
-
-### 422 Unprocessable Entity
-```json
-{
-  "success": false,
-  "errors": {
-    "email": ["The email field is required."],
-    "password": ["The password must be at least 8 characters."]
-  }
-}
-```
-
-### 500 Internal Server Error
-```json
-{
-  "success": false,
-  "message": "Internal server error"
-}
-```
+| Code | Description |
+|------|-------------|
+| 200 | OK |
+| 201 | Created |
+| 207 | Multi-Status (partial sync success) |
+| 400 | Bad Request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Not Found |
+| 409 | Conflict (version mismatch) |
+| 422 | Validation Error |
+| 429 | Too Many Requests (rate limit) |
+| 500 | Internal Server Error |
 
 ## Rate Limiting
 
-- **Authentication endpoints**: 5 requests per minute
-- **Sync endpoints**: 30 requests per minute
-- **Resource endpoints**: 60 requests per minute
+- 60 requests per minute per user
+- Rate limit headers included in response:
+  - `X-RateLimit-Limit`
+  - `X-RateLimit-Remaining`
+  - `X-RateLimit-Reset`
 
-## Conflict Resolution
+## Pagination
 
-When a conflict is detected during sync:
+All list endpoints support pagination:
+- `page`: Page number (default: 1)
+- `per_page`: Items per page (default: 50, max: 100)
 
-```json
-{
-  "status": "conflict",
-  "message": "Version conflict detected",
-  "client_version": 5,
-  "server_version": 6,
-  "server_data": {...},
-  "client_data": {...}
-}
-```
+## Filtering
 
-Default strategy: **Server wins**
-- Server data takes precedence
-- Client data is discarded
-- User notified of conflict
+Most endpoints support filtering via query parameters. Common filters:
+- `is_active`: Filter by active status
+- `search`: Text search across relevant fields
+- `start_date` / `end_date`: Date range filtering
 
-## Webhooks (Future Enhancement)
+## Versioning
 
-Not yet implemented. Planned for real-time updates.
+API uses version-based conflict detection:
+- Include `version` field in create/update requests
+- Server will return 409 Conflict if version mismatch
+- Client should update with server data and retry
 
----
+## WebSocket Support
 
-For more information, visit: https://github.com/yourusername/CollectPay
+Coming soon: Real-time updates via WebSocket connections.
+
+## SDKs
+
+Official SDKs:
+- JavaScript/TypeScript (React Native)
+- Coming soon: iOS (Swift), Android (Kotlin)
+
+## Support
+
+- Documentation: https://docs.paytrack.com
+- API Status: https://status.paytrack.com
+- Support: support@paytrack.com

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class Payment extends Model
@@ -14,30 +13,28 @@ class Payment extends Model
 
     protected $fillable = [
         'uuid',
-        'reference_number',
         'supplier_id',
         'payment_date',
         'amount',
         'payment_type',
         'payment_method',
-        'transaction_reference',
+        'reference_number',
         'notes',
-        'balance_before',
-        'balance_after',
+        'allocation',
+        'is_synced',
+        'synced_at',
         'processed_by',
         'created_by',
         'updated_by',
-        'last_sync_at',
         'version',
-        'sync_status',
     ];
 
     protected $casts = [
         'payment_date' => 'date',
         'amount' => 'decimal:2',
-        'balance_before' => 'decimal:2',
-        'balance_after' => 'decimal:2',
-        'last_sync_at' => 'datetime',
+        'allocation' => 'array',
+        'is_synced' => 'boolean',
+        'synced_at' => 'datetime',
         'version' => 'integer',
     ];
 
@@ -53,36 +50,30 @@ class Payment extends Model
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
             }
-            
-            if (empty($model->reference_number)) {
-                $model->reference_number = 'PAY-' . date('Ymd') . '-' . strtoupper(Str::random(6));
-            }
         });
 
-        static::saving(function ($model) {
-            if ($model->isDirty() && !$model->wasRecentlyCreated) {
-                $model->version++;
-            }
+        static::updating(function ($model) {
+            $model->version++;
         });
     }
 
     // Relationships
-    public function supplier(): BelongsTo
+    public function supplier()
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function processor(): BelongsTo
+    public function processor()
     {
         return $this->belongsTo(User::class, 'processed_by');
     }
 
-    public function creator(): BelongsTo
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater(): BelongsTo
+    public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
@@ -90,21 +81,37 @@ class Payment extends Model
     // Scopes
     public function scopeSynced($query)
     {
-        return $query->where('sync_status', 'synced');
+        return $query->where('is_synced', true);
     }
 
     public function scopePending($query)
     {
-        return $query->where('sync_status', 'pending');
+        return $query->where('is_synced', false);
     }
 
-    public function scopeForSupplier($query, int $supplierId)
+    public function scopeByDateRange($query, $startDate, $endDate)
     {
-        return $query->where('supplier_id', $supplierId);
+        return $query->whereBetween('payment_date', [$startDate, $endDate]);
     }
 
-    public function scopeForDateRange($query, string $from, string $to)
+    public function scopeByType($query, $type)
     {
-        return $query->whereBetween('payment_date', [$from, $to]);
+        return $query->where('payment_type', $type);
+    }
+
+    // Helpers
+    public function markAsSynced()
+    {
+        $this->update([
+            'is_synced' => true,
+            'synced_at' => now(),
+        ]);
+    }
+
+    public function allocateToCollections(array $collections)
+    {
+        // Store collection IDs and amounts this payment covers
+        $this->allocation = $collections;
+        $this->save();
     }
 }

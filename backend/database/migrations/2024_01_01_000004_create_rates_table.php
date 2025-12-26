@@ -13,24 +13,23 @@ return new class extends Migration
     {
         Schema::create('rates', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->unique();
+            $table->foreignId('supplier_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->foreignId('supplier_id')->nullable()->constrained()->onDelete('cascade');
-            $table->decimal('rate', 15, 2);
-            $table->date('effective_from');
-            $table->date('effective_to')->nullable();
+            $table->decimal('rate', 10, 2); // Price per unit
+            $table->date('effective_from'); // Start date for this rate
+            $table->date('effective_to')->nullable(); // End date (null = current/active)
             $table->boolean('is_active')->default(true);
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamp('last_sync_at')->nullable();
-            $table->unsignedBigInteger('version')->default(1);
             $table->timestamps();
             $table->softDeletes();
+            $table->integer('version')->default(1);
             
-            $table->index(['product_id', 'effective_from']);
-            $table->index(['supplier_id', 'product_id', 'effective_from']);
-            $table->index('is_active');
-            $table->index(['updated_at', 'version']);
+            $table->index(['uuid', 'is_active']);
+            $table->index(['supplier_id', 'product_id', 'effective_from', 'effective_to']);
+            $table->index('effective_from');
         });
     }
 

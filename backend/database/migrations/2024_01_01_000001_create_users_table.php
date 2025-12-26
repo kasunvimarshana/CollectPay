@@ -15,18 +15,17 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('password');
-            $table->enum('role', ['admin', 'collector', 'manager'])->default('collector');
-            $table->json('permissions')->nullable(); // For ABAC
-            $table->boolean('is_active')->default(true);
             $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->string('role')->default('collector'); // admin, manager, collector
+            $table->json('permissions')->nullable(); // ABAC permissions
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
             
-            $table->index('email');
+            $table->index(['email', 'is_active']);
             $table->index('role');
-            $table->index('is_active');
         });
     }
 

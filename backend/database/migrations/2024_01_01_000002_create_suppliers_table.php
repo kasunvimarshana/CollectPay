@@ -13,27 +13,23 @@ return new class extends Migration
     {
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->uuid('uuid')->unique(); // For offline-first sync
             $table->string('name');
-            $table->text('address')->nullable();
+            $table->string('contact_person')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
-            $table->decimal('credit_limit', 15, 2)->default(0);
-            $table->decimal('current_balance', 15, 2)->default(0);
-            $table->json('metadata')->nullable();
+            $table->text('address')->nullable();
+            $table->string('registration_number')->nullable();
+            $table->json('metadata')->nullable(); // Additional flexible data
             $table->boolean('is_active')->default(true);
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamp('last_sync_at')->nullable();
-            $table->unsignedBigInteger('version')->default(1);
             $table->timestamps();
             $table->softDeletes();
+            $table->integer('version')->default(1); // Optimistic locking
             
-            $table->index('code');
+            $table->index(['uuid', 'is_active']);
             $table->index('name');
-            $table->index('is_active');
-            $table->index('created_by');
-            $table->index(['updated_at', 'version']);
         });
     }
 

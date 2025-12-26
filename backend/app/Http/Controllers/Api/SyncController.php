@@ -2,172 +2,146 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Services\SyncService;
+use App\Models\SyncLog;
+use App\Models\Supplier;
+use App\Models\Product;
+use App\Models\Rate;
+use App\Models\Collection;
+use App\Models\Payment;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
-class SyncController extends Controller
+class SyncController extends ApiController
 {
-    private SyncService $syncService;
+    private const BATCH_SIZE = 100;
 
-    public function __construct(SyncService $syncService)
-    {
-        $this->syncService = $syncService;
-    }
+    private const ENTITY_MODELS = [
+        'suppliers' => Supplier::class,
+        'products' => Product::class,
+        'rates' => Rate::class,
+        'collections' => Collection::class,
+        'payments' => Payment::class,
+    ];
 
     /**
-     * Push local changes to server (bidirectional sync - push phase)
+     * Sync data from client to server (push)
      */
     public function push(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'device_id' => 'required|string',
-            'batch' => 'required|array',
-            'batch.*.entity_type' => 'required|string|in:suppliers,products,rates,collections,payments',
-            'batch.*.operation' => 'required|string|in:create,update,delete',
-            'batch.*.data' => 'required|array',
+            'changes' => 'required|array',
+            'changes.*.entity_type' => 'required|in:suppliers,products,rates,collections,payments',
+            'changes.*.operation' => 'required|in:create,update,delete',
+            'changes.*.data' => 'required|array',
+            'changes.*.data.uuid' => 'required|uuid',
+            'changes.*.data.version' => 'sometimes|integer',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+        $results = [
+            'success' => [],
+            'conflicts' => [],
+            'errors' => [],
+        ];
 
-        $userId = auth()->id();
-        $deviceId = $request->device_id;
-        $batch = $request->batch;
-
+        DB::beginTransaction();
         try {
-            $results = $this->syncService->processSyncBatch($batch, $userId, $deviceId);
+            foreach ($validated['changes'] as $change) {
+                $result = $this->processChange(
+                    $change['entity_type'],
+                    $change['operation'],
+                    $change['data'],
+                    $request->user(),
+                    $validated['device_id']
+                );
+
+                if ($result['status'] === 'success') {
+                    $results['success'][] = $result;
+                } elseif ($result['status'] === 'conflict') {
+                    $results['conflicts'][] = $result;
+                } else {
+                    $results['errors'][] = $result;
+                }
+            }
+
+            DB::commit();
+
+            $statusCode = empty($results['conflicts']) && empty($results['errors']) ? 200 : 207;
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sync push completed',
+                'message' => 'Sync completed',
                 'results' => $results,
-                'summary' => [
-                    'total' => count($batch),
-                    'success' => count($results['success']),
-                    'conflicts' => count($results['conflicts']),
-                    'errors' => count($results['errors']),
-                ],
-            ]);
+                'timestamp' => now()->toIso8601String(),
+            ], $statusCode);
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Sync push failed',
+            DB::rollBack();
+            Log::error('Sync push failed', [
                 'error' => $e->getMessage(),
-            ], 500);
+                'user_id' => $request->user()->id,
+            ]);
+
+            return $this->error('Sync failed: ' . $e->getMessage(), 500);
         }
     }
 
     /**
-     * Pull server changes to local (bidirectional sync - pull phase)
+     * Get data from server to client (pull)
      */
     public function pull(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'device_id' => 'required|string',
-            'last_sync_at' => 'nullable|date',
-            'entity_types' => 'required|array',
-            'entity_types.*' => 'string|in:suppliers,products,rates,collections,payments',
+            'last_sync' => 'nullable|date',
+            'entities' => 'sometimes|array',
+            'entities.*' => 'in:suppliers,products,rates,collections,payments',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+        $lastSync = $validated['last_sync'] ?? null;
+        $entities = $validated['entities'] ?? array_keys(self::ENTITY_MODELS);
 
-        $userId = auth()->id();
-        $lastSyncAt = $request->last_sync_at;
-        $entityTypes = $request->entity_types;
+        $data = [];
 
         try {
-            $changes = [];
-            
-            foreach ($entityTypes as $entityType) {
-                $changes[$entityType] = $this->syncService->getChangesSince(
-                    $entityType,
-                    $lastSyncAt,
-                    $userId
-                );
+            foreach ($entities as $entityType) {
+                $modelClass = self::ENTITY_MODELS[$entityType];
+                
+                $query = $modelClass::query();
+
+                if ($lastSync) {
+                    $query->where(function ($q) use ($lastSync) {
+                        $q->where('updated_at', '>', $lastSync)
+                          ->orWhere('created_at', '>', $lastSync);
+                    });
+                }
+
+                // Add relationships for better offline support
+                if ($entityType === 'collections') {
+                    $query->with(['supplier:id,uuid,name', 'product:id,uuid,name,unit']);
+                } elseif ($entityType === 'payments') {
+                    $query->with(['supplier:id,uuid,name']);
+                } elseif ($entityType === 'rates') {
+                    $query->with(['supplier:id,uuid,name', 'product:id,uuid,name']);
+                }
+
+                $data[$entityType] = $query->get();
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Sync pull completed',
-                'changes' => $changes,
-                'sync_timestamp' => now()->toIso8601String(),
+            return $this->success([
+                'data' => $data,
+                'timestamp' => now()->toIso8601String(),
+                'has_more' => false, // Can be extended for pagination
             ]);
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Sync pull failed',
+            Log::error('Sync pull failed', [
                 'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Full bidirectional sync (push then pull)
-     */
-    public function sync(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'device_id' => 'required|string',
-            'last_sync_at' => 'nullable|date',
-            'batch' => 'nullable|array',
-            'entity_types' => 'required|array',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $userId = auth()->id();
-        $deviceId = $request->device_id;
-        
-        try {
-            // Phase 1: Push local changes
-            $pushResults = null;
-            if ($request->has('batch') && count($request->batch) > 0) {
-                $pushResults = $this->syncService->processSyncBatch(
-                    $request->batch,
-                    $userId,
-                    $deviceId
-                );
-            }
-
-            // Phase 2: Pull server changes
-            $changes = [];
-            foreach ($request->entity_types as $entityType) {
-                $changes[$entityType] = $this->syncService->getChangesSince(
-                    $entityType,
-                    $request->last_sync_at,
-                    $userId
-                );
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Full sync completed',
-                'push_results' => $pushResults,
-                'pull_changes' => $changes,
-                'sync_timestamp' => now()->toIso8601String(),
+                'user_id' => $request->user()->id,
             ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Sync failed',
-                'error' => $e->getMessage(),
-            ], 500);
+
+            return $this->error('Failed to pull data: ' . $e->getMessage(), 500);
         }
     }
 
@@ -176,21 +150,212 @@ class SyncController extends Controller
      */
     public function status(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'device_id' => 'required|string',
+        $validated = $request->validate([
+            'device_id' => 'sometimes|string',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+        $query = SyncLog::where('user_id', $request->user()->id);
+
+        if (isset($validated['device_id'])) {
+            $query->where('device_id', $validated['device_id']);
         }
 
-        return response()->json([
-            'success' => true,
-            'server_time' => now()->toIso8601String(),
-            'status' => 'online',
+        $status = [
+            'pending' => (clone $query)->pending()->count(),
+            'failed' => (clone $query)->failed()->count(),
+            'conflicts' => (clone $query)->conflicted()->count(),
+            'last_sync' => (clone $query)->where('status', 'success')
+                ->latest('synced_at')
+                ->value('synced_at'),
+            'recent_logs' => (clone $query)->latest()
+                ->limit(10)
+                ->get(),
+        ];
+
+        return $this->success($status);
+    }
+
+    /**
+     * Process a single change
+     */
+    private function processChange(string $entityType, string $operation, array $data, $user, string $deviceId): array
+    {
+        $modelClass = self::ENTITY_MODELS[$entityType];
+        $uuid = $data['uuid'];
+
+        // Create sync log
+        $syncLog = SyncLog::create([
+            'user_id' => $user->id,
+            'device_id' => $deviceId,
+            'entity_type' => $entityType,
+            'entity_uuid' => $uuid,
+            'operation' => $operation,
+            'payload' => $data,
+            'status' => 'pending',
+        ]);
+
+        try {
+            $existing = $modelClass::where('uuid', $uuid)->first();
+
+            if ($operation === 'create') {
+                if ($existing) {
+                    // Already exists, check for conflicts
+                    if (isset($data['version']) && $existing->version != $data['version']) {
+                        $syncLog->markAsConflict([
+                            'client_version' => $data['version'],
+                            'server_version' => $existing->version,
+                        ], 'server_wins');
+
+                        return [
+                            'status' => 'conflict',
+                            'entity_type' => $entityType,
+                            'uuid' => $uuid,
+                            'server_data' => $existing,
+                            'resolution' => 'server_wins',
+                        ];
+                    }
+                    
+                    // Same version or no version check, update instead
+                    $existing->update($this->prepareData($data, $user));
+                    $syncLog->markAsSuccess();
+
+                    return [
+                        'status' => 'success',
+                        'operation' => 'updated',
+                        'entity_type' => $entityType,
+                        'uuid' => $uuid,
+                        'data' => $existing->fresh(),
+                    ];
+                }
+
+                // Create new
+                $entity = $modelClass::create($this->prepareData($data, $user));
+                $syncLog->markAsSuccess();
+
+                return [
+                    'status' => 'success',
+                    'operation' => 'created',
+                    'entity_type' => $entityType,
+                    'uuid' => $uuid,
+                    'data' => $entity,
+                ];
+            } elseif ($operation === 'update') {
+                if (!$existing) {
+                    // Doesn't exist, create instead
+                    $entity = $modelClass::create($this->prepareData($data, $user));
+                    $syncLog->markAsSuccess();
+
+                    return [
+                        'status' => 'success',
+                        'operation' => 'created',
+                        'entity_type' => $entityType,
+                        'uuid' => $uuid,
+                        'data' => $entity,
+                    ];
+                }
+
+                // Check for version conflict
+                if (isset($data['version']) && $existing->version != $data['version']) {
+                    $syncLog->markAsConflict([
+                        'client_version' => $data['version'],
+                        'server_version' => $existing->version,
+                    ], 'server_wins');
+
+                    return [
+                        'status' => 'conflict',
+                        'entity_type' => $entityType,
+                        'uuid' => $uuid,
+                        'server_data' => $existing,
+                        'resolution' => 'server_wins',
+                    ];
+                }
+
+                $existing->update($this->prepareData($data, $user, false));
+                $syncLog->markAsSuccess();
+
+                return [
+                    'status' => 'success',
+                    'operation' => 'updated',
+                    'entity_type' => $entityType,
+                    'uuid' => $uuid,
+                    'data' => $existing->fresh(),
+                ];
+            } elseif ($operation === 'delete') {
+                if ($existing) {
+                    $existing->delete();
+                }
+
+                $syncLog->markAsSuccess();
+
+                return [
+                    'status' => 'success',
+                    'operation' => 'deleted',
+                    'entity_type' => $entityType,
+                    'uuid' => $uuid,
+                ];
+            }
+
+        } catch (\Exception $e) {
+            $syncLog->markAsFailed($e->getMessage());
+
+            return [
+                'status' => 'error',
+                'entity_type' => $entityType,
+                'uuid' => $uuid,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Prepare data for database insertion
+     */
+    private function prepareData(array $data, $user, bool $isCreate = true): array
+    {
+        // Remove non-fillable fields
+        $prepared = array_filter($data, function ($key) {
+            return !in_array($key, ['id', 'created_at', 'updated_at', 'deleted_at']);
+        }, ARRAY_FILTER_USE_KEY);
+
+        // Add user tracking
+        if ($isCreate) {
+            $prepared['created_by'] = $user->id;
+        }
+        $prepared['updated_by'] = $user->id;
+
+        return $prepared;
+    }
+
+    /**
+     * Get changes since timestamp
+     */
+    public function changes(Request $request)
+    {
+        $validated = $request->validate([
+            'since' => 'required|date',
+            'entities' => 'sometimes|array',
+            'entities.*' => 'in:suppliers,products,rates,collections,payments',
+        ]);
+
+        $since = $validated['since'];
+        $entities = $validated['entities'] ?? array_keys(self::ENTITY_MODELS);
+
+        $changes = [];
+
+        foreach ($entities as $entityType) {
+            $modelClass = self::ENTITY_MODELS[$entityType];
+            
+            $changes[$entityType] = [
+                'updated' => $modelClass::where('updated_at', '>', $since)->get(),
+                'deleted' => $modelClass::onlyTrashed()
+                    ->where('deleted_at', '>', $since)
+                    ->get(['id', 'uuid', 'deleted_at']),
+            ];
+        }
+
+        return $this->success([
+            'changes' => $changes,
+            'timestamp' => now()->toIso8601String(),
         ]);
     }
 }

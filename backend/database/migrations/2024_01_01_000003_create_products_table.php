@@ -13,25 +13,22 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->uuid('uuid')->unique();
             $table->string('name');
+            $table->string('code')->unique()->nullable();
             $table->text('description')->nullable();
             $table->string('unit')->default('kg'); // kg, liters, pieces, etc.
             $table->string('category')->nullable();
-            $table->json('metadata')->nullable();
             $table->boolean('is_active')->default(true);
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamp('last_sync_at')->nullable();
-            $table->unsignedBigInteger('version')->default(1);
             $table->timestamps();
             $table->softDeletes();
+            $table->integer('version')->default(1);
             
-            $table->index('code');
+            $table->index(['uuid', 'is_active']);
             $table->index('name');
-            $table->index('category');
-            $table->index('is_active');
-            $table->index(['updated_at', 'version']);
+            $table->index('code');
         });
     }
 

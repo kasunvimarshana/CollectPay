@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
-use Tymon\JWTAuth\Contracts\JWTSubject;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -24,7 +24,6 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
-        'deleted_at',
     ];
 
     protected $casts = [
@@ -34,63 +33,71 @@ class User extends Authenticatable implements JWTSubject
         'is_active' => 'boolean',
     ];
 
-    // JWT Methods
-    public function getJWTIdentifier()
+    // Relationships
+    public function createdSuppliers()
     {
-        return $this->getKey();
+        return $this->hasMany(Supplier::class, 'created_by');
     }
 
-    public function getJWTCustomClaims()
+    public function createdProducts()
     {
-        return [
-            'role' => $this->role,
-            'permissions' => $this->permissions,
-        ];
+        return $this->hasMany(Product::class, 'created_by');
     }
 
-    // RBAC - Role-Based Access Control
-    public function hasRole(string $role): bool
+    public function collections()
+    {
+        return $this->hasMany(Collection::class, 'collected_by');
+    }
+
+    public function processedPayments()
+    {
+        return $this->hasMany(Payment::class, 'processed_by');
+    }
+
+    public function syncLogs()
+    {
+        return $this->hasMany(SyncLog::class);
+    }
+
+    // Authorization helpers (RBAC + ABAC)
+    public function hasRole($role)
     {
         return $this->role === $role;
     }
 
-    public function isAdmin(): bool
+    public function hasAnyRole(array $roles)
     {
-        return $this->role === 'admin';
+        return in_array($this->role, $roles);
     }
 
-    public function isManager(): bool
-    {
-        return $this->role === 'manager';
-    }
-
-    public function isCollector(): bool
-    {
-        return $this->role === 'collector';
-    }
-
-    // ABAC - Attribute-Based Access Control
-    public function hasPermission(string $permission): bool
+    public function hasPermission($permission)
     {
         if (!$this->permissions) {
             return false;
         }
-        
+
         return in_array($permission, $this->permissions);
     }
 
-    public function can($abilities, $arguments = [])
+    public function can($ability, $arguments = [])
     {
         // Admin has all permissions
-        if ($this->isAdmin()) {
+        if ($this->role === 'admin') {
             return true;
         }
 
-        // Check ABAC permissions
-        if (is_string($abilities)) {
-            return $this->hasPermission($abilities);
-        }
+        // Check specific permissions
+        return $this->hasPermission($ability) || parent::can($ability, $arguments);
+    }
 
-        return parent::can($abilities, $arguments);
+    // Scopes
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeByRole($query, $role)
+    {
+        return $query->where('role', $role);
     }
 }

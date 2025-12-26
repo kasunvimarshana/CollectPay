@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "CollectPay",
-    "slug": "collectpay-mobile",
+    "name": "PayTrack",
+    "slug": "paytrack",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.collectpay.mobile"
+      "bundleIdentifier": "com.paytrack.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.collectpay.mobile",
+      "package": "com.paytrack.app",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE"
@@ -36,6 +36,12 @@
       "expo-router",
       "expo-secure-store",
       "expo-sqlite"
-    ]
+    ],
+    "scheme": "paytrack",
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
   }
 }

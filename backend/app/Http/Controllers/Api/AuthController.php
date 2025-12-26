@@ -2,145 +2,133 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Validation\ValidationException;
 
-class AuthController extends Controller
+class AuthController extends ApiController
 {
     /**
      * Register a new user
      */
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'in:admin,collector,manager',
+            'role' => 'sometimes|in:admin,manager,collector',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role ?? 'collector',
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'] ?? 'collector',
             'is_active' => true,
         ]);
 
-        $token = JWTAuth::fromUser($user);
+        $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User registered successfully',
+        return $this->success([
             'user' => $user,
             'token' => $token,
-        ], 201);
+            'token_type' => 'Bearer',
+        ], 'User registered successfully', 201);
     }
 
     /**
-     * Login user and return JWT token
+     * Login user
      */
     public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $request->validate([
             'email' => 'required|email',
-            'password' => 'required|string',
+            'password' => 'required',
+            'device_id' => 'sometimes|string',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
         }
-
-        $credentials = $request->only('email', 'password');
-
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid credentials',
-            ], 401);
-        }
-
-        $user = auth()->user();
 
         if (!$user->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Account is inactive',
-            ], 403);
+            return $this->error('Your account has been deactivated', 403);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful',
+        // Create token with device_id if provided
+        $tokenName = $request->device_id ?? 'auth_token';
+        $token = $user->createToken($tokenName)->plainTextToken;
+
+        return $this->success([
             'user' => $user,
             'token' => $token,
-            'expires_in' => config('jwt.ttl') * 60,
-        ]);
+            'token_type' => 'Bearer',
+        ], 'Login successful');
+    }
+
+    /**
+     * Logout user (revoke token)
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return $this->success(null, 'Logged out successfully');
     }
 
     /**
      * Get authenticated user
      */
-    public function me()
+    public function me(Request $request)
     {
-        return response()->json([
-            'success' => true,
-            'user' => auth()->user(),
+        return $this->success($request->user());
+    }
+
+    /**
+     * Refresh token
+     */
+    public function refresh(Request $request)
+    {
+        $user = $request->user();
+        
+        // Delete current token
+        $request->user()->currentAccessToken()->delete();
+        
+        // Create new token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return $this->success([
+            'user' => $user,
+            'token' => $token,
+            'token_type' => 'Bearer',
+        ], 'Token refreshed successfully');
+    }
+
+    /**
+     * Update user profile
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'password' => 'sometimes|string|min:8|confirmed',
         ]);
-    }
 
-    /**
-     * Refresh JWT token
-     */
-    public function refresh()
-    {
-        try {
-            $token = JWTAuth::refresh(JWTAuth::getToken());
-            
-            return response()->json([
-                'success' => true,
-                'token' => $token,
-                'expires_in' => config('jwt.ttl') * 60,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token refresh failed',
-            ], 401);
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
         }
-    }
 
-    /**
-     * Logout user
-     */
-    public function logout()
-    {
-        try {
-            JWTAuth::invalidate(JWTAuth::getToken());
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Logout successful',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Logout failed',
-            ], 500);
-        }
+        $user->update($validated);
+
+        return $this->success($user, 'Profile updated successfully');
     }
 }

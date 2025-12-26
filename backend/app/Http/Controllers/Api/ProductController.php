@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
-class ProductController extends Controller
+class ProductController extends ApiController
 {
+    /**
+     * Get all products
+     */
     public function index(Request $request)
     {
-        $query = Product::query();
+        $query = Product::query()->with(['creator', 'updater']);
+
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -26,116 +32,155 @@ class ProductController extends Controller
             $query->where('category', $request->category);
         }
 
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
+        $perPage = $request->get('per_page', 50);
+        $products = $query->orderBy('name')->paginate($perPage);
 
-        $products = $query->with(['creator', 'updater'])
-            ->orderBy('name')
-            ->paginate($request->per_page ?? 50);
-
-        return response()->json([
-            'success' => true,
-            'products' => $products,
-        ]);
+        return $this->success($products);
     }
 
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'code' => 'required|string|unique:products,code',
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'unit' => 'required|string|max:50',
-            'category' => 'nullable|string|max:100',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $product = Product::create(array_merge($request->all(), [
-            'created_by' => auth()->id(),
-            'updated_by' => auth()->id(),
-        ]));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Product created successfully',
-            'product' => $product,
-        ], 201);
-    }
-
+    /**
+     * Get single product
+     */
     public function show($id)
     {
-        $product = Product::with(['rates', 'collections'])->findOrFail($id);
+        $product = Product::with(['rates' => function ($query) {
+            $query->where('is_active', true)->with('supplier');
+        }])->find($id);
 
-        return response()->json([
-            'success' => true,
-            'product' => $product,
-        ]);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $product = Product::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'code' => 'sometimes|string|unique:products,code,' . $id,
-            'name' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'unit' => 'sometimes|string|max:50',
-            'category' => 'nullable|string|max:100',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+        if (!$product) {
+            return $this->notFound('Product not found');
         }
 
-        $product->update(array_merge($request->all(), [
-            'updated_by' => auth()->id(),
-        ]));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Product updated successfully',
-            'product' => $product->fresh(),
-        ]);
+        return $this->success($product);
     }
 
+    /**
+     * Create new product
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'uuid' => 'sometimes|uuid|unique:products,uuid',
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:50|unique:products,code',
+            'description' => 'nullable|string',
+            'unit' => 'required|string|max:20',
+            'category' => 'nullable|string|max:100',
+            'is_active' => 'sometimes|boolean',
+            'version' => 'sometimes|integer',
+        ]);
+
+        if (isset($validated['uuid'])) {
+            $existing = Product::where('uuid', $validated['uuid'])->first();
+            if ($existing) {
+                if (isset($validated['version']) && $existing->version != $validated['version']) {
+                    return $this->conflict([
+                        'server_version' => $existing->version,
+                        'server_data' => $existing,
+                    ], 'Version conflict detected');
+                }
+                return $this->update($request, $existing->id);
+            }
+        }
+
+        DB::beginTransaction();
+        try {
+            $validated['created_by'] = $request->user()->id;
+            $product = Product::create($validated);
+
+            DB::commit();
+            return $this->success($product, 'Product created successfully', 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->error('Failed to create product: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Update product
+     */
+    public function update(Request $request, $id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return $this->notFound('Product not found');
+        }
+
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'code' => 'nullable|string|max:50|unique:products,code,' . $id,
+            'description' => 'nullable|string',
+            'unit' => 'sometimes|string|max:20',
+            'category' => 'nullable|string|max:100',
+            'is_active' => 'sometimes|boolean',
+            'version' => 'sometimes|integer',
+        ]);
+
+        if (isset($validated['version']) && $product->version != $validated['version']) {
+            return $this->conflict([
+                'server_version' => $product->version,
+                'server_data' => $product,
+            ], 'Version conflict detected');
+        }
+
+        DB::beginTransaction();
+        try {
+            $validated['updated_by'] = $request->user()->id;
+            $product->update($validated);
+
+            DB::commit();
+            return $this->success($product, 'Product updated successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->error('Failed to update product: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Delete product
+     */
     public function destroy($id)
     {
-        $product = Product::findOrFail($id);
-        $product->updated_by = auth()->id();
-        $product->save();
-        $product->delete();
+        $product = Product::find($id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product deleted successfully',
-        ]);
+        if (!$product) {
+            return $this->notFound('Product not found');
+        }
+
+        try {
+            $product->delete();
+            return $this->success(null, 'Product deleted successfully');
+        } catch (\Exception $e) {
+            return $this->error('Failed to delete product: ' . $e->getMessage(), 500);
+        }
     }
 
-    public function currentRate($id, Request $request)
+    /**
+     * Get current rate for a product and supplier
+     */
+    public function getCurrentRate(Request $request, $id)
     {
-        $product = Product::findOrFail($id);
-        $supplierId = $request->query('supplier_id');
-        $date = $request->query('date');
+        $product = Product::find($id);
 
-        $rate = $product->getCurrentRate($supplierId, $date);
+        if (!$product) {
+            return $this->notFound('Product not found');
+        }
 
-        return response()->json([
-            'success' => true,
-            'product_id' => $product->id,
-            'rate' => $rate,
+        $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'date' => 'nullable|date',
         ]);
+
+        $rate = $product->getCurrentRate(
+            $request->supplier_id,
+            $request->get('date')
+        );
+
+        if (!$rate) {
+            return $this->notFound('No active rate found for this product and supplier');
+        }
+
+        return $this->success($rate);
     }
 }

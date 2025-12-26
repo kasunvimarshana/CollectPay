@@ -13,31 +13,29 @@ return new class extends Migration
     {
         Schema::create('collections', function (Blueprint $table) {
             $table->id();
-            $table->string('uuid')->unique(); // For offline-first identification
+            $table->uuid('uuid')->unique();
             $table->foreignId('supplier_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->foreignId('rate_id')->constrained()->onDelete('restrict');
+            $table->foreignId('rate_id')->nullable()->constrained()->onDelete('set null'); // Rate at time of collection
             $table->date('collection_date');
-            $table->decimal('quantity', 15, 3);
-            $table->string('unit');
-            $table->decimal('rate_applied', 15, 2);
-            $table->decimal('amount', 15, 2);
+            $table->decimal('quantity', 10, 3); // Multi-unit quantity support
+            $table->string('unit'); // Unit at time of collection
+            $table->decimal('rate_applied', 10, 2); // Rate applied (frozen at collection time)
+            $table->decimal('total_amount', 12, 2); // quantity * rate_applied
             $table->text('notes')->nullable();
-            $table->foreignId('collector_id')->constrained('users')->onDelete('restrict');
+            $table->boolean('is_synced')->default(false); // Sync status
+            $table->timestamp('synced_at')->nullable();
+            $table->foreignId('collected_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamp('last_sync_at')->nullable();
-            $table->unsignedBigInteger('version')->default(1);
-            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('pending');
             $table->timestamps();
             $table->softDeletes();
+            $table->integer('version')->default(1);
             
-            $table->index('uuid');
+            $table->index(['uuid', 'is_synced']);
             $table->index(['supplier_id', 'collection_date']);
             $table->index(['product_id', 'collection_date']);
-            $table->index('collector_id');
-            $table->index('sync_status');
-            $table->index(['updated_at', 'version']);
+            $table->index('collection_date');
         });
     }
 
