@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
@@ -11,50 +12,51 @@ class Product extends Model
 
     protected $fillable = [
         'name',
-        'description',
         'code',
-        'default_unit',
+        'description',
+        'unit',
         'is_active',
-        'created_by',
+        'version'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'version' => 'integer'
     ];
 
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function rates()
+    /**
+     * Get rates for this product
+     */
+    public function rates(): HasMany
     {
         return $this->hasMany(ProductRate::class);
     }
 
-    public function activeRates()
-    {
-        return $this->rates()->where('is_active', true);
-    }
-
-    public function collections()
+    /**
+     * Get collections for this product
+     */
+    public function collections(): HasMany
     {
         return $this->hasMany(Collection::class);
     }
 
-    public function getCurrentRate($unit = null, $date = null)
+    /**
+     * Get the current active rate for this product
+     */
+    public function getCurrentRate(string $unit = null)
     {
         $query = $this->rates()
             ->where('is_active', true)
-            ->where('effective_from', '<=', $date ?? now());
+            ->where('effective_from', '<=', now())
+            ->where(function($q) {
+                $q->whereNull('effective_to')
+                  ->orWhere('effective_to', '>=', now());
+            });
 
         if ($unit) {
             $query->where('unit', $unit);
         }
 
-        return $query->where(function ($q) use ($date) {
-            $q->whereNull('effective_to')
-                ->orWhere('effective_to', '>=', $date ?? now());
-        })->orderBy('effective_from', 'desc')->first();
+        return $query->orderBy('effective_from', 'desc')->first();
     }
 }

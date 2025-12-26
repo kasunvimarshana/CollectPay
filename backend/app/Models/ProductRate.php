@@ -3,51 +3,39 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductRate extends Model
 {
-    use SoftDeletes;
-
     protected $fillable = [
         'product_id',
-        'unit',
         'rate',
+        'unit',
         'effective_from',
         'effective_to',
-        'is_active',
-        'created_by',
+        'is_active'
     ];
 
     protected $casts = [
         'rate' => 'decimal:2',
         'effective_from' => 'date',
         'effective_to' => 'date',
-        'is_active' => 'boolean',
+        'is_active' => 'boolean'
     ];
 
-    public function product()
+    /**
+     * Get the product that owns this rate
+     */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
+    /**
+     * Get collections that use this rate
+     */
     public function collections()
     {
-        return $this->hasMany(Collection::class);
-    }
-
-    public function isEffectiveOn($date)
-    {
-        $checkDate = $date instanceof \DateTime ? $date : \Carbon\Carbon::parse($date);
-        $from = $this->effective_from;
-        $to = $this->effective_to;
-
-        return $checkDate->greaterThanOrEqualTo($from) &&
-            ($to === null || $checkDate->lessThanOrEqualTo($to));
+        return $this->hasMany(\App\Models\Collection::class);
     }
 }

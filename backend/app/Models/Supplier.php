@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supplier extends Model
 {
@@ -11,46 +12,49 @@ class Supplier extends Model
 
     protected $fillable = [
         'name',
-        'contact_person',
+        'code',
         'phone',
         'email',
         'address',
-        'registration_number',
+        'location',
         'is_active',
-        'created_by',
+        'version'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'version' => 'integer'
     ];
 
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function collections()
+    /**
+     * Get collections for this supplier
+     */
+    public function collections(): HasMany
     {
         return $this->hasMany(Collection::class);
     }
 
-    public function payments()
+    /**
+     * Get payments for this supplier
+     */
+    public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
-    public function getTotalCollectionsAmount()
+    /**
+     * Calculate total amount owed to supplier
+     */
+    public function calculateTotalOwed(): float
     {
-        return $this->collections()->sum('total_amount');
-    }
-
-    public function getTotalPaymentsAmount()
-    {
-        return $this->payments()->sum('amount');
-    }
-
-    public function getBalanceAmount()
-    {
-        return $this->getTotalCollectionsAmount() - $this->getTotalPaymentsAmount();
+        $totalCollections = $this->collections()
+            ->whereNull('deleted_at')
+            ->sum('total_amount');
+        
+        $totalPayments = $this->payments()
+            ->whereNull('deleted_at')
+            ->sum('amount');
+        
+        return $totalCollections - $totalPayments;
     }
 }

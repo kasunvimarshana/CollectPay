@@ -1,144 +1,206 @@
-# PayCore Frontend
+# Paywise Frontend - React Native (Expo)
 
-## Overview
-React Native (Expo) mobile application for the PayCore Data Collection and Payment Management System.
+Mobile application for the Paywise data collection and payment management system.
 
 ## Features
-- **Authentication**: Secure login and registration
-- **Supplier Management**: Create, view, and manage suppliers
-- **Product Management**: Manage products with multi-unit support
-- **Collection Tracking**: Record daily collections with automatic rate application
-- **Payment Management**: Track advance, partial, and full payments
-- **Real-time Data**: Multi-user and multi-device synchronization
-- **Secure Storage**: Encrypted token storage using Expo SecureStore
+
+- **Cross-platform** - Works on iOS, Android, and Web
+- **Authentication** - Secure login with token-based auth
+- **Real-time data** - Live updates from backend API
+- **Offline-ready** - Local storage with AsyncStorage
+- **Clean Architecture** - Modular and maintainable codebase
+- **User-friendly UI** - Intuitive interface for data entry and management
 
 ## Tech Stack
-- React Native with Expo
-- TypeScript
-- React Navigation
-- Axios for API calls
-- Expo SecureStore for secure token storage
-- Context API for state management
+
+- **React Native** with Expo
+- **React Navigation** for routing
+- **Axios** for HTTP requests
+- **AsyncStorage** for local data persistence
+- **Context API** for state management
 
 ## Prerequisites
-- Node.js >= 18
-- npm or yarn
-- Expo CLI
-- iOS Simulator (Mac only) or Android Emulator
+
+- Node.js 18+ and npm
+- Expo CLI (installed automatically with npx)
+- iOS Simulator (macOS) or Android Emulator
+- Or use Expo Go app on your physical device
 
 ## Installation
 
-1. **Install Dependencies**
-   ```bash
-   cd frontend
-   npm install
-   ```
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
 
-2. **Configure API URL**
-   Edit `src/constants/index.ts` to set your backend API URL:
-   ```typescript
-   export const API_BASE_URL = 'http://YOUR_BACKEND_IP:8000/api';
-   ```
+2. Install dependencies:
+```bash
+npm install
+```
 
-3. **Start Development Server**
-   ```bash
-   npm start
-   ```
+3. Update API base URL in `src/api/client.js`:
+```javascript
+const API_BASE_URL = 'http://YOUR_BACKEND_URL/api';
+```
 
-4. **Run on Device/Emulator**
-   - Press `a` for Android
-   - Press `i` for iOS (Mac only)
-   - Scan QR code with Expo Go app on physical device
+For local development:
+- **iOS Simulator**: `http://localhost:8000/api`
+- **Android Emulator**: `http://10.0.2.2:8000/api`
+- **Physical Device**: Use your computer's local IP address
+
+## Running the App
+
+### Start the development server:
+```bash
+npm start
+```
+
+### Run on specific platforms:
+
+**iOS (requires macOS):**
+```bash
+npm run ios
+```
+
+**Android:**
+```bash
+npm run android
+```
+
+**Web:**
+```bash
+npm run web
+```
+
+### Using Expo Go (Easiest Method)
+
+1. Install Expo Go app on your iOS or Android device
+2. Run `npm start`
+3. Scan the QR code with your device
+4. Make sure your device and computer are on the same network
 
 ## Project Structure
 
 ```
 frontend/
 ├── src/
+│   ├── api/              # API client and endpoints
+│   │   ├── client.js     # Axios configuration
+│   │   └── index.js      # API methods
 │   ├── components/       # Reusable UI components
-│   ├── context/         # React Context providers
-│   │   └── AuthContext.tsx
-│   ├── navigation/      # Navigation configuration
-│   │   └── AppNavigator.tsx
-│   ├── screens/         # Screen components
-│   │   ├── Auth/
-│   │   ├── Home/
-│   │   ├── Suppliers/
-│   │   ├── Products/
-│   │   ├── Collections/
-│   │   └── Payments/
-│   ├── services/        # API services
-│   │   └── api.ts
-│   ├── types/           # TypeScript type definitions
-│   │   └── index.ts
-│   ├── constants/       # App constants and config
-│   │   └── index.ts
-│   └── utils/           # Utility functions
-├── App.tsx              # Root component
-├── package.json
-└── tsconfig.json
+│   ├── context/          # React Context providers
+│   │   └── AuthContext.js
+│   ├── navigation/       # Navigation configuration
+│   │   └── AppNavigator.js
+│   ├── screens/          # Screen components
+│   │   ├── LoginScreen.js
+│   │   ├── HomeScreen.js
+│   │   ├── SuppliersScreen.js
+│   │   ├── ProductsScreen.js
+│   │   ├── CollectionsScreen.js
+│   │   └── PaymentsScreen.js
+│   ├── utils/            # Utility functions
+│   └── constants/        # App constants
+├── App.js                # Root component
+└── package.json          # Dependencies
 ```
 
-## Key Features Implementation
+## Default Login Credentials
+
+Use these credentials to test the application:
+
+| Role      | Email                    | Password |
+|-----------|--------------------------|----------|
+| Admin     | admin@paywise.com        | password |
+| Manager   | manager@paywise.com      | password |
+| Collector | collector@paywise.com    | password |
+
+## Key Features
 
 ### Authentication
-- Secure token-based authentication using Laravel Sanctum
-- Persistent login with encrypted token storage
-- Auto-logout on token expiration
+- Secure token-based authentication
+- Automatic token refresh
+- Persistent login state
 
-### Multi-Unit Support
-- Configurable unit types (kg, g, l, ml, etc.)
-- Unit conversion support
-- Consistent unit display across app
+### Suppliers Management
+- View all suppliers
+- Filter by status
+- Search by name or code
+- Real-time updates
 
-### Data Integrity
-- Optimistic UI updates with rollback on error
-- Conflict resolution for concurrent operations
-- Local data validation before API calls
+### Products Management
+- View products with current rates
+- Rate versioning support
+- Multi-unit tracking
 
-### Security
-- Encrypted token storage via Expo SecureStore
-- HTTPS-only API communication
-- No sensitive data in logs or async storage
+### Collections
+- Record daily collections
+- Automatic rate application
+- Multi-unit quantity support
+- Real-time total calculations
 
-## Available Scripts
+### Payments
+- Track advance, partial, and full payments
+- Payment history
+- Supplier payment status
 
-- `npm start` - Start Expo development server
-- `npm run android` - Run on Android emulator
-- `npm run ios` - Run on iOS simulator
-- `npm run web` - Run in web browser
+## Development Tips
+
+### Debugging
+- Use `console.log()` for quick debugging
+- Use React Native Debugger for advanced debugging
+- Check Metro bundler logs for errors
+
+### Hot Reload
+- The app automatically reloads when you save changes
+- Shake your device or press Cmd+D (iOS) / Cmd+M (Android) for dev menu
+
+### API Configuration
+- For testing with a remote server, update `API_BASE_URL` in `src/api/client.js`
+- Ensure CORS is properly configured on the backend
 
 ## Building for Production
 
-### Android
+### Android APK
 ```bash
 expo build:android
 ```
 
-### iOS
+### iOS IPA
 ```bash
 expo build:ios
 ```
 
-## API Integration
-
-All API calls go through the centralized `ApiService` class located in `src/services/api.ts`. This handles:
-- Authentication token injection
-- Response/error handling
-- Token expiration management
-
-Example usage:
-```typescript
-import ApiService from '../services/api';
-
-const suppliers = await ApiService.getSuppliers({ is_active: true });
+### Using EAS Build (Recommended)
+```bash
+npm install -g eas-cli
+eas build --platform android
+eas build --platform ios
 ```
 
-## Contributing
-- Follow TypeScript best practices
-- Use functional components with hooks
-- Keep components small and focused
-- Add proper error handling
+## Troubleshooting
+
+### Cannot connect to backend
+- Check if backend server is running
+- Verify API_BASE_URL is correct
+- Ensure device/emulator can reach the backend
+- Check firewall settings
+
+### Module not found errors
+- Run `npm install` again
+- Clear cache: `expo start -c`
+- Delete `node_modules` and reinstall
+
+### iOS Simulator not loading
+- Make sure Xcode is installed
+- Run `sudo xcode-select --switch /Applications/Xcode.app`
+
+## Additional Resources
+
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation](https://reactnative.dev/)
+- [React Navigation](https://reactnavigation.org/)
 
 ## License
+
 Proprietary - All rights reserved

@@ -12,7 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'role',
         'is_active',
+        'version',
     ];
 
     /**
@@ -48,21 +49,39 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'version' => 'integer',
         ];
     }
 
-    public function suppliers()
+    /**
+     * Check if user has a specific role
+     */
+    public function hasRole(string $role): bool
     {
-        return $this->hasMany(Supplier::class, 'created_by');
+        return $this->role === $role;
     }
 
-    public function collections()
+    /**
+     * Check if user is an admin
+     */
+    public function isAdmin(): bool
     {
-        return $this->hasMany(Collection::class, 'collected_by');
+        return $this->role === 'admin';
     }
 
-    public function payments()
+    /**
+     * Check if user is a manager
+     */
+    public function isManager(): bool
     {
-        return $this->hasMany(Payment::class, 'created_by');
+        return $this->role === 'manager';
+    }
+
+    /**
+     * Check if user is a collector
+     */
+    public function isCollector(): bool
+    {
+        return $this->role === 'collector';
     }
 }

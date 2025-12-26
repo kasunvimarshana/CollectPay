@@ -1,105 +1,108 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Payment::with(['supplier', 'creator']);
+        $query = Payment::with(['supplier', 'user']);
 
         if ($request->has('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
-        }
-
-        if ($request->has('payment_type')) {
-            $query->where('payment_type', $request->payment_type);
+            $query->where('supplier_id', $request->input('supplier_id'));
         }
 
         if ($request->has('date_from')) {
-            $query->where('payment_date', '>=', $request->date_from);
+            $query->where('payment_date', '>=', $request->input('date_from'));
         }
 
         if ($request->has('date_to')) {
-            $query->where('payment_date', '<=', $request->date_to);
+            $query->where('payment_date', '<=', $request->input('date_to'));
         }
 
-        $payments = $query->latest('payment_date')->paginate($request->per_page ?? 15);
+        if ($request->has('type')) {
+            $query->where('type', $request->input('type'));
+        }
+
+        $payments = $query->orderBy('payment_date', 'desc')
+            ->paginate($request->input('per_page', 15));
+
         return response()->json($payments);
     }
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'payment_date' => 'required|date',
             'amount' => 'required|numeric|min:0',
-            'payment_type' => 'required|in:advance,partial,full',
-            'payment_method' => 'nullable|string|max:50',
-            'reference_number' => 'nullable|string|max:100',
-            'notes' => 'nullable|string',
+            'type' => 'required|in:advance,partial,full',
+            'reference_number' => 'nullable|string|max:255',
+            'notes' => 'nullable|string'
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $payment = DB::transaction(function () use ($request) {
-            return Payment::create([
-                ...$request->all(),
-                'created_by' => $request->user()->id,
-            ]);
-        });
+        $payment = Payment::create([
+            'supplier_id' => $validated['supplier_id'],
+            'user_id' => $request->user()->id,
+            'payment_date' => $validated['payment_date'],
+            'amount' => $validated['amount'],
+            'type' => $validated['type'],
+            'reference_number' => $validated['reference_number'] ?? null,
+            'notes' => $validated['notes'] ?? null
+        ]);
 
         return response()->json([
-            'message' => 'Payment created successfully',
-            'data' => $payment->load(['supplier', 'creator']),
+            'message' => 'Payment recorded successfully',
+            'payment' => $payment->load(['supplier', 'user'])
         ], 201);
     }
 
-    public function show(string $id)
+    public function show($id)
     {
-        $payment = Payment::with(['supplier', 'creator'])->findOrFail($id);
-        return response()->json($payment);
+        $payment = Payment::with(['supplier', 'user'])->findOrFail($id);
+        return response()->json(['payment' => $payment]);
     }
 
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
         $payment = Payment::findOrFail($id);
 
-        $validator = Validator::make($request->all(), [
-            'supplier_id' => 'sometimes|required|exists:suppliers,id',
-            'payment_date' => 'sometimes|required|date',
-            'amount' => 'sometimes|required|numeric|min:0',
-            'payment_type' => 'sometimes|required|in:advance,partial,full',
-            'payment_method' => 'nullable|string|max:50',
-            'reference_number' => 'nullable|string|max:100',
-            'notes' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        if ($request->has('version') && $payment->version != $request->input('version')) {
+            throw ValidationException::withMessages([
+                'version' => ['This record has been modified by another user. Please refresh and try again.']
+            ]);
         }
 
-        $payment->update($request->all());
+        $validated = $request->validate([
+            'payment_date' => 'sometimes|required|date',
+            'amount' => 'sometimes|required|numeric|min:0',
+            'type' => 'sometimes|required|in:advance,partial,full',
+            'reference_number' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'version' => 'integer'
+        ]);
+
+        DB::transaction(function () use ($payment, $validated) {
+            $payment->update($validated);
+            $payment->increment('version');
+        });
 
         return response()->json([
             'message' => 'Payment updated successfully',
-            'data' => $payment->load(['supplier', 'creator']),
+            'payment' => $payment->fresh()->load(['supplier', 'user'])
         ]);
     }
 
-    public function destroy(string $id)
+    public function destroy($id)
     {
         $payment = Payment::findOrFail($id);
         $payment->delete();
-
         return response()->json(['message' => 'Payment deleted successfully']);
     }
 }
