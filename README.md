@@ -59,37 +59,41 @@ npm start
 
 ## 📖 Documentation
 
-Complete documentation for TrackVault:
+Complete documentation for TrackVault is now organized in the `/docs` directory.
+
+**📌 [DOCUMENTATION.md](DOCUMENTATION.md) - Complete Documentation Guide with Quick Links**
 
 ### Quick Start
 - **[README.md](README.md)** - This file: Project overview and quick start
-- **[IMPLEMENTATION.md](IMPLEMENTATION.md)** - Complete setup and implementation guide
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - 🚀 Quick reference guide for developers
-- **[SWAGGER.md](SWAGGER.md)** - 🆕 **Interactive API Documentation Guide**
-- **[PICKER_COMPONENT.md](PICKER_COMPONENT.md)** - 🆕 **Enhanced Picker Component Guide**
+- **[docs/INDEX.md](docs/INDEX.md)** - 📚 Complete documentation index
 
-### API Documentation
-- **[API.md](API.md)** - Complete REST API reference with examples
+### Essential Documentation
+- **[Implementation Guide](docs/implementation/IMPLEMENTATION.md)** - Complete setup and implementation
+- **[API Reference](docs/api/API.md)** - Complete REST API documentation
+- **[Swagger Guide](docs/api/SWAGGER.md)** - Interactive API documentation
 - **Interactive Swagger UI** - `http://localhost:8000/api/documentation`
 
-### Verification & Status
-- **[COMPLETE_VERIFICATION.md](COMPLETE_VERIFICATION.md)** - ⭐ **NEW** Comprehensive verification report
-- **[IMPLEMENTATION_FINAL_SUMMARY.md](IMPLEMENTATION_FINAL_SUMMARY.md)** - ⭐ **NEW** Final implementation summary
-- **[SUMMARY.md](SUMMARY.md)** - Complete implementation summary and status
-- **[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)** - Future enhancements verification report
+### Documentation Categories
 
-### Technical Documentation
-- **[API.md](API.md)** - Complete REST API reference with examples
-- **[SECURITY.md](SECURITY.md)** - Security architecture and best practices
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
-- **[FUTURE_ENHANCEMENTS_COMPLETE.md](FUTURE_ENHANCEMENTS_COMPLETE.md)** - Future enhancements implementation guide
+All documentation is organized in `/docs` with the following structure:
 
-### Requirements Documentation
-- **[SRS.md](SRS.md)** / **[SRS-01.md](SRS-01.md)** - Software Requirements Specification (IEEE format)
-- **[PRD.md](PRD.md)** / **[PRD-01.md](PRD-01.md)** - Product Requirements Document
-- **[ES.md](ES.md)** / **[ESS.md](ESS.md)** - Executive Summary
+- **[Requirements](docs/requirements/)** - PRD, SRS, Executive Summary
+- **[API](docs/api/)** - API reference and Swagger documentation
+- **[Implementation](docs/implementation/)** - Setup guides and implementation details
+- **[Frontend](docs/frontend/)** - Frontend architecture, implementation, and enhancements
+- **[Components](docs/components/)** - Component documentation (e.g., Picker Component)
+- **[Verification](docs/verification/)** - Verification reports and test results
+- **[Deployment](docs/deployment/)** - Production deployment guides and checklists
+- **[Security](docs/security/)** - Security architecture and best practices
+- **[Archive](docs/archive/)** - Older versions and superseded documents
 
-### Component Documentation
+### Status Reports
+- **[TASK_COMPLETE.md](TASK_COMPLETE.md)** - Task completion report
+- **[FINAL_SUMMARY.md](FINAL_SUMMARY.md)** - Final implementation summary
+- **[SUMMARY.md](SUMMARY.md)** - Complete project summary
+
+### Component-Specific Documentation
 - **[backend/README.md](backend/README.md)** - Backend API documentation
 - **[frontend/README.md](frontend/README.md)** - Frontend app documentation
 
@@ -229,9 +233,9 @@ Fully-featured picker with enterprise-grade capabilities:
 
 **Usage**: Collections, Payments, Product Rates, and custom forms
 
-See **[PICKER_COMPONENT.md](PICKER_COMPONENT.md)** for complete documentation and usage examples.
+See **[Picker Component Documentation](docs/components/PICKER_COMPONENT.md)** for complete documentation and usage examples.
 
-For detailed implementation information, see [FUTURE_ENHANCEMENTS_COMPLETE.md](FUTURE_ENHANCEMENTS_COMPLETE.md) and [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+For detailed implementation information, see the [Implementation Guide](docs/implementation/IMPLEMENTATION_FINAL_SUMMARY.md) and [Verification Reports](docs/verification/).
 
 ## 🤝 Contributing
 
@@ -251,7 +255,7 @@ Kasun Vimarshana
 
 ---
 
-**For detailed technical documentation, see [IMPLEMENTATION.md](IMPLEMENTATION.md)**
+**For detailed technical documentation, see [Implementation Guide](docs/implementation/IMPLEMENTATION.md) and [Documentation Index](docs/INDEX.md)**
 
 - Encrypt sensitive data **in transit and at rest**.
 - Apply **secure data storage and transmission practices** throughout both backend and frontend.

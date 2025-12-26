@@ -1,0 +1,31 @@
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Backup files
+*.bak
+*.backup
+
+# Node modules (if any in root)
+node_modules/
+
+# Environment files (if any in root)
+.env
+.env.local
