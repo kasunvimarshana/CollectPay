@@ -4,80 +4,91 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SyncQueue extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'sync_queue';
 
     protected $fillable = [
-        'uuid',
-        'user_id',
-        'entity_type',
-        'entity_uuid',
-        'operation',
-        'payload',
-        'payload_signature',
-        'status',
-        'retry_count',
-        'last_retry_at',
-        'error_message',
-        'client_version',
-        'server_version',
         'device_id',
+        'user_id',
+        'operation',
+        'entity_type',
+        'entity_id',
+        'entity_uuid',
+        'payload',
+        'idempotency_key',
+        'status',
+        'attempts',
+        'last_error',
+        'processed_at',
+        'synced_at',
     ];
 
     protected $casts = [
-        'payload' => 'array',
-        'last_retry_at' => 'datetime',
-        'client_version' => 'integer',
-        'server_version' => 'integer',
-        'retry_count' => 'integer',
+        'payload' => 'json',
+        'processed_at' => 'datetime',
+        'synced_at' => 'datetime',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-        
-        static::creating(function ($syncQueue) {
-            if (empty($syncQueue->uuid)) {
-                $syncQueue->uuid = (string) Str::uuid();
-            }
-        });
-    }
-
-    public function user()
+    /**
+     * Get the user who initiated this sync operation.
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function markAsProcessing()
+    /**
+     * Get pending sync items.
+     */
+    public function scopePending($query)
     {
-        $this->update(['status' => 'processing']);
+        return $query->where('status', 'pending');
     }
 
-    public function markAsCompleted($serverVersion)
+    /**
+     * Get failed sync items.
+     */
+    public function scopeFailed($query)
     {
-        $this->update([
-            'status' => 'completed',
-            'server_version' => $serverVersion,
-        ]);
+        return $query->where('status', 'failed');
     }
 
-    public function markAsFailed($errorMessage)
+    /**
+     * Get synced items.
+     */
+    public function scopeSynced($query)
     {
-        $this->update([
-            'status' => 'failed',
-            'retry_count' => $this->retry_count + 1,
-            'last_retry_at' => now(),
-            'error_message' => $errorMessage,
-        ]);
+        return $query->where('status', 'synced');
     }
 
-    public function canRetry($maxRetries = 3)
+    /**
+     * Get items for a specific device.
+     */
+    public function scopeForDevice($query, string $deviceId)
     {
-        return $this->retry_count < $maxRetries;
+        return $query->where('device_id', $deviceId);
+    }
+
+    /**
+     * Get items for a specific user.
+     */
+    public function scopeForUser($query, int $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Increment attempt count.
+     */
+    public function incrementAttempt(): void
+    {
+        $this->attempts++;
+        $this->save();
     }
 }

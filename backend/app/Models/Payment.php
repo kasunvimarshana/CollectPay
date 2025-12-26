@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
 {
@@ -13,59 +13,102 @@ class Payment extends Model
 
     protected $fillable = [
         'uuid',
-        'supplier_id',
+        'payment_reference',
+        'collection_id',
+        'rate_id',
+        'payer_id',
         'amount',
-        'payment_type',
-        'payment_method',
-        'reference_number',
-        'payment_date',
-        'notes',
+        'currency',
         'status',
-        'sync_status',
+        'payment_method',
+        'notes',
+        'payment_date',
+        'processed_at',
+        'is_automated',
         'metadata',
-        'paid_by',
+        'version',
         'created_by',
         'updated_by',
+        'synced_at',
+        'device_id',
+        'idempotency_key',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'is_automated' => 'boolean',
+        'metadata' => 'json',
+        'synced_at' => 'datetime',
         'payment_date' => 'datetime',
-        'metadata' => 'array',
+        'processed_at' => 'datetime',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-        
-        static::creating(function ($payment) {
-            if (empty($payment->uuid)) {
-                $payment->uuid = (string) Str::uuid();
-            }
-        });
+    protected $hidden = [];
 
-        static::saving(function ($payment) {
-            $payment->version++;
-        });
+    /**
+     * Get the collection this payment belongs to.
+     */
+    public function collection(): BelongsTo
+    {
+        return $this->belongsTo(Collection::class);
     }
 
-    public function supplier()
+    /**
+     * Get the rate applied to this payment.
+     */
+    public function rate(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(Rate::class);
     }
 
-    public function payer()
+    /**
+     * Get the user who made this payment.
+     */
+    public function payer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'paid_by');
+        return $this->belongsTo(User::class, 'payer_id');
     }
 
-    public function creator()
+    /**
+     * Get the user who created this payment.
+     */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater()
+    /**
+     * Get the user who last updated this payment.
+     */
+    public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * Check if a payment with this idempotency key already exists.
+     */
+    public function scopeByIdempotencyKey($query, string $key)
+    {
+        return $query->where('idempotency_key', $key);
+    }
+
+    /**
+     * Get modified payments since a given timestamp.
+     */
+    public function scopeModifiedSince($query, ?\DateTime $timestamp)
+    {
+        if ($timestamp) {
+            return $query->where('updated_at', '>=', $timestamp);
+        }
+        return $query;
+    }
+
+    /**
+     * Get payments for a specific collection.
+     */
+    public function scopeForCollection($query, $collectionId)
+    {
+        return $query->where('collection_id', $collectionId);
     }
 }

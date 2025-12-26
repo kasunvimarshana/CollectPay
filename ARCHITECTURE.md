@@ -1,326 +1,379 @@
-# Collection Payment System - Architecture Documentation
+# Architecture Documentation
 
 ## System Overview
 
-A production-ready, end-to-end data collection and payment management application built with:
-- **Backend**: Laravel 12 with Clean Architecture
-- **Frontend**: React Native (Expo) with TypeScript
-- **Architecture**: Online-first with robust offline support
+The Collection Payments Sync system follows an **online-first architecture** with robust offline support. The backend (Laravel) serves as the single source of truth, while the mobile app (React Native/Expo) operates in an offline-first manner with automatic synchronization.
 
-## Core Features
+## Design Principles
 
-### 1. Entity Management (CRUD)
-- **Users**: Multi-role support (admin, manager, collector) with RBAC/ABAC
-- **Suppliers**: Detailed profiles with regional tracking
-- **Products**: Multi-unit support (kg, g, lb)
-- **Collections**: Quantity tracking with immutable historical rates
-- **Payments**: Advance, partial, full payments with multiple methods
-- **Rates**: Time-versioned pricing with supplier-specific or global rates
+### 1. Online-First Architecture
+- Server is the authoritative source of data
+- Clients pull the latest data on connection
+- Changes made online are immediately persisted to server
+- Offline changes are queued and synced when connection is restored
 
-### 2. Offline-First Synchronization
-- **Event-driven triggers**: Network restoration, app foreground, authentication
-- **Manual sync option**: User-initiated sync with visual feedback
-- **Idempotent operations**: Guaranteed zero data loss and no duplication
-- **Conflict resolution**: Version-based with timestamp validation
-- **Tamper-resistant**: HMAC-signed payloads
-
-### 3. Security
-- **Authentication**: JWT-based with secure token storage
-- **Authorization**: RBAC + ABAC enforced on all operations
-- **Encryption**: 
-  - Data in transit: HTTPS/TLS
-  - Data at rest: Encrypted SQLite (frontend), encrypted DB fields (backend)
-- **Integrity**: HMAC signatures on sync payloads
-
-### 4. Payment Calculations
-- Fully automated, auditable calculations
-- Based on historical collections with preserved rates
-- Accounts for advance and partial payments
-- Transparent financial oversight
-
-## Architecture
-
-### Backend (Clean Architecture)
+### 2. Clean Architecture (Backend)
+The backend follows Clean Architecture principles with clear separation of concerns:
 
 ```
-backend/
-├── src/
-│   ├── Domain/                    # Core business logic
-│   │   ├── Entities/              # Business entities
-│   │   ├── ValueObjects/          # Immutable value objects
-│   │   ├── Repositories/          # Repository interfaces
-│   │   ├── Services/              # Domain services
-│   │   └── Events/                # Domain events
-│   ├── Application/               # Application layer
-│   │   ├── UseCases/              # Use case implementations
-│   │   ├── DTOs/                  # Data transfer objects
-│   │   ├── Services/              # Application services
-│   │   └── Contracts/             # Application interfaces
-│   └── Infrastructure/            # External concerns
-│       ├── Persistence/
-│       │   ├── Eloquent/
-│       │   │   ├── Models/        # Eloquent models
-│       │   │   └── Repositories/  # Repository implementations
-│       │   └── Migrations/        # Database migrations
-│       ├── Http/
-│       │   ├── Controllers/       # API controllers
-│       │   ├── Middleware/        # HTTP middleware
-│       │   └── Requests/          # Form requests
-│       ├── Security/              # Security implementations
-│       └── Sync/                  # Synchronization logic
-├── app/
-│   ├── Models/                    # Eloquent models
-│   └── Http/
-│       ├── Controllers/Api/       # RESTful API controllers
-│       └── Middleware/            # HTTP middleware
-├── database/
-│   └── migrations/                # Database migrations
-├── routes/
-│   └── api.php                    # API routes
-└── tests/                         # Automated tests
+┌─────────────────────────────────────────┐
+│         Presentation Layer              │
+│  (HTTP Controllers, Routes, Views)      │
+└──────────────┬──────────────────────────┘
+               │
+┌──────────────▼──────────────────────────┐
+│       Application Layer                 │
+│  (Use Cases, DTOs, Services)            │
+└──────────────┬──────────────────────────┘
+               │
+┌──────────────▼──────────────────────────┐
+│          Domain Layer                   │
+│  (Entities, Repository Interfaces)      │
+└──────────────┬──────────────────────────┘
+               │
+┌──────────────▼──────────────────────────┐
+│      Infrastructure Layer               │
+│  (Eloquent Models, Repositories)        │
+└─────────────────────────────────────────┘
 ```
 
-### Frontend (Clean Architecture)
+**Benefits:**
+- Testable business logic
+- Framework independence
+- Database independence
+- Easy to maintain and extend
 
+### 3. Event-Driven Synchronization
+- Changes trigger sync events
+- Idempotent operations prevent duplicates
+- Version tracking for conflict detection
+- Audit logging for all changes
+
+### 4. Conflict Resolution
+Three strategies available:
+- **Server Wins**: Accept server version
+- **Client Wins**: Override server with client
+- **Manual Merge**: User resolves conflicts
+
+## Data Flow
+
+### Create Operation (Online)
 ```
-frontend/
-├── src/
-│   ├── domain/                    # Business logic
-│   │   ├── entities/              # Domain entities
-│   │   ├── repositories/          # Repository interfaces
-│   │   └── usecases/              # Use cases
-│   ├── data/                      # Data layer
-│   │   ├── repositories/          # Repository implementations
-│   │   ├── datasources/
-│   │   │   ├── local/             # SQLite/AsyncStorage
-│   │   │   └── remote/            # API clients
-│   │   └── models/                # Data models
-│   ├── presentation/              # UI layer
-│   │   ├── screens/               # Screen components
-│   │   ├── components/            # Reusable components
-│   │   ├── navigation/            # Navigation configuration
-│   │   └── state/                 # State management (Context)
-│   ├── infrastructure/            # External concerns
-│   │   ├── storage/               # Encrypted local storage
-│   │   ├── network/               # Network utilities
-│   │   ├── sync/                  # Sync orchestration
-│   │   └── security/              # Security utilities
-│   └── core/                      # Shared utilities
-│       ├── constants/
-│       ├── types/
-│       └── utils/
-└── App.tsx                        # Entry point
+Mobile App → API Service → Controller → Domain Service → Repository → Database
+                                                ↓
+                                         Audit Log Created
+                                                ↓
+                                         Response to Client
+                                                ↓
+                                         Update Local Storage
 ```
 
-## Database Schema
+### Create Operation (Offline)
+```
+Mobile App → Local Storage → Sync Queue
+                   ↓
+            (Connection Restored)
+                   ↓
+           Sync Service → API → Database
+```
 
-### Core Tables
-
-#### users
-- id, uuid, name, email, password, role, permissions
-- is_active, last_login_at, version, device_id
-- created_at, updated_at
-
-#### suppliers
-- id, uuid, name, code, phone, email, address, region
-- id_number, credit_limit, is_active, version, metadata
-- created_by, updated_by, created_at, updated_at, deleted_at
-
-#### products
-- id, uuid, name, code, description
-- default_unit, available_units (JSON), category
-- is_active, version, metadata
-- created_by, updated_by, created_at, updated_at, deleted_at
-
-#### rates
-- id, uuid, product_id, supplier_id (nullable for global)
-- rate_value, unit, effective_from, effective_to
-- is_active, version, metadata
-- created_by, updated_by, created_at, updated_at, deleted_at
-
-#### collections
-- id, uuid, supplier_id, product_id, rate_id
-- quantity, unit, rate_at_collection (immutable), total_value
-- collected_at, notes, sync_status, version, metadata
-- collected_by, created_by, updated_by
-- created_at, updated_at, deleted_at
-
-#### payments
-- id, uuid, supplier_id, amount
-- payment_type (advance, partial, full, adjustment)
-- payment_method (cash, bank_transfer, cheque, mobile_money, other)
-- reference_number, payment_date, notes
-- status (pending, completed, cancelled)
-- sync_status, version, metadata
-- paid_by, created_by, updated_by
-- created_at, updated_at, deleted_at
-
-#### sync_queue
-- id, uuid, user_id, entity_type, entity_uuid
-- operation (create, update, delete), payload (JSON)
-- payload_signature (HMAC), status, retry_count
-- last_retry_at, error_message
-- client_version, server_version, device_id
-- created_at, updated_at
-
-## API Endpoints
-
-### Authentication
-- POST /api/auth/register
-- POST /api/auth/login
-- POST /api/auth/logout
-- POST /api/auth/refresh
-- GET /api/auth/me
-
-### CRUD Operations
-- GET|POST /api/suppliers
-- GET|PUT|DELETE /api/suppliers/{id}
-- GET|POST /api/products
-- GET|PUT|DELETE /api/products/{id}
-- GET|POST /api/rates
-- GET|PUT|DELETE /api/rates/{id}
-- GET|POST /api/collections
-- GET|PUT|DELETE /api/collections/{id}
-- GET|POST /api/payments
-- GET|PUT|DELETE /api/payments/{id}
-
-### Synchronization
-- POST /api/sync/push - Push local changes
-- GET /api/sync/pull - Pull server changes
-- GET /api/sync/status - Get sync status
-- POST /api/sync/resolve-conflict - Resolve conflicts
-
-### Calculations
-- GET /api/suppliers/{id}/balance - Calculate supplier balance
-- GET /api/suppliers/{id}/statement - Get supplier statement
-- GET /api/payments/calculate - Calculate payment amount
+### Read Operation
+```
+Mobile App → Check Local Storage
+      ↓
+   Data Found? → Return Data
+      ↓
+   Data Not Found? → API Request → Database
+      ↓
+   Cache Locally → Return Data
+```
 
 ## Synchronization Protocol
 
-### Push Sync (Client → Server)
-1. Client collects pending operations from local sync queue
-2. Signs payload with HMAC using user secret
-3. Sends batch of operations with metadata:
-   - entity_type, entity_uuid, operation
-   - payload, payload_signature
-   - client_version, device_id
-4. Server validates signature and version
-5. Server processes operations in transaction
-6. Server returns sync results with server_version
-7. Client updates local records and removes from queue
+### Pull Synchronization
+1. Client requests data with `last_synced_at` timestamp
+2. Server returns all records modified after that timestamp
+3. Client merges server data with local data based on version numbers
+4. Higher version number wins in case of conflict
+5. Conflicts flagged for user resolution
 
-### Pull Sync (Server → Client)
-1. Client sends last known version
-2. Server returns all changes since version
-3. Client applies changes with conflict detection
-4. Client updates local version marker
+### Push Synchronization
+1. Client sends queued operations to server
+2. Server validates each operation
+3. For creates: Check idempotency key to prevent duplicates
+4. For updates: Check version number for conflicts
+5. Server processes valid operations
+6. Server returns success/conflict status for each operation
+7. Client updates local storage and removes successfully synced items from queue
 
-### Conflict Resolution
-- **Version-based**: Compare client_version vs server_version
-- **Timestamp-based**: Use updated_at for tie-breaking
-- **Last-write-wins**: Server version takes precedence
-- **User notification**: UI shows conflicts for user decision
+## Idempotency
 
-## Security Implementation
-
-### Backend
-- JWT authentication with short-lived tokens
-- RBAC middleware on all routes
-- Rate limiting on API endpoints
-- SQL injection prevention (Eloquent ORM)
-- XSS prevention (input sanitization)
-- CSRF protection
-- HTTPS enforced in production
-
-### Frontend
-- Encrypted SQLite database
-- Secure token storage (Expo SecureStore)
-- Certificate pinning for API calls
-- Input validation before sync
-- Secure random UUID generation
-
-## Deployment
-
-### Backend (Laravel)
-```bash
-# Install dependencies
-composer install --no-dev --optimize-autoloader
-
-# Setup environment
-cp .env.example .env
-php artisan key:generate
-
-# Run migrations
-php artisan migrate --force
-
-# Cache configuration
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# Setup web server (Nginx/Apache) with PHP-FPM
+### Payment Idempotency
+Each payment has a unique `idempotency_key`:
+```
+idempotency_key = device_id + timestamp + random_string
 ```
 
-### Frontend (Expo)
-```bash
-# Install dependencies
-npm install
+When a payment is submitted:
+1. Server checks if a payment with the same idempotency key exists
+2. If exists, returns the existing payment (no duplicate charge)
+3. If not exists, creates the new payment
+4. This ensures retries don't create duplicate payments
 
-# Build for production
-npx expo build:android
-npx expo build:ios
+### API Idempotency
+All state-changing operations (POST, PUT, DELETE) include:
+- Unique request ID
+- Timestamp
+- Version number (for updates)
 
-# Or use EAS Build
-eas build --platform all
+## Version Management
+
+### Rate Versioning
+Rates are immutable once created. Updates create new versions:
+```
+Rate v1: $100, effective 2024-01-01 to 2024-06-30
+Rate v2: $120, effective 2024-07-01 onwards
+```
+
+Benefits:
+- Historical rate tracking
+- Audit trail for rate changes
+- No impact on existing payments
+
+### Entity Versioning
+All entities (Collections, Payments, Rates) have version numbers:
+- Starts at 1 on creation
+- Increments on each update
+- Used for conflict detection during sync
+
+## Access Control
+
+### RBAC (Role-Based Access Control)
+Roles define sets of permissions:
+- **Admin**: Full access to all resources
+- **Manager**: Create/read/update collections and payments
+- **Collector**: Create payments, read collections
+- **Viewer**: Read-only access
+
+### ABAC (Attribute-Based Access Control)
+Fine-grained permissions based on:
+- User attributes (role, department, region)
+- Resource attributes (status, created_by, collection_id)
+- Environment attributes (time, device, location)
+
+Example: User can only update payments they created
+
+## Audit Logging
+
+Every change is logged with:
+- User ID and name
+- Action performed (created, updated, deleted, synced)
+- Old values (for updates)
+- New values
+- IP address
+- User agent
+- Device ID
+- Timestamp
+
+This provides:
+- Complete audit trail
+- Regulatory compliance
+- Debugging capability
+- User activity tracking
+
+## Data Models
+
+### Collection
+```typescript
+{
+  uuid: string           // Unique identifier
+  name: string           // Collection name
+  description: string    // Optional description
+  status: enum           // active, inactive, archived
+  version: number        // Version for conflict detection
+  created_by: number     // User who created
+  synced_at: timestamp   // Last sync time
+  device_id: string      // Source device
+}
+```
+
+### Payment
+```typescript
+{
+  uuid: string                    // Unique identifier
+  payment_reference: string       // Unique reference
+  collection_id: number           // Parent collection
+  rate_id: number                 // Applied rate
+  payer_id: number                // User who paid
+  amount: decimal                 // Payment amount
+  currency: string                // Currency code
+  status: enum                    // pending, completed, failed
+  payment_method: enum            // cash, card, transfer
+  idempotency_key: string         // For duplicate prevention
+  version: number                 // Version number
+  is_automated: boolean           // Auto-generated?
+  synced_at: timestamp           // Last sync time
+}
+```
+
+### Rate
+```typescript
+{
+  uuid: string              // Unique identifier
+  name: string              // Rate name
+  amount: decimal           // Rate amount
+  currency: string          // Currency code
+  rate_type: string         // monthly, annual, one-time
+  version: number           // Version number
+  effective_from: timestamp // Start date
+  effective_until: timestamp // End date (optional)
+  is_active: boolean        // Active flag
+}
+```
+
+## Security Considerations
+
+### Authentication
+- Token-based authentication (Laravel Sanctum)
+- Tokens stored in secure storage on device
+- Token refresh mechanism
+- Automatic logout on token expiry
+
+### Data Security
+- HTTPS for all API communication
+- SQL injection prevention via ORM
+- XSS prevention via input sanitization
+- CSRF protection for state-changing operations
+- Rate limiting to prevent abuse
+
+### Device Security
+- Secure storage for authentication tokens
+- Local database encryption (optional)
+- Biometric authentication (optional)
+- Remote wipe capability (optional)
+
+## Performance Optimization
+
+### Backend
+- Database indexing on frequently queried fields
+- Query optimization with eager loading
+- Caching for static data (rates, collections)
+- Queue workers for background jobs
+- API response pagination
+
+### Mobile
+- Lazy loading for large lists
+- Image optimization and caching
+- Debouncing for search inputs
+- Optimistic UI updates
+- Background sync scheduling
+
+## Scalability
+
+### Horizontal Scaling
+- Stateless API design
+- Load balancer for multiple app servers
+- Separate queue workers
+- CDN for static assets
+
+### Vertical Scaling
+- Database query optimization
+- Connection pooling
+- Redis for caching
+- Database read replicas
+
+## Monitoring and Logging
+
+### Backend Monitoring
+- API response times
+- Database query performance
+- Error rates and types
+- User activity metrics
+- Sync success/failure rates
+
+### Mobile Monitoring
+- Crash reports
+- Network errors
+- Sync performance
+- User engagement metrics
+- Device/OS distribution
+
+## Future Enhancements
+
+1. **Real-time Sync**: WebSocket support for instant updates
+2. **Conflict AI**: Machine learning for automatic conflict resolution
+3. **Bulk Operations**: Batch processing for large datasets
+4. **Export/Import**: CSV/Excel import/export functionality
+5. **Reporting**: Built-in analytics and reports
+6. **Multi-tenancy**: Support for multiple organizations
+7. **Geolocation**: Location-based features
+8. **Notifications**: Push notifications for important events
+9. **Offline Maps**: Cached maps for field operations
+10. **Biometric Auth**: Fingerprint/Face ID authentication
+
+## Deployment Architecture
+
+```
+                    ┌─────────────┐
+                    │   CDN       │
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │Load Balancer│
+                    └──────┬──────┘
+                           │
+        ┌──────────────────┴──────────────────┐
+        │                                     │
+   ┌────▼────┐                          ┌────▼────┐
+   │ Web App │                          │ Web App │
+   │ Server  │                          │ Server  │
+   └────┬────┘                          └────┬────┘
+        │                                     │
+        └──────────────────┬──────────────────┘
+                           │
+                    ┌──────▼──────┐
+                    │  Database   │
+                    │  (Primary)  │
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │  Database   │
+                    │  (Replica)  │
+                    └─────────────┘
 ```
 
 ## Testing Strategy
 
-### Backend
-- Unit tests: Domain logic
-- Integration tests: API endpoints
-- Feature tests: Complete workflows
-- Database transactions for isolation
+### Unit Tests
+- Domain entities and services
+- Repository implementations
+- API controllers
+- Mobile services
 
-### Frontend
-- Unit tests: Business logic
-- Integration tests: Sync operations
-- E2E tests: Critical user flows
-- Offline scenario testing
+### Integration Tests
+- API endpoints
+- Database operations
+- Sync operations
+- Authentication flow
 
-## Performance Optimization
+### End-to-End Tests
+- Complete user workflows
+- Offline scenarios
+- Conflict resolution
+- Multi-device sync
 
-- Database indexing on frequently queried columns
-- Lazy loading of relationships
-- Pagination on list endpoints
-- Delta sync (only changed data)
-- Background sync queue processing
-- Caching of frequently accessed data
+## Maintenance
 
-## Example Use Case: Tea Leaf Collection
+### Regular Tasks
+- Database backups (daily)
+- Log rotation (weekly)
+- Dependency updates (monthly)
+- Security patches (as needed)
+- Performance monitoring (continuous)
 
-1. **Collector visits supplier**: Opens app, selects supplier
-2. **Records collection**: Enters quantity (kg), system fetches current rate
-3. **Saves collection**: Stored locally with current rate (immutable)
-4. **Makes advance payment**: Records payment against supplier
-5. **Syncs data**: When online, pushes collections and payments
-6. **Month-end rate update**: Admin updates rate for the period
-7. **Calculate balance**: System computes total owed minus payments
-8. **Generate statement**: Detailed breakdown with all collections and payments
-
-## Monitoring & Maintenance
-
-- Error logging with Laravel Log
-- Sync queue monitoring
-- Database backup strategy
-- API health checks
-- Performance metrics tracking
-
-## Future Enhancements
-
-- Real-time WebSocket notifications
-- Batch operations for bulk data entry
-- Advanced reporting and analytics
-- Export to Excel/PDF
-- Multi-language support
-- Biometric authentication
+### Code Quality
+- PSR-12 coding standards (PHP)
+- ESLint/Prettier (TypeScript)
+- Automated tests on CI/CD
+- Code reviews for all changes
+- Documentation updates

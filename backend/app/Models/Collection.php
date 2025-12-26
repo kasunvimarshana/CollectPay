@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Collection extends Model
 {
@@ -13,86 +14,64 @@ class Collection extends Model
 
     protected $fillable = [
         'uuid',
-        'supplier_id',
-        'product_id',
-        'rate_id',
-        'quantity',
-        'unit',
-        'rate_at_collection',
-        'total_value',
-        'collected_at',
-        'notes',
-        'sync_status',
-        'metadata',
-        'collected_by',
+        'name',
+        'description',
         'created_by',
         'updated_by',
+        'status',
+        'metadata',
+        'version',
+        'synced_at',
+        'device_id',
     ];
 
     protected $casts = [
-        'quantity' => 'decimal:4',
-        'rate_at_collection' => 'decimal:4',
-        'total_value' => 'decimal:2',
-        'collected_at' => 'datetime',
-        'metadata' => 'array',
+        'metadata' => 'json',
+        'synced_at' => 'datetime',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-        
-        static::creating(function ($collection) {
-            if (empty($collection->uuid)) {
-                $collection->uuid = (string) Str::uuid();
-            }
+    protected $hidden = [];
 
-            // Auto-fetch and set rate if not provided
-            if (empty($collection->rate_at_collection) && $collection->product_id) {
-                $rate = $collection->product->getCurrentRate($collection->supplier_id, $collection->collected_at);
-                if ($rate) {
-                    $collection->rate_id = $rate->id;
-                    $collection->rate_at_collection = $rate->rate_value;
-                }
-            }
-
-            // Calculate total value
-            if (!empty($collection->quantity) && !empty($collection->rate_at_collection)) {
-                $collection->total_value = $collection->quantity * $collection->rate_at_collection;
-            }
-        });
-
-        static::saving(function ($collection) {
-            $collection->version++;
-        });
-    }
-
-    public function supplier()
-    {
-        return $this->belongsTo(Supplier::class);
-    }
-
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
-
-    public function rate()
-    {
-        return $this->belongsTo(Rate::class);
-    }
-
-    public function collector()
-    {
-        return $this->belongsTo(User::class, 'collected_by');
-    }
-
-    public function creator()
+    /**
+     * Get the user who created this collection.
+     */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater()
+    /**
+     * Get the user who last updated this collection.
+     */
+    public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * Get all payments associated with this collection.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Get all rates associated with this collection.
+     */
+    public function rates(): HasMany
+    {
+        return $this->hasMany(Rate::class);
+    }
+
+    /**
+     * Get modified collections since a given timestamp.
+     */
+    public function scopeModifiedSince($query, ?\DateTime $timestamp)
+    {
+        if ($timestamp) {
+            return $query->where('updated_at', '>=', $timestamp);
+        }
+        return $query;
     }
 }

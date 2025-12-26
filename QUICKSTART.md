@@ -1,325 +1,224 @@
-# Quick Start Guide - Collection Payment System
+# Quick Start Guide
 
-## 🚀 Get Started in 5 Minutes
+This guide will help you get the Collection Payments Sync system up and running in minutes.
 
-### Prerequisites
-- PHP 8.3+
-- Composer 2.x
-- Node.js 20.x
-- MySQL/SQLite
+## Prerequisites
 
-### Backend Setup (2 minutes)
+Make sure you have installed:
+- PHP 8.2+ with Composer
+- Node.js 20+ with npm
+- Expo CLI: `npm install -g expo-cli`
+
+## Step 1: Clone and Setup Backend
 
 ```bash
 # Navigate to backend
 cd backend
 
-# Install dependencies
+# Install PHP dependencies
 composer install
 
 # Setup environment
 cp .env.example .env
 
-# Generate keys
+# Generate application key
 php artisan key:generate
-php artisan jwt:secret
 
 # Run migrations
 php artisan migrate
 
-# Seed initial data
-php artisan db:seed --class=InitialDataSeeder
-
-# Start server
+# Start the server
 php artisan serve
 ```
 
-**Server running at: http://localhost:8000**
+The API will be running at `http://localhost:8000`
 
-### Test Authentication (30 seconds)
-
-```bash
-# Login as admin
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"password"}'
-```
-
-**Expected Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": 1,
-      "name": "Admin User",
-      "email": "admin@example.com",
-      "role": "admin"
-    },
-    "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-    "expires_in": 3600
-  },
-  "message": "Login successful"
-}
-```
-
-### Frontend Setup (2 minutes)
+## Step 2: Setup Mobile App
 
 ```bash
-# Navigate to frontend
-cd frontend
+# In a new terminal, navigate to mobile
+cd mobile
 
 # Install dependencies
 npm install
+
+# Update API endpoint
+# Edit src/services/ApiService.ts and change API_BASE_URL to:
+# const API_BASE_URL = 'http://localhost:8000/api/v1';
+# OR for physical device:
+# const API_BASE_URL = 'http://YOUR_COMPUTER_IP:8000/api/v1';
 
 # Start Expo
 npm start
-
-# Or run on specific platform
-npm run android  # For Android
-npm run ios      # For iOS (macOS only)
-npm run web      # For Web
 ```
 
-## 🔐 Test Users
+## Step 3: Create Test User
 
-| Email | Password | Role |
-|-------|----------|------|
-| admin@example.com | password | admin |
-| collector@example.com | password | collector |
+You can create a user via the mobile app registration, or use Laravel Tinker:
 
-## 📊 Sample Data Available
-
-### Products
-- **Tea Leaves** (TEA001) - Rate: 5.50/kg
-- **Coffee Beans** (COF001) - Rate: 12.00/kg
-
-### Suppliers
-- **Green Valley Farm** (SUP001) - Central region
-- **Sunrise Plantation** (SUP002) - Northern region
-
-### Rates
-- Global rate for Tea Leaves: 5.50/kg
-- Supplier-specific rate for Green Valley Farm: 6.00/kg (premium)
-- Global rate for Coffee Beans: 12.00/kg
-
-## 🧪 Testing the API
-
-### 1. Health Check
 ```bash
-curl http://localhost:8000/api/health
+cd backend
+php artisan tinker
+
+# Create a test user
+$user = new App\Models\User();
+$user->name = 'Test User';
+$user->email = 'test@example.com';
+$user->password = Hash::make('password');
+$user->save();
 ```
 
-### 2. Login
-```bash
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"password"}'
-```
+## Step 4: Test the App
 
-### 3. Get Current User (with token)
-```bash
-curl -X GET http://localhost:8000/api/auth/me \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-  -H "Accept: application/json"
-```
+1. **Mobile App**: 
+   - Press 'i' for iOS simulator or 'a' for Android emulator
+   - Or scan the QR code with Expo Go on your phone
 
-### 4. Register New User
+2. **Login**:
+   - Email: `test@example.com`
+   - Password: `password`
+
+3. **Try Features**:
+   - Create a collection
+   - Add a payment
+   - Try offline mode (turn off wifi)
+   - Sync when back online
+
+## API Testing with cURL
+
+### Register User
 ```bash
-curl -X POST http://localhost:8000/api/auth/register \
+curl -X POST http://localhost:8000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "New Collector",
-    "email": "newcollector@example.com",
-    "password": "password",
-    "password_confirmation": "password",
-    "role": "collector"
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "password123",
+    "password_confirmation": "password123"
   }'
 ```
 
-## 📱 Using the API
-
-### Authentication Flow
-1. **Login** → Get JWT token
-2. **Use token** in Authorization header for all requests
-3. **Refresh token** when needed (before expiry)
-4. **Logout** to invalidate token
-
-### Example: Creating a Collection (Coming Soon)
+### Login
 ```bash
-TOKEN="your_token_here"
-
-curl -X POST http://localhost:8000/api/collections \
-  -H "Authorization: Bearer $TOKEN" \
+curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "supplier_id": 1,
-    "product_id": 1,
-    "quantity": 150.00,
-    "unit": "kg",
-    "collected_at": "2025-12-23T10:30:00Z",
-    "notes": "Morning collection"
+    "email": "test@example.com",
+    "password": "password"
   }'
 ```
 
-## 📚 Documentation
+Save the token from the response.
 
-- **[README.md](./README.md)** - Overview and features
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture (10+ pages)
-- **[API.md](./API.md)** - Complete API reference (15+ pages)
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Production deployment (13+ pages)
-- **[IMPLEMENTATION.md](./IMPLEMENTATION.md)** - Development guide (11+ pages)
-- **[SUMMARY.md](./SUMMARY.md)** - Project summary (10+ pages)
-
-## 🔧 Common Commands
-
-### Backend
+### Create Collection
 ```bash
-# Run migrations
-php artisan migrate
-
-# Fresh migration (reset DB)
-php artisan migrate:fresh
-
-# Seed database
-php artisan db:seed --class=InitialDataSeeder
-
-# Clear cache
-php artisan cache:clear
-php artisan config:clear
-
-# Run tests
-php artisan test
-
-# Start server
-php artisan serve
+curl -X POST http://localhost:8000/api/v1/collections \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "name": "Monthly Collections",
+    "description": "Regular monthly collections"
+  }'
 ```
 
-### Frontend
+### List Collections
 ```bash
-# Install dependencies
-npm install
-
-# Start development
-npm start
-
-# Run on Android
-npm run android
-
-# Run on iOS
-npm run ios
-
-# Run on web
-npm run web
-
-# Type checking
-npx tsc --noEmit
+curl -X GET http://localhost:8000/api/v1/collections \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Backend Issues
 
-**"Target class does not exist"**
+**Error: "No application encryption key"**
 ```bash
-composer dump-autoload
-php artisan config:clear
+php artisan key:generate
 ```
 
-**"Database connection failed"**
-- Check .env database settings
-- Ensure MySQL/SQLite is running
-- Verify database exists
-
-**"JWT secret not set"**
+**Database errors**
 ```bash
-php artisan jwt:secret
+php artisan migrate:fresh
 ```
 
-### Frontend Issues
+**Port 8000 already in use**
+```bash
+php artisan serve --port=8001
+# Then update mobile API_BASE_URL accordingly
+```
 
-**"Module not found"**
+### Mobile Issues
+
+**Metro bundler issues**
+```bash
+npm start -- --clear
+```
+
+**Can't connect to API from physical device**
+- Make sure your computer and phone are on the same network
+- Update API_BASE_URL to use your computer's IP address
+- Check firewall settings
+
+**Node modules issues**
 ```bash
 rm -rf node_modules
 npm install
 ```
 
-**"Expo start failed"**
+## What's Next?
+
+- Check out the [Architecture Documentation](ARCHITECTURE.md)
+- Read the full [README](README.md)
+- Explore the API endpoints
+- Customize for your use case
+
+## Common Development Tasks
+
+### Add a new migration
 ```bash
-npx expo start -c  # Clear cache
+cd backend
+php artisan make:migration create_something_table
+php artisan migrate
 ```
 
-## 🎯 What's Working Right Now
-
-✅ Backend API server  
-✅ JWT authentication (login, register, refresh, logout)  
-✅ Database with sample data  
-✅ Health check endpoint  
-✅ All models with business logic  
-✅ API route structure  
-
-## 🚧 Coming Next
-
-- Supplier, Product, Rate controllers
-- Collection and Payment controllers
-- Sync controller
-- Frontend authentication screens
-- Offline storage
-- Synchronization service
-
-## 💡 Tips
-
-1. **Use Postman/Insomnia** to test API endpoints
-2. **Check Laravel logs** at `storage/logs/laravel.log`
-3. **Review API docs** for complete endpoint reference
-4. **Use sample data** for testing before creating new records
-5. **Test with both users** (admin and collector) to see role differences
-
-## 📞 Need Help?
-
-- Check the comprehensive documentation in the `/docs` folder
-- Review the API documentation for endpoint details
-- See ARCHITECTURE.md for system design
-- Check IMPLEMENTATION.md for development guidance
-
-## ⚡ Performance Tips
-
-1. Use database indexing (already configured)
-2. Enable Redis caching in production
-3. Use Eloquent eager loading for relationships
-4. Implement pagination on list endpoints
-5. Cache configuration in production
-
-## 🔐 Security Checklist
-
-- ✅ JWT authentication configured
-- ✅ Password hashing (bcrypt)
-- ✅ Role-based access control ready
-- ✅ Input validation (to be added)
-- ✅ HTTPS-ready (for production)
-- ✅ CORS configured
-- ✅ SQL injection protected (Eloquent ORM)
-
-## 🎉 Success!
-
-If you can login and get a JWT token, your backend is working perfectly!
-
+### Run tests
 ```bash
-# Quick test
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"password"}'
+cd backend
+php artisan test
 ```
 
-If you see a success response with a token, you're all set! 🚀
+### Clear cache
+```bash
+cd backend
+php artisan cache:clear
+php artisan config:clear
+```
 
----
+### View logs
+```bash
+cd backend
+tail -f storage/logs/laravel.log
+```
 
-**Next Steps**: 
-1. Explore the API documentation
-2. Test all authentication endpoints
-3. Review the architecture documentation
-4. Start implementing frontend screens
-5. Build the offline synchronization system
+## Production Deployment Tips
 
-Happy coding! 💻✨
+1. **Backend**:
+   - Set `APP_ENV=production` in `.env`
+   - Set `APP_DEBUG=false`
+   - Run `php artisan config:cache`
+   - Use a real database (MySQL/PostgreSQL)
+   - Set up queue workers
+   - Enable HTTPS
+
+2. **Mobile**:
+   - Update API_BASE_URL to production URL
+   - Build with `eas build`
+   - Test thoroughly before release
+   - Set up crash reporting
+
+## Support
+
+For issues or questions:
+- Check the documentation
+- Review the code comments
+- Open an issue on GitHub

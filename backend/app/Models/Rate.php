@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Rate extends Model
 {
@@ -13,71 +14,108 @@ class Rate extends Model
 
     protected $fillable = [
         'uuid',
-        'product_id',
-        'supplier_id',
-        'rate_value',
-        'unit',
+        'name',
+        'description',
+        'amount',
+        'currency',
+        'rate_type',
+        'collection_id',
+        'version',
         'effective_from',
-        'effective_to',
+        'effective_until',
         'is_active',
         'metadata',
         'created_by',
         'updated_by',
+        'synced_at',
+        'device_id',
     ];
 
     protected $casts = [
-        'rate_value' => 'decimal:4',
+        'amount' => 'decimal:2',
         'is_active' => 'boolean',
+        'metadata' => 'json',
+        'synced_at' => 'datetime',
         'effective_from' => 'datetime',
-        'effective_to' => 'datetime',
-        'metadata' => 'array',
+        'effective_until' => 'datetime',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-        
-        static::creating(function ($rate) {
-            if (empty($rate->uuid)) {
-                $rate->uuid = (string) Str::uuid();
-            }
-        });
+    protected $hidden = [];
 
-        static::saving(function ($rate) {
-            $rate->version++;
-        });
+    /**
+     * Get the collection this rate belongs to.
+     */
+    public function collection(): BelongsTo
+    {
+        return $this->belongsTo(Collection::class);
     }
 
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
-
-    public function supplier()
-    {
-        return $this->belongsTo(Supplier::class);
-    }
-
-    public function creator()
+    /**
+     * Get the user who created this rate.
+     */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater()
+    /**
+     * Get the user who last updated this rate.
+     */
+    public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    public function collections()
+    /**
+     * Get all payments using this rate.
+     */
+    public function payments(): HasMany
     {
-        return $this->hasMany(Collection::class);
+        return $this->hasMany(Payment::class);
     }
 
-    public function isEffectiveOn($date)
+    /**
+     * Get active rates.
+     */
+    public function scopeActive($query)
     {
-        $date = $date ?? now();
-        
-        return $this->effective_from <= $date && 
-               ($this->effective_to === null || $this->effective_to >= $date);
+        return $query->where('is_active', true)
+                     ->where(function ($q) {
+                         $now = now();
+                         $q->where('effective_from', '<=', $now)
+                           ->where(function ($subQ) {
+                               $subQ->whereNull('effective_until')
+                                    ->orWhere('effective_until', '>=', now());
+                           });
+                     });
+    }
+
+    /**
+     * Get modified rates since a given timestamp.
+     */
+    public function scopeModifiedSince($query, ?\DateTime $timestamp)
+    {
+        if ($timestamp) {
+            return $query->where('updated_at', '>=', $timestamp);
+        }
+        return $query;
+    }
+
+    /**
+     * Get rates for a specific collection.
+     */
+    public function scopeForCollection($query, $collectionId)
+    {
+        return $query->where('collection_id', $collectionId);
+    }
+
+    /**
+     * Get the current rate (highest version).
+     */
+    public function scopeCurrentVersion($query, $name)
+    {
+        return $query->where('name', $name)
+                     ->orderBy('version', 'desc')
+                     ->first();
     }
 }

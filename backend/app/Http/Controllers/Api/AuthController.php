@@ -3,176 +3,88 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Services\AuthenticationService;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    protected AuthenticationService $authService;
+
+    public function __construct()
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'nullable|string|in:admin,manager,collector',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'VALIDATION_ERROR',
-                    'message' => 'Validation failed',
-                    'details' => $validator->errors()
-                ]
-            ], 422);
-        }
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role ?? 'collector',
-            'is_active' => true,
-        ]);
-
-        $token = JWTAuth::fromUser($user);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'uuid' => $user->uuid ?? null,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'is_active' => $user->is_active,
-                ],
-                'token' => $token,
-                'expires_in' => config('jwt.ttl') * 60
-            ],
-            'message' => 'User registered successfully'
-        ], 201);
+        $this->authService = new AuthenticationService();
     }
 
-    public function login(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string',
-            'device_id' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'VALIDATION_ERROR',
-                    'message' => 'Validation failed',
-                    'details' => $validator->errors()
-                ]
-            ], 422);
-        }
-
-        $credentials = $request->only('email', 'password');
-
-        if (!$token = auth('api')->attempt($credentials)) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'UNAUTHORIZED',
-                    'message' => 'Invalid credentials'
-                ]
-            ], 401);
-        }
-
-        $user = auth('api')->user();
-
-        // Update last login and device_id
-        $user->update([
-            'last_login_at' => now(),
-            'device_id' => $request->device_id
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'uuid' => $user->uuid ?? null,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'permissions' => $user->permissions,
-                    'is_active' => $user->is_active,
-                ],
-                'token' => $token,
-                'expires_in' => config('jwt.ttl') * 60
-            ],
-            'message' => 'Login successful'
-        ]);
-    }
-
-    public function logout()
-    {
-        auth('api')->logout();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Successfully logged out'
-        ]);
-    }
-
-    public function refresh()
+    /**
+     * Register a new user.
+     */
+    public function register(RegisterRequest $request): JsonResponse
     {
         try {
-            $token = auth('api')->refresh();
+            $user = $this->authService->register($request->validated());
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'token' => $token,
-                    'expires_in' => config('jwt.ttl') * 60
-                ],
-                'message' => 'Token refreshed successfully'
+                'message' => 'User registered successfully',
+                'user' => $user,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Login user and get token.
+     */
+    public function login(LoginRequest $request): JsonResponse
+    {
+        try {
+            $result = $this->authService->login(
+                $request->email,
+                $request->password
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Login successful',
+                'user' => $result['user'],
+                'token' => $result['token'],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'UNAUTHORIZED',
-                    'message' => 'Token refresh failed'
-                ]
+                'message' => $e->getMessage(),
             ], 401);
         }
     }
 
-    public function me()
+    /**
+     * Get current user.
+     */
+    public function user(Request $request): JsonResponse
     {
-        $user = auth('api')->user();
+        return response()->json([
+            'success' => true,
+            'user' => $this->authService->getUser($request->user()),
+        ]);
+    }
+
+    /**
+     * Logout user.
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        $this->authService->logout($request->user());
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'uuid' => $user->uuid ?? null,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'permissions' => $user->permissions,
-                    'is_active' => $user->is_active,
-                    'last_login_at' => $user->last_login_at,
-                    'device_id' => $user->device_id,
-                    'version' => $user->version ?? 1,
-                    'created_at' => $user->created_at,
-                    'updated_at' => $user->updated_at,
-                ]
-            ]
+            'message' => 'Logout successful',
         ]);
     }
 }
