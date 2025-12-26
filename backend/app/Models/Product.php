@@ -4,43 +4,87 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use SoftDeletes;
-
-    public $incrementing = false;
-    protected $keyType = 'string';
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'id',
+        'uuid',
         'name',
         'code',
-        'unit',
         'description',
-        'user_id',
-        'version',
+        'default_unit',
+        'available_units',
+        'category',
+        'is_active',
+        'metadata',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
-        'version' => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'is_active' => 'boolean',
+        'available_units' => 'array',
+        'metadata' => 'array',
     ];
 
-    public function user()
+    protected static function boot()
     {
-        return $this->belongsTo(User::class);
+        parent::boot();
+        
+        static::creating(function ($product) {
+            if (empty($product->uuid)) {
+                $product->uuid = (string) Str::uuid();
+            }
+        });
+
+        static::saving(function ($product) {
+            $product->version++;
+        });
     }
 
-    public function rateVersions()
+    public function creator()
     {
-        return $this->hasMany(RateVersion::class);
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     public function collections()
     {
         return $this->hasMany(Collection::class);
+    }
+
+    public function rates()
+    {
+        return $this->hasMany(Rate::class);
+    }
+
+    public function getCurrentRate($supplierId = null, $date = null)
+    {
+        $date = $date ?? now();
+        
+        return $this->rates()
+            ->where('is_active', true)
+            ->where('effective_from', '<=', $date)
+            ->where(function ($query) use ($date) {
+                $query->whereNull('effective_to')
+                      ->orWhere('effective_to', '>=', $date);
+            })
+            ->where(function ($query) use ($supplierId) {
+                if ($supplierId) {
+                    $query->where('supplier_id', $supplierId);
+                } else {
+                    $query->whereNull('supplier_id');
+                }
+            })
+            ->orderBy('effective_from', 'desc')
+            ->first();
     }
 }

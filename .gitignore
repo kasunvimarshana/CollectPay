@@ -1,13 +1,52 @@
-# Root gitignore
-.DS_Store
-*.log
-*.env
-.env.local
+# Backend (Laravel)
+backend/vendor/
+backend/node_modules/
+backend/.env
+backend/.env.backup
+backend/.phpunit.result.cache
+backend/Homestead.json
+backend/Homestead.yaml
+backend/npm-debug.log
+backend/yarn-error.log
+backend/storage/*.key
+backend/storage/logs/*.log
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+backend/bootstrap/cache/*
+backend/database/database.sqlite
+backend/.DS_Store
+
+# Frontend (React Native + Expo)
+frontend/node_modules/
+frontend/.expo/
+frontend/.expo-shared/
+frontend/dist/
+frontend/npm-debug.*
+frontend/*.jks
+frontend/*.p8
+frontend/*.p12
+frontend/*.key
+frontend/*.mobileprovision
+frontend/*.orig.*
+frontend/web-build/
+frontend/.env
+frontend/.env.local
+frontend/.DS_Store
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# OS generated files
+# OS
+.DS_Store
 Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+
+# Temporary files
+/tmp/
+*.tmp
+*.temp

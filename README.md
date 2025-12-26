@@ -1,449 +1,331 @@
-# FieldSyncLedger
+# Collection Payment Management System
 
-**Production-ready, offline-first data collection and payment management application**
+A production-ready, offline-first mobile application for managing product collections and payments, built with React Native (Expo) frontend and Laravel backend.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Laravel](https://img.shields.io/badge/Laravel-10.x-red.svg)](https://laravel.com)
-[![React Native](https://img.shields.io/badge/React%20Native-0.73-blue.svg)](https://reactnative.dev)
-[![Expo](https://img.shields.io/badge/Expo-50.x-blue.svg)](https://expo.dev)
+## 🎯 Overview
 
-## Overview
+This system enables collectors (e.g., tea leaf collectors) to:
+- Track quantities collected from multiple suppliers
+- Manage advance and partial payments
+- Define and track time-based product rates
+- Calculate accurate supplier balances
+- Work seamlessly offline with automatic synchronization
+- Handle multi-user, multi-device scenarios with conflict resolution
 
-FieldSyncLedger is a comprehensive, production-ready application designed for scenarios requiring reliable data collection and payment management in areas with intermittent or limited internet connectivity. Perfect for agricultural product collection, field services, and any business requiring accurate tracking and payment management in remote locations.
+## 🏗️ Architecture
 
-### Key Features
+### Backend (Laravel 12)
+- **Clean Architecture** with clear separation of concerns
+- **RESTful API** with JWT authentication
+- **PostgreSQL/MySQL** database with comprehensive schema
+- **Version-based conflict resolution** for multi-device sync
+- **RBAC/ABAC** security model
 
-✅ **Offline-First Architecture** - Full functionality without internet connection  
-✅ **Automatic Synchronization** - Event-driven sync on network restoration  
-✅ **Zero Data Loss** - Deterministic conflict resolution with versioning  
-✅ **Historical Rate Management** - Preserves exact rates at collection time  
-✅ **Multi-User Support** - Concurrent access across multiple devices  
-✅ **Automated Payment Calculations** - Accurate, auditable financial tracking  
-✅ **Enterprise Security** - End-to-end encryption, RBAC/ABAC, tamper-resistant  
-✅ **Clean Architecture** - SOLID principles, maintainable, scalable
+### Frontend (React Native + Expo)
+- **TypeScript** for type safety
+- **Offline-first** architecture with SQLite storage
+- **Encrypted local storage** for sensitive data
+- **Event-driven synchronization** (network restore, app foreground, auth)
+- **Clean Architecture** with domain, data, and presentation layers
 
-## Technology Stack
+## 📋 Requirements
 
 ### Backend
-- **Framework**: Laravel 10.x
-- **Database**: MySQL 8.0
-- **Authentication**: Laravel Sanctum (JWT)
-- **Architecture**: Clean Architecture, DDD
+- PHP 8.3+
+- Composer 2.x
+- MySQL 8.0+ or PostgreSQL 13+
+- Redis (optional, for caching)
 
 ### Frontend
-- **Framework**: React Native with Expo 50.x
-- **Language**: TypeScript
-- **Local Storage**: SQLite (expo-sqlite)
-- **Secure Storage**: Expo SecureStore
-- **State Management**: Zustand
-- **Architecture**: Clean Architecture
+- Node.js 20.x LTS
+- npm 10.x or yarn
+- Expo CLI
 
-## Quick Start
+## 🚀 Quick Start
 
-### Prerequisites
-- Docker & Docker Compose
-- Node.js 18+
-- Git
+### Backend Setup
 
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/kasunvimarshana/FieldSyncLedger.git
-   cd FieldSyncLedger
-   ```
-
-2. **Start the backend**
-   ```bash
-   # Copy environment file
-   cp backend/.env.example backend/.env
-   
-   # Start services
-   docker-compose up -d
-   
-   # Run migrations
-   docker-compose exec backend php artisan migrate
-   
-   # Generate app key
-   docker-compose exec backend php artisan key:generate
-   
-   # Seed test data (optional)
-   docker-compose exec backend php artisan db:seed
-   ```
-   
-   Backend API: `http://localhost:8000`
-   
-   **Test Credentials (after seeding)**:
-   - Admin: `admin@fieldsyncledger.com` / `password`
-   - Collector: `john@fieldsyncledger.com` / `password`
-   - Viewer: `viewer@fieldsyncledger.com` / `password`
-
-3. **Start the frontend**
-   ```bash
-   cd frontend
-   npm install
-   echo "EXPO_PUBLIC_API_URL=http://localhost:8000/api" > .env
-   npm start
-   ```
-   
-   Scan QR code with Expo Go app or press `i` for iOS, `a` for Android
-
-## Use Cases
-
-### Tea Leaf Collection (Example)
-- Collectors visit multiple suppliers daily
-- Record quantities collected with automatic rate application
-- Make advance/partial payments at intervals
-- Define final rates at month-end
-- Automatically calculate supplier balances
-- Generate accurate payment reports
-
-### Supported Operations
-- ✅ Full CRUD for suppliers, products, collections, payments
-- ✅ Multi-unit quantity tracking (kg, g, liters, etc.)
-- ✅ Time-based and versioned product rates
-- ✅ Advance, partial, and final payments
-- ✅ Automated payment calculations from historical data
-- ✅ Audit trail for all transactions
-
-## Architecture
-
-### Backend Structure
-```
-backend/
-├── app/
-│   ├── Domain/         # Business entities, rules, interfaces
-│   ├── Application/    # Use cases, DTOs, services
-│   ├── Infrastructure/ # Database, external services
-│   ├── Http/          # Controllers, middleware, routes
-│   └── Models/        # Eloquent models
-├── database/
-│   └── migrations/    # Database schema
-└── tests/            # Unit and integration tests
-```
-
-### Frontend Structure
-```
-frontend/
-├── src/
-│   ├── domain/         # Entity interfaces, repositories
-│   ├── application/    # Use cases, business logic
-│   ├── infrastructure/ # API, SQLite, sync service
-│   └── presentation/   # UI components, screens
-├── app/               # Expo Router screens
-└── assets/           # Images, fonts
-```
-
-## Core Features
-
-### Offline-First Synchronization
-- **Automatic Sync Triggers**:
-  - Network restoration
-  - App foregrounding
-  - Successful authentication
-  - Manual sync option
-
-- **Conflict Resolution**:
-  - Version-based detection
-  - Server-wins for critical data
-  - Last-write-wins with timestamps
-  - Manual resolution UI for complex conflicts
-
-- **Data Integrity**:
-  - Idempotency keys for collections/payments
-  - Optimistic locking with version numbers
-  - Transactional batch operations
-  - Zero data loss guarantee
-
-### Historical Rate Management
-- Preserves exact rate at collection time
-- New collections use latest active rate
-- Rate versioning with effective date ranges
-- Seamless offline/online rate application
-
-### Payment Calculation
-```
-Balance Due = Total Collection Value - Total Payments
-
-Where:
-- Collection Value = Σ(quantity × applied_rate)
-- Includes all historical collections
-- Deducts all prior payments (advance, partial)
-```
-
-### Security Features
-- JWT authentication
-- RBAC/ABAC authorization
-- Encrypted data storage
-- Tamper-resistant sync
-- SQL injection prevention
-- HTTPS/TLS for transmission
-
-## Documentation
-
-- 📘 [Architecture Documentation](./docs/ARCHITECTURE.md) - System design and architecture
-- 🛠️ [Developer Setup Guide](./docs/DEVELOPER_SETUP.md) - Local development setup
-- 🚀 [Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment instructions
-- 📡 [API Documentation](./docs/API.md) - Complete API reference
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login and get token
-- `GET /api/auth/user` - Get current user
-- `POST /api/auth/logout` - Logout
-
-### Resources
-- `GET/POST/PUT/DELETE /api/suppliers` - Supplier management
-- `GET/POST/PUT/DELETE /api/products` - Product management
-- `GET/POST/PUT/DELETE /api/rate-versions` - Rate version management
-- `GET /api/rate-versions/active` - Get active rate for product/date
-- `GET/POST/PUT/DELETE /api/collections` - Collection management
-- `GET/POST/PUT/DELETE /api/payments` - Payment management
-- `GET /api/supplier-balances` - Get all supplier balances
-- `GET /api/supplier-balances/{id}` - Get specific supplier balance
-
-### Synchronization
-- `GET /api/sync/pull?since={timestamp}` - Pull server changes
-- `POST /api/sync/push` - Push local changes
-
-See [API Documentation](./docs/API.md) for complete details.
-
-## Database Schema
-
-### Core Entities
-- **Users** - Authentication and authorization
-- **Suppliers** - Supplier information and contacts
-- **Products** - Product definitions with units
-- **RateVersions** - Time-based product rates
-- **Collections** - Quantity collected with applied rates
-- **Payments** - Payment records with types
-- **SyncLogs** - Synchronization audit trail
-
-### Key Relationships
-- User → Suppliers (one-to-many)
-- Product → RateVersions (one-to-many)
-- Supplier → Collections, Payments (one-to-many)
-- Collection → RateVersion (many-to-one)
-
-## Development
-
-### Running Tests
-
-**Backend:**
 ```bash
-docker-compose exec backend php artisan test
+cd backend
+
+# Install dependencies
+composer install
+
+# Setup environment
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret
+
+# Configure database in .env
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=collection_payment_db
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# Run migrations
+php artisan migrate
+
+# Start development server
+php artisan serve
 ```
 
-**Frontend:**
+### Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create .env file
+echo "API_BASE_URL=http://localhost:8000/api" > .env
+
+# Start development server
+npm start
+
+# Or run on specific platform
+npm run android
+npm run ios
+npm run web
+```
+
+## 📚 Documentation
+
+- **[Architecture Documentation](./ARCHITECTURE.md)** - Detailed system architecture
+- **[API Documentation](./API.md)** - Complete API reference
+- **[Deployment Guide](./DEPLOYMENT.md)** - Production deployment instructions
+
+## 🔑 Key Features
+
+### 1. Supplier Management
+- Detailed supplier profiles with contact information
+- Regional tracking
+- Credit limit management
+- Active/inactive status
+
+### 2. Product Management
+- Multi-unit support (kg, g, lb, etc.)
+- Category organization
+- Product codes and descriptions
+
+### 3. Rate Management
+- Time-versioned rates (effective from/to dates)
+- Supplier-specific or global rates
+- Historical rate preservation
+- Automatic rate application on collections
+
+### 4. Collection Tracking
+- Quantity recording with units
+- Immutable historical rates
+- Automatic total value calculation
+- Collector attribution
+- Notes and metadata support
+
+### 5. Payment Management
+- Multiple payment types: advance, partial, full, adjustment
+- Multiple payment methods: cash, bank transfer, cheque, mobile money
+- Payment tracking with reference numbers
+- Status management (pending, completed, cancelled)
+
+### 6. Offline Synchronization
+- **Automatic sync triggers:**
+  - Network connectivity restored
+  - App brought to foreground
+  - Successful authentication
+- **Manual sync option** with user feedback
+- **Idempotent operations** prevent duplication
+- **Conflict resolution** with version tracking
+- **Tamper-resistant** with HMAC signatures
+
+### 7. Financial Calculations
+- Automated supplier balance calculation
+- Detailed supplier statements
+- Payment due calculations
+- Historical transaction tracking
+
+### 8. Security
+- JWT authentication
+- Role-based access control (RBAC)
+- Attribute-based access control (ABAC)
+- Encrypted data storage and transmission
+- Secure local storage on mobile devices
+
+## 🔐 User Roles
+
+### Admin
+- Full system access
+- User management
+- System configuration
+- All CRUD operations
+
+### Manager
+- View all data
+- Manage suppliers, products, rates
+- Approve payments
+- View reports
+
+### Collector
+- Record collections
+- Make payments
+- View assigned suppliers
+- Sync data
+
+## 📊 Database Schema
+
+### Core Tables
+- `users` - User accounts with roles and permissions
+- `suppliers` - Supplier information
+- `products` - Product catalog
+- `rates` - Time-versioned product rates
+- `collections` - Collection records with immutable rates
+- `payments` - Payment transactions
+- `sync_queue` - Offline operation queue
+
+## 🔄 Synchronization Flow
+
+### Push Sync (Offline → Online)
+1. App collects pending operations in local queue
+2. Signs payload with HMAC
+3. Sends batch to server with version info
+4. Server validates and processes
+5. Returns server versions
+6. App updates local records
+
+### Pull Sync (Online → Offline)
+1. App sends last known version
+2. Server returns all changes since version
+3. App applies changes with conflict detection
+4. App updates version marker
+
+### Conflict Resolution
+- Version-based detection
+- Timestamp-based tie-breaking
+- Last-write-wins strategy
+- User notification for manual resolution (optional)
+
+## 🧪 Testing
+
+### Backend Tests
+```bash
+cd backend
+php artisan test
+```
+
+### Frontend Tests
 ```bash
 cd frontend
 npm test
 ```
 
-### Code Quality
+## 📦 Building for Production
 
-**Backend:**
+### Backend
 ```bash
-# Code style
-docker-compose exec backend vendor/bin/pint
-
-# Static analysis
-docker-compose exec backend vendor/bin/phpstan analyse
+cd backend
+composer install --no-dev --optimize-autoloader
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
 ```
 
-**Frontend:**
-```bash
-# Linting
-npm run lint
-
-# Type checking
-npx tsc --noEmit
-```
-
-## Deployment
-
-### Docker Deployment (Recommended)
-
-```bash
-# Production build
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# Run migrations
-docker-compose -f docker-compose.prod.yml exec backend php artisan migrate --force
-```
-
-### Mobile App Build
-
+### Frontend
 ```bash
 cd frontend
 
-# iOS
-eas build --platform ios
+# Build APK for Android
+npx expo build:android
 
-# Android
-eas build --platform android
+# Build for iOS
+npx expo build:ios
+
+# Or use EAS Build
+eas build --platform all
 ```
 
-See [Deployment Guide](./docs/DEPLOYMENT.md) for complete instructions.
+## 🌍 Example Use Case: Tea Leaf Collection
 
-## Contributing
+1. **Daily Collections**: Collector visits suppliers, records quantity collected
+2. **Auto Rate Application**: System applies current rate, stores immutably
+3. **Offline Operation**: Works without internet, queues operations
+4. **Advance Payments**: Collector makes advance payments to suppliers
+5. **Auto Sync**: When online, syncs all data automatically
+6. **Month-End**: Admin updates rate for the period
+7. **Balance Calculation**: System calculates total owed minus payments
+8. **Statement Generation**: Detailed breakdown for each supplier
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## 🛡️ Security Best Practices
 
-### Code Style
-- Follow PSR-12 for PHP
-- Follow TypeScript ESLint rules
-- Add meaningful comments
-- Write tests for new features
+1. **Never commit** `.env` files or credentials
+2. **Use HTTPS** in production
+3. **Regular security updates** for dependencies
+4. **Strong passwords** and key rotation
+5. **Rate limiting** on API endpoints
+6. **Input validation** on all inputs
+7. **Encrypted storage** for sensitive data
+8. **Regular backups** and disaster recovery testing
 
-## Design Principles
+## 📈 Performance Optimization
 
-### Clean Architecture
-- **Domain Layer**: Core business logic, independent of frameworks
-- **Application Layer**: Use cases and application services
-- **Infrastructure Layer**: External integrations (DB, API, storage)
-- **Presentation Layer**: UI components and user interactions
+- Database indexing on frequently queried columns
+- Lazy loading of relationships
+- Pagination on list endpoints
+- Delta sync (only changed data)
+- Background processing for heavy tasks
+- Redis caching for frequently accessed data
 
-### SOLID Principles
-- **S**ingle Responsibility
-- **O**pen/Closed
-- **L**iskov Substitution
-- **I**nterface Segregation
-- **D**ependency Inversion
+## 🤝 Contributing
 
-### Best Practices
-- DRY (Don't Repeat Yourself)
-- KISS (Keep It Simple, Stupid)
-- Minimal external dependencies
-- Comprehensive testing
-- Clear documentation
+This is a production system. For changes:
+1. Follow Clean Architecture principles
+2. Maintain SOLID design patterns
+3. Write comprehensive tests
+4. Update documentation
+5. Follow existing code style
 
-## Troubleshooting
+## 📄 License
 
-### Backend Issues
+Proprietary - All rights reserved
 
-**Database connection failed:**
-```bash
-# Check MySQL is running
-docker-compose ps
+## 📞 Support
 
-# View logs
-docker-compose logs mysql
-```
+For technical support or questions:
+- Technical Documentation: See `/docs` folder
+- API Reference: See `API.md`
+- Deployment Guide: See `DEPLOYMENT.md`
 
-**Migrations not running:**
-```bash
-# Reset database (WARNING: destroys data)
-docker-compose exec backend php artisan migrate:fresh
-```
+## 🔄 Version History
 
-### Frontend Issues
+### v1.0.0 (Current)
+- Initial release
+- Core CRUD operations
+- Offline synchronization
+- Payment calculations
+- Multi-user support
+- JWT authentication
+- RBAC/ABAC security
 
-**Cannot connect to API:**
-- Check API URL in `.env`
-- Ensure device is on same network
-- Use local IP instead of localhost for physical devices
+## 🎯 Roadmap
 
-**SQLite errors:**
-```bash
-# Clear cache
-npx expo start -c
-```
-
-## Performance
-
-### Backend Optimization
-- OPcache enabled for PHP
-- Query result caching
-- Database indexing on frequently queried fields
-- Connection pooling
-
-### Frontend Optimization
-- Batch sync operations (max 100 items)
-- Lazy loading for large lists
-- Image optimization
-- Efficient SQLite queries with indexes
-
-## Security
-
-### Backend
-- JWT authentication with Laravel Sanctum
-- SQL injection prevention via Eloquent ORM
-- CSRF protection
-- Rate limiting (60 requests/minute)
-- Input validation and sanitization
-
-### Frontend
-- Secure token storage (Expo SecureStore)
-- Local database encryption capability
-- Certificate pinning for API calls
-- No sensitive data in logs
-
-## Monitoring
-
-### Application Logs
-```bash
-# Backend logs
-docker-compose logs -f backend
-
-# Laravel logs
-tail -f backend/storage/logs/laravel.log
-```
-
-### Database Backups
-```bash
-# Manual backup
-docker-compose exec mysql mysqldump -u root -p fieldsyncledger > backup.sql
-
-# Automated backups (see Deployment Guide)
-```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-Built with:
-- [Laravel](https://laravel.com) - Backend framework
-- [React Native](https://reactnative.dev) - Mobile framework
-- [Expo](https://expo.dev) - Development platform
-- [TypeScript](https://www.typescriptlang.org) - Type safety
-- [SQLite](https://www.sqlite.org) - Local storage
-
-## Support
-
-For issues, questions, or contributions:
-- 📧 Email: support@fieldsyncledger.com
-- 🐛 Issues: [GitHub Issues](https://github.com/kasunvimarshana/FieldSyncLedger/issues)
-- 📖 Documentation: [Wiki](https://github.com/kasunvimarshana/FieldSyncLedger/wiki)
-
-## Roadmap
-
-### Version 1.x
-- [x] Core offline-first functionality
-- [x] Automatic synchronization
-- [x] Payment calculation engine
-- [ ] Advanced reporting
-- [ ] Export to CSV/PDF
+### Future Enhancements
+- [ ] Real-time WebSocket notifications
+- [ ] Advanced reporting and analytics
+- [ ] Export to Excel/PDF
 - [ ] Multi-language support
+- [ ] Biometric authentication
+- [ ] Batch operations
+- [ ] Dashboard with charts
+- [ ] SMS notifications
 
-### Version 2.x
-- [ ] Real-time collaborative editing
-- [ ] WebSocket notifications
-- [ ] Advanced analytics dashboard
-- [ ] Image attachments for collections
-- [ ] Barcode/QR code scanning
+## 📝 Notes
+
+- This system follows **online-first** architecture with robust offline support
+- All operations are **idempotent** to prevent data duplication
+- Historical rates are **immutable** to preserve transaction integrity
+- Synchronization is **event-driven** and predictable
+- Security is implemented **end-to-end** across all layers
 
 ---
 
-**Made with ❤️ for reliable field operations in any connectivity condition**
-
-
-
+Built with ❤️ following Clean Architecture, SOLID principles, and industry best practices.

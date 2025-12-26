@@ -1,73 +1,56 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CollectionController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\RateVersionController;
-use App\Http\Controllers\SupplierBalanceController;
-use App\Http\Controllers\SyncController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\SupplierController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\RateController;
+use App\Http\Controllers\Api\CollectionController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\SyncController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
-
-// Public routes - with throttling
-Route::middleware('throttle.api:10,1')->group(function () {
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
-});
+// Public routes
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
 
 // Protected routes
-Route::middleware(['auth:sanctum', 'throttle.api:60,1'])->group(function () {
-    // Auth routes
-    Route::get('/auth/user', [AuthController::class, 'user']);
+Route::middleware('auth:api')->group(function () {
+    // Authentication
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
 
-    // Supplier routes - collectors and admins can manage
-    Route::middleware('role:admin,collector')->group(function () {
-        Route::apiResource('suppliers', SupplierController::class);
-    });
+    // Suppliers
+    Route::apiResource('suppliers', SupplierController::class);
+    Route::get('/suppliers/{id}/balance', [SupplierController::class, 'balance']);
+    Route::get('/suppliers/{id}/statement', [SupplierController::class, 'statement']);
 
-    // Product routes - admins can create/update/delete, all can view
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/{id}', [ProductController::class, 'show']);
-    Route::middleware('role:admin')->group(function () {
-        Route::post('/products', [ProductController::class, 'store']);
-        Route::put('/products/{id}', [ProductController::class, 'update']);
-        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
-    });
+    // Products
+    Route::apiResource('products', ProductController::class);
 
-    // Rate version routes - admins manage rates, all can view
-    Route::get('/rate-versions', [RateVersionController::class, 'index']);
-    Route::get('/rate-versions/active', [RateVersionController::class, 'getActiveRate']);
-    Route::get('/rate-versions/{id}', [RateVersionController::class, 'show']);
-    Route::middleware('role:admin')->group(function () {
-        Route::post('/rate-versions', [RateVersionController::class, 'store']);
-        Route::put('/rate-versions/{id}', [RateVersionController::class, 'update']);
-        Route::delete('/rate-versions/{id}', [RateVersionController::class, 'destroy']);
-    });
+    // Rates
+    Route::apiResource('rates', RateController::class);
+    Route::get('/rates/current', [RateController::class, 'current']);
 
-    // Collection routes - collectors and admins can manage
-    Route::middleware('role:admin,collector')->group(function () {
-        Route::apiResource('collections', CollectionController::class);
-    });
+    // Collections
+    Route::apiResource('collections', CollectionController::class);
 
-    // Payment routes - collectors and admins can manage
-    Route::middleware('role:admin,collector')->group(function () {
-        Route::apiResource('payments', PaymentController::class);
-    });
+    // Payments
+    Route::apiResource('payments', PaymentController::class);
+    Route::post('/payments/calculate', [PaymentController::class, 'calculate']);
 
-    // Supplier balance routes - all authenticated users can view
-    Route::get('/supplier-balances', [SupplierBalanceController::class, 'index']);
-    Route::get('/supplier-balances/{supplierId}', [SupplierBalanceController::class, 'show']);
-
-    // Sync routes - all authenticated users can sync
-    Route::get('/sync/pull', [SyncController::class, 'pull']);
+    // Synchronization
     Route::post('/sync/push', [SyncController::class, 'push']);
+    Route::get('/sync/pull', [SyncController::class, 'pull']);
+    Route::get('/sync/status', [SyncController::class, 'status']);
+    Route::post('/sync/resolve-conflict', [SyncController::class, 'resolveConflict']);
+});
+
+// Health check
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+        'database' => \DB::connection()->getPdo() ? 'connected' : 'disconnected'
+    ]);
 });
