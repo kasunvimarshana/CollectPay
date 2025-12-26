@@ -3,12 +3,41 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Application\UseCases\CreateProductUseCase;
+use App\Application\UseCases\UpdateProductUseCase;
+use App\Application\UseCases\GetProductUseCase;
+use App\Application\UseCases\DeleteProductUseCase;
+use App\Application\DTOs\CreateProductDTO;
+use App\Application\DTOs\UpdateProductDTO;
+use App\Domain\Repositories\ProductRepositoryInterface;
+use App\Domain\Exceptions\EntityNotFoundException;
+use App\Domain\Exceptions\VersionConflictException;
+use App\Domain\Exceptions\InvalidOperationException;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class ProductController extends Controller
 {
+    private ProductRepositoryInterface $productRepository;
+    private CreateProductUseCase $createProductUseCase;
+    private UpdateProductUseCase $updateProductUseCase;
+    private GetProductUseCase $getProductUseCase;
+    private DeleteProductUseCase $deleteProductUseCase;
+
+    public function __construct(
+        ProductRepositoryInterface $productRepository,
+        CreateProductUseCase $createProductUseCase,
+        UpdateProductUseCase $updateProductUseCase,
+        GetProductUseCase $getProductUseCase,
+        DeleteProductUseCase $deleteProductUseCase
+    ) {
+        $this->productRepository = $productRepository;
+        $this->createProductUseCase = $createProductUseCase;
+        $this->updateProductUseCase = $updateProductUseCase;
+        $this->getProductUseCase = $getProductUseCase;
+        $this->deleteProductUseCase = $deleteProductUseCase;
+    }
     /**
      * @OA\Get(
      *     path="/api/products",
@@ -82,35 +111,39 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with('rates');
+        $filters = [
+            'search' => $request->input('search'),
+            'is_active' => $request->input('is_active'),
+            'sort_by' => $request->input('sort_by', 'name'),
+            'sort_order' => $request->input('sort_order', 'asc'),
+        ];
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
-            });
-        }
+        $page = (int) $request->input('page', 1);
+        $perPage = min((int) $request->input('per_page', 15), 100);
 
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
+        $products = $this->productRepository->findAll($filters, $page, $perPage);
+        $total = $this->productRepository->count($filters);
 
-        // Server-side sorting
-        $sortBy = $request->get('sort_by', 'name');
-        $sortOrder = $request->get('sort_order', 'asc');
-        
-        // Validate sort parameters
-        $allowedSortFields = ['name', 'code', 'created_at', 'updated_at'];
-        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'name';
-        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'asc';
-        
-        $query->orderBy($sortBy, $sortOrder);
+        // Convert entities to arrays and add relationships
+        $data = array_map(function($product) {
+            $productData = $product->toArray();
+            
+            // Load rates relationship using model
+            $model = Product::with('rates')->find($product->getId());
+            if ($model) {
+                $productData['rates'] = $model->rates;
+            }
+            
+            return $productData;
+        }, $products);
 
-        $perPage = $request->get('per_page', 15);
-        $products = $query->paginate($perPage);
-
-        return response()->json($products);
+        return response()->json([
+            'data' => $data,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'last_page' => ceil($total / $perPage),
+        ]);
     }
 
     /**

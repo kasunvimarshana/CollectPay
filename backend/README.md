@@ -2,6 +2,32 @@
 
 Laravel 11 backend API for the TrackVault Data Collection and Payment Management System.
 
+## 🏗️ Architecture
+
+This backend follows **Clean Architecture** principles with clear separation of concerns across four distinct layers. See [CLEAN_ARCHITECTURE.md](CLEAN_ARCHITECTURE.md) for detailed documentation.
+
+### Layer Overview
+
+```
+┌─────────────────────────────────────────┐
+│     Presentation Layer (Controllers)    │  ← HTTP/API Layer
+├─────────────────────────────────────────┤
+│   Application Layer (Use Cases, DTOs)   │  ← Business Operations
+├─────────────────────────────────────────┤
+│ Domain Layer (Entities, Services, VOs)  │  ← Core Business Logic
+├─────────────────────────────────────────┤
+│ Infrastructure Layer (Repositories, DB)  │  ← Framework & Database
+└─────────────────────────────────────────┘
+```
+
+### Key Principles
+
+- **SOLID**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
+- **DRY**: Don't Repeat Yourself - business logic centralized
+- **KISS**: Keep It Simple - clear, focused classes
+- **Clean Code**: Readable, maintainable, testable
+- **Domain-Driven Design**: Business logic separate from infrastructure
+
 ## Overview
 
 This backend provides a RESTful API for managing:
@@ -170,10 +196,19 @@ php artisan test
 ## Architecture
 
 The backend follows Clean Architecture principles:
-- **Models**: Domain entities with business logic
-- **Controllers**: API endpoints with validation
-- **Migrations**: Database schema definitions
-- **Policies**: Authorization rules (future implementation)
+- **Domain Layer** (`app/Domain/`): Pure business logic with entities, value objects, services, and repository interfaces
+- **Application Layer** (`app/Application/`): Use cases, DTOs, and business orchestration
+- **Infrastructure Layer** (`app/Infrastructure/`): Repository implementations, database access
+- **Presentation Layer** (`app/Http/Controllers/`): Thin controllers handling only HTTP concerns
+
+### Benefits
+
+- **Testability**: Business logic can be tested without database or framework
+- **Maintainability**: Clear structure with single responsibility
+- **Flexibility**: Easy to swap implementations (e.g., database, cache)
+- **Scalability**: Modular architecture supports growth
+
+For complete architecture documentation, see [CLEAN_ARCHITECTURE.md](CLEAN_ARCHITECTURE.md).
 
 ## Security
 

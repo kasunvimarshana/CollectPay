@@ -3,13 +3,41 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Application\UseCases\CreateCollectionUseCase;
+use App\Application\UseCases\UpdateCollectionUseCase;
+use App\Application\UseCases\GetCollectionUseCase;
+use App\Application\UseCases\DeleteCollectionUseCase;
+use App\Application\DTOs\CreateCollectionDTO;
+use App\Application\DTOs\UpdateCollectionDTO;
+use App\Domain\Repositories\CollectionRepositoryInterface;
+use App\Domain\Exceptions\EntityNotFoundException;
+use App\Domain\Exceptions\VersionConflictException;
+use App\Domain\Exceptions\InvalidOperationException;
 use App\Models\Collection;
-use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class CollectionController extends Controller
 {
+    private CollectionRepositoryInterface $collectionRepository;
+    private CreateCollectionUseCase $createCollectionUseCase;
+    private UpdateCollectionUseCase $updateCollectionUseCase;
+    private GetCollectionUseCase $getCollectionUseCase;
+    private DeleteCollectionUseCase $deleteCollectionUseCase;
+
+    public function __construct(
+        CollectionRepositoryInterface $collectionRepository,
+        CreateCollectionUseCase $createCollectionUseCase,
+        UpdateCollectionUseCase $updateCollectionUseCase,
+        GetCollectionUseCase $getCollectionUseCase,
+        DeleteCollectionUseCase $deleteCollectionUseCase
+    ) {
+        $this->collectionRepository = $collectionRepository;
+        $this->createCollectionUseCase = $createCollectionUseCase;
+        $this->updateCollectionUseCase = $updateCollectionUseCase;
+        $this->getCollectionUseCase = $getCollectionUseCase;
+        $this->deleteCollectionUseCase = $deleteCollectionUseCase;
+    }
     /**
      * @OA\Get(
      *     path="/api/collections",
@@ -87,39 +115,47 @@ class CollectionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Collection::with(['supplier', 'product', 'user', 'productRate']);
+        $filters = [
+            'supplier_id' => $request->input('supplier_id'),
+            'product_id' => $request->input('product_id'),
+            'from_date' => $request->input('from_date'),
+            'to_date' => $request->input('to_date'),
+            'sort_by' => $request->input('sort_by', 'collection_date'),
+            'sort_order' => $request->input('sort_order', 'desc'),
+        ];
 
-        if ($request->has('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
-        }
+        $page = (int) $request->input('page', 1);
+        $perPage = min((int) $request->input('per_page', 15), 100);
 
-        if ($request->has('product_id')) {
-            $query->where('product_id', $request->product_id);
-        }
+        $collections = $this->collectionRepository->findAll($filters, $page, $perPage);
+        $total = $this->collectionRepository->count($filters);
 
-        if ($request->has('from_date')) {
-            $query->where('collection_date', '>=', $request->from_date);
-        }
+        // Convert entities to arrays and include relationships
+        $data = array_map(function($collection) {
+            $collectionData = $collection->toArray();
+            
+            // Load relationships using original model for now
+            // TODO: Move this to a dedicated use case or service
+            $model = Collection::with(['supplier', 'product', 'user', 'productRate'])
+                ->find($collection->getId());
+            
+            if ($model) {
+                $collectionData['supplier'] = $model->supplier;
+                $collectionData['product'] = $model->product;
+                $collectionData['user'] = $model->user;
+                $collectionData['product_rate'] = $model->productRate;
+            }
+            
+            return $collectionData;
+        }, $collections);
 
-        if ($request->has('to_date')) {
-            $query->where('collection_date', '<=', $request->to_date);
-        }
-
-        // Server-side sorting
-        $sortBy = $request->get('sort_by', 'collection_date');
-        $sortOrder = $request->get('sort_order', 'desc');
-        
-        // Validate sort parameters
-        $allowedSortFields = ['collection_date', 'quantity', 'total_amount', 'created_at', 'updated_at'];
-        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'collection_date';
-        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
-        
-        $query->orderBy($sortBy, $sortOrder);
-
-        $perPage = $request->get('per_page', 15);
-        $collections = $query->paginate($perPage);
-
-        return response()->json($collections);
+        return response()->json([
+            'data' => $data,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'last_page' => ceil($total / $perPage),
+        ]);
     }
 
     /**
@@ -172,35 +208,46 @@ class CollectionController extends Controller
             'metadata' => 'nullable|array',
         ]);
 
-        $collection = DB::transaction(function () use ($validated, $request) {
-            $product = Product::findOrFail($validated['product_id']);
-            $rate = $product->getCurrentRate($validated['unit'], $validated['collection_date']);
-
-            if (!$rate) {
-                throw new \Exception('No rate found for this product and unit on the specified date');
-            }
-
+        try {
             $validated['user_id'] = $request->user()->id;
-            $validated['product_rate_id'] = $rate->id;
-            $validated['rate_applied'] = $rate->rate;
-            $validated['total_amount'] = $validated['quantity'] * $rate->rate;
-
-            return Collection::create($validated);
-        });
-
-        return response()->json($collection->load(['supplier', 'product', 'user', 'productRate']), 201);
+            $dto = CreateCollectionDTO::fromArray($validated);
+            $collection = $this->createCollectionUseCase->execute($dto);
+            
+            // Load relationships for response
+            $model = Collection::with(['supplier', 'product', 'user', 'productRate'])
+                ->find($collection->getId());
+            
+            return response()->json($model, 201);
+        } catch (InvalidOperationException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create collection', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to create collection'], 500);
+        }
     }
 
     public function show(string $id)
     {
-        $collection = Collection::with(['supplier', 'product', 'user', 'productRate'])->findOrFail($id);
-        return response()->json($collection);
+        try {
+            $collection = $this->getCollectionUseCase->execute((int) $id);
+            
+            // Load relationships for response
+            $model = Collection::with(['supplier', 'product', 'user', 'productRate'])
+                ->findOrFail($id);
+                
+            return response()->json($model);
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            \Log::error('Failed to retrieve collection', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to retrieve collection'], 500);
+        }
     }
 
     public function update(Request $request, string $id)
     {
-        $collection = Collection::findOrFail($id);
-
         $validated = $request->validate([
             'supplier_id' => 'sometimes|required|exists:suppliers,id',
             'product_id' => 'sometimes|required|exists:products,id',
@@ -212,43 +259,42 @@ class CollectionController extends Controller
             'version' => 'required|integer',
         ]);
 
-        DB::transaction(function () use ($collection, $validated, $request) {
-            if ($collection->version != $validated['version']) {
-                throw new \Exception('Version mismatch. Please refresh and try again.');
-            }
-
-            if (isset($validated['product_id']) || isset($validated['unit']) || isset($validated['collection_date'])) {
-                $productId = $validated['product_id'] ?? $collection->product_id;
-                $unit = $validated['unit'] ?? $collection->unit;
-                $date = $validated['collection_date'] ?? $collection->collection_date;
-
-                $product = Product::findOrFail($productId);
-                $rate = $product->getCurrentRate($unit, $date);
-
-                if (!$rate) {
-                    throw new \Exception('No rate found for this product and unit on the specified date');
-                }
-
-                $validated['product_rate_id'] = $rate->id;
-                $validated['rate_applied'] = $rate->rate;
-            }
-
-            if (isset($validated['quantity'])) {
-                $validated['total_amount'] = $validated['quantity'] * ($validated['rate_applied'] ?? $collection->rate_applied);
-            }
-
-            $validated['version'] = $collection->version + 1;
-            $collection->update($validated);
-        });
-
-        return response()->json($collection->load(['supplier', 'product', 'user', 'productRate']));
+        try {
+            $dto = UpdateCollectionDTO::fromArray((int) $id, $validated);
+            $collection = $this->updateCollectionUseCase->execute($dto);
+            
+            // Load relationships for response
+            $model = Collection::with(['supplier', 'product', 'user', 'productRate'])
+                ->find($collection->getId());
+            
+            return response()->json($model);
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (VersionConflictException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
+        } catch (InvalidOperationException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update collection', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to update collection'], 500);
+        }
     }
 
     public function destroy(string $id)
     {
-        $collection = Collection::findOrFail($id);
-        $collection->delete();
+        try {
+            $deleted = $this->deleteCollectionUseCase->execute((int) $id);
 
-        return response()->json(['message' => 'Collection deleted successfully']);
+            if (!$deleted) {
+                return response()->json(['error' => 'Collection not found'], 404);
+            }
+
+            return response()->json(['message' => 'Collection deleted successfully']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete collection', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to delete collection'], 500);
+        }
     }
 }

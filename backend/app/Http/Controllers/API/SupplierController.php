@@ -3,12 +3,36 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Application\UseCases\CreateSupplierUseCase;
+use App\Application\UseCases\UpdateSupplierUseCase;
+use App\Application\UseCases\GetSupplierUseCase;
+use App\Application\DTOs\CreateSupplierDTO;
+use App\Application\DTOs\UpdateSupplierDTO;
+use App\Domain\Repositories\SupplierRepositoryInterface;
+use App\Domain\Exceptions\EntityNotFoundException;
+use App\Domain\Exceptions\VersionConflictException;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class SupplierController extends Controller
 {
+    private SupplierRepositoryInterface $supplierRepository;
+    private CreateSupplierUseCase $createSupplierUseCase;
+    private UpdateSupplierUseCase $updateSupplierUseCase;
+    private GetSupplierUseCase $getSupplierUseCase;
+
+    public function __construct(
+        SupplierRepositoryInterface $supplierRepository,
+        CreateSupplierUseCase $createSupplierUseCase,
+        UpdateSupplierUseCase $updateSupplierUseCase,
+        GetSupplierUseCase $getSupplierUseCase
+    ) {
+        $this->supplierRepository = $supplierRepository;
+        $this->createSupplierUseCase = $createSupplierUseCase;
+        $this->updateSupplierUseCase = $updateSupplierUseCase;
+        $this->getSupplierUseCase = $getSupplierUseCase;
+    }
     /**
      * @OA\Get(
      *     path="/api/suppliers",
@@ -89,46 +113,42 @@ class SupplierController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Supplier::query();
+        $filters = [
+            'search' => $request->input('search'),
+            'is_active' => $request->input('is_active'),
+            'sort_by' => $request->input('sort_by', 'name'),
+            'sort_order' => $request->input('sort_order', 'asc'),
+        ];
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
+        $page = (int) $request->input('page', 1);
+        $perPage = min((int) $request->input('per_page', 15), 100);
+        $includeBalance = $request->get('include_balance', false);
+
+        $suppliers = $this->supplierRepository->findAll($filters, $page, $perPage);
+        $total = $this->supplierRepository->count($filters);
+
+        // Convert entities to arrays
+        $data = array_map(fn($supplier) => $supplier->toArray(), $suppliers);
+
+        // Include balance information if requested (using original model temporarily)
+        if ($includeBalance) {
+            foreach ($data as $index => &$supplierData) {
+                $model = Supplier::find($supplierData['id']);
+                if ($model) {
+                    $supplierData['total_collections'] = $model->getTotalCollectionsAmount();
+                    $supplierData['total_payments'] = $model->getTotalPaymentsAmount();
+                    $supplierData['balance'] = $model->getBalanceAmount();
+                }
+            }
         }
 
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
-
-        // Server-side sorting
-        $sortBy = $request->get('sort_by', 'name');
-        $sortOrder = $request->get('sort_order', 'asc');
-        
-        // Validate sort parameters
-        $allowedSortFields = ['name', 'code', 'created_at', 'updated_at'];
-        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'name';
-        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'asc';
-        
-        $query->orderBy($sortBy, $sortOrder);
-
-        $perPage = $request->get('per_page', 15);
-        $suppliers = $query->paginate($perPage);
-
-        // Include balance information if requested
-        if ($request->get('include_balance', false)) {
-            $suppliers->getCollection()->transform(function ($supplier) {
-                $supplier->total_collections = $supplier->getTotalCollectionsAmount();
-                $supplier->total_payments = $supplier->getTotalPaymentsAmount();
-                $supplier->balance = $supplier->getBalanceAmount();
-                return $supplier;
-            });
-        }
-
-        return response()->json($suppliers);
+        return response()->json([
+            'data' => $data,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'last_page' => ceil($total / $perPage),
+        ]);
     }
 
     /**
@@ -178,28 +198,43 @@ class SupplierController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $supplier = DB::transaction(function () use ($validated) {
-            return Supplier::create($validated);
-        });
-
-        return response()->json($supplier, 201);
+        try {
+            $dto = CreateSupplierDTO::fromArray($validated);
+            $supplier = $this->createSupplierUseCase->execute($dto);
+            
+            return response()->json($supplier->toArray(), 201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create supplier', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to create supplier'], 500);
+        }
     }
 
     public function show(string $id)
     {
-        $supplier = Supplier::with(['collections', 'payments'])->findOrFail($id);
+        try {
+            $supplier = $this->getSupplierUseCase->execute((int) $id);
+            
+            // Get balance information using original model temporarily
+            // TODO: Move this to a dedicated use case
+            $model = Supplier::with(['collections', 'payments'])->findOrFail($id);
+            $data = $supplier->toArray();
+            $data['total_collections'] = $model->getTotalCollectionsAmount();
+            $data['total_payments'] = $model->getTotalPaymentsAmount();
+            $data['balance'] = $model->getBalanceAmount();
 
-        $supplier->total_collections = $supplier->getTotalCollectionsAmount();
-        $supplier->total_payments = $supplier->getTotalPaymentsAmount();
-        $supplier->balance = $supplier->getBalanceAmount();
-
-        return response()->json($supplier);
+            return response()->json($data);
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            \Log::error('Failed to retrieve supplier', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to retrieve supplier'], 500);
+        }
     }
 
     public function update(Request $request, string $id)
     {
-        $supplier = Supplier::findOrFail($id);
-
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'code' => 'sometimes|required|string|max:255|unique:suppliers,code,' . $id,
@@ -211,23 +246,36 @@ class SupplierController extends Controller
             'version' => 'required|integer',
         ]);
 
-        DB::transaction(function () use ($supplier, $validated) {
-            if ($supplier->version != $validated['version']) {
-                throw new \Exception('Version mismatch. Please refresh and try again.');
-            }
-
-            $validated['version'] = $supplier->version + 1;
-            $supplier->update($validated);
-        });
-
-        return response()->json($supplier);
+        try {
+            $dto = UpdateSupplierDTO::fromArray((int) $id, $validated);
+            $supplier = $this->updateSupplierUseCase->execute($dto);
+            
+            return response()->json($supplier->toArray());
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (VersionConflictException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update supplier', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to update supplier'], 500);
+        }
     }
 
     public function destroy(string $id)
     {
-        $supplier = Supplier::findOrFail($id);
-        $supplier->delete();
+        try {
+            $deleted = $this->supplierRepository->delete((int) $id);
 
-        return response()->json(['message' => 'Supplier deleted successfully']);
+            if (!$deleted) {
+                return response()->json(['error' => 'Supplier not found'], 404);
+            }
+
+            return response()->json(['message' => 'Supplier deleted successfully']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete supplier', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to delete supplier'], 500);
+        }
     }
 }

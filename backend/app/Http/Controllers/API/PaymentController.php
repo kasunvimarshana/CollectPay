@@ -3,13 +3,41 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Application\UseCases\CreatePaymentUseCase;
+use App\Application\UseCases\UpdatePaymentUseCase;
+use App\Application\UseCases\GetPaymentUseCase;
+use App\Application\UseCases\DeletePaymentUseCase;
+use App\Application\DTOs\CreatePaymentDTO;
+use App\Application\DTOs\UpdatePaymentDTO;
+use App\Domain\Repositories\PaymentRepositoryInterface;
+use App\Domain\Exceptions\EntityNotFoundException;
+use App\Domain\Exceptions\VersionConflictException;
 use App\Models\Payment;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class PaymentController extends Controller
 {
+    private PaymentRepositoryInterface $paymentRepository;
+    private CreatePaymentUseCase $createPaymentUseCase;
+    private UpdatePaymentUseCase $updatePaymentUseCase;
+    private GetPaymentUseCase $getPaymentUseCase;
+    private DeletePaymentUseCase $deletePaymentUseCase;
+
+    public function __construct(
+        PaymentRepositoryInterface $paymentRepository,
+        CreatePaymentUseCase $createPaymentUseCase,
+        UpdatePaymentUseCase $updatePaymentUseCase,
+        GetPaymentUseCase $getPaymentUseCase,
+        DeletePaymentUseCase $deletePaymentUseCase
+    ) {
+        $this->paymentRepository = $paymentRepository;
+        $this->createPaymentUseCase = $createPaymentUseCase;
+        $this->updatePaymentUseCase = $updatePaymentUseCase;
+        $this->getPaymentUseCase = $getPaymentUseCase;
+        $this->deletePaymentUseCase = $deletePaymentUseCase;
+    }
     /**
      * @OA\Get(
      *     path="/api/payments",
@@ -75,39 +103,43 @@ class PaymentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Payment::with(['supplier', 'user']);
+        $filters = [
+            'supplier_id' => $request->input('supplier_id'),
+            'payment_type' => $request->input('payment_type'),
+            'from_date' => $request->input('from_date'),
+            'to_date' => $request->input('to_date'),
+            'sort_by' => $request->input('sort_by', 'payment_date'),
+            'sort_order' => $request->input('sort_order', 'desc'),
+        ];
 
-        if ($request->has('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
-        }
+        $page = (int) $request->input('page', 1);
+        $perPage = min((int) $request->input('per_page', 15), 100);
 
-        if ($request->has('payment_type')) {
-            $query->where('payment_type', $request->payment_type);
-        }
+        $payments = $this->paymentRepository->findAll($filters, $page, $perPage);
+        $total = $this->paymentRepository->count($filters);
 
-        if ($request->has('from_date')) {
-            $query->where('payment_date', '>=', $request->from_date);
-        }
+        // Convert entities to arrays and include relationships
+        $data = array_map(function($payment) {
+            $paymentData = $payment->toArray();
+            
+            // Load relationships using original model for now
+            $model = Payment::with(['supplier', 'user'])->find($payment->getId());
+            
+            if ($model) {
+                $paymentData['supplier'] = $model->supplier;
+                $paymentData['user'] = $model->user;
+            }
+            
+            return $paymentData;
+        }, $payments);
 
-        if ($request->has('to_date')) {
-            $query->where('payment_date', '<=', $request->to_date);
-        }
-
-        // Server-side sorting
-        $sortBy = $request->get('sort_by', 'payment_date');
-        $sortOrder = $request->get('sort_order', 'desc');
-        
-        // Validate sort parameters
-        $allowedSortFields = ['payment_date', 'amount', 'payment_type', 'created_at', 'updated_at'];
-        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'payment_date';
-        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
-        
-        $query->orderBy($sortBy, $sortOrder);
-
-        $perPage = $request->get('per_page', 15);
-        $payments = $query->paginate($perPage);
-
-        return response()->json($payments);
+        return response()->json([
+            'data' => $data,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'last_page' => ceil($total / $perPage),
+        ]);
     }
 
     /**
@@ -152,24 +184,42 @@ class PaymentController extends Controller
             'metadata' => 'nullable|array',
         ]);
 
-        $payment = DB::transaction(function () use ($validated, $request) {
+        try {
             $validated['user_id'] = $request->user()->id;
-            return Payment::create($validated);
-        });
-
-        return response()->json($payment->load(['supplier', 'user']), 201);
+            $dto = CreatePaymentDTO::fromArray($validated);
+            $payment = $this->createPaymentUseCase->execute($dto);
+            
+            // Load relationships for response
+            $model = Payment::with(['supplier', 'user'])->find($payment->getId());
+            
+            return response()->json($model, 201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create payment', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to create payment'], 500);
+        }
     }
 
     public function show(string $id)
     {
-        $payment = Payment::with(['supplier', 'user'])->findOrFail($id);
-        return response()->json($payment);
+        try {
+            $payment = $this->getPaymentUseCase->execute((int) $id);
+            
+            // Load relationships for response
+            $model = Payment::with(['supplier', 'user'])->findOrFail($id);
+            
+            return response()->json($model);
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            \Log::error('Failed to retrieve payment', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to retrieve payment'], 500);
+        }
     }
 
     public function update(Request $request, string $id)
     {
-        $payment = Payment::findOrFail($id);
-
         $validated = $request->validate([
             'supplier_id' => 'sometimes|required|exists:suppliers,id',
             'payment_date' => 'sometimes|required|date',
@@ -182,24 +232,40 @@ class PaymentController extends Controller
             'version' => 'required|integer',
         ]);
 
-        DB::transaction(function () use ($payment, $validated) {
-            if ($payment->version != $validated['version']) {
-                throw new \Exception('Version mismatch. Please refresh and try again.');
-            }
-
-            $validated['version'] = $payment->version + 1;
-            $payment->update($validated);
-        });
-
-        return response()->json($payment->load(['supplier', 'user']));
+        try {
+            $dto = UpdatePaymentDTO::fromArray((int) $id, $validated);
+            $payment = $this->updatePaymentUseCase->execute($dto);
+            
+            // Load relationships for response
+            $model = Payment::with(['supplier', 'user'])->find($payment->getId());
+            
+            return response()->json($model);
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (VersionConflictException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update payment', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to update payment'], 500);
+        }
     }
 
     public function destroy(string $id)
     {
-        $payment = Payment::findOrFail($id);
-        $payment->delete();
+        try {
+            $deleted = $this->deletePaymentUseCase->execute((int) $id);
 
-        return response()->json(['message' => 'Payment deleted successfully']);
+            if (!$deleted) {
+                return response()->json(['error' => 'Payment not found'], 404);
+            }
+
+            return response()->json(['message' => 'Payment deleted successfully']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete payment', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to delete payment'], 500);
+        }
     }
 
     public function getSupplierBalance(string $supplierId)
