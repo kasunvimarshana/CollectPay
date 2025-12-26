@@ -13,10 +13,12 @@ import { collectionService, Collection, CreateCollectionRequest, UpdateCollectio
 import { supplierService, Supplier } from '../api/supplier';
 import { productService, Product } from '../api/product';
 import { formatDate, formatAmount } from '../utils/formatters';
-import { FloatingActionButton, FormModal, Input, Button, Picker } from '../components';
+import { FloatingActionButton, FormModal, Input, Button, Picker, PrintButton } from '../components';
 import DateRangePicker, { DateRange } from '../components/DateRangePicker';
 import { UNIT_OPTIONS } from '../utils/constants';
 import { usePagination } from '../hooks/usePagination';
+import { printService } from '../utils/printService';
+import { generateCollectionReceipt, generateCollectionsReport } from '../utils/printTemplates';
 
 const CollectionsScreen = () => {
   const pagination = usePagination<Collection>({ initialPerPage: 25 });
@@ -31,6 +33,7 @@ const CollectionsScreen = () => {
   const [sortBy, setSortBy] = useState<'collection_date' | 'quantity' | 'total_amount'>('collection_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: '', endDate: '' });
+  const [isPrinting, setIsPrinting] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -277,6 +280,46 @@ const CollectionsScreen = () => {
     );
   };
 
+  const handlePrintReceipt = async (collection: Collection) => {
+    try {
+      setIsPrinting(true);
+      const html = generateCollectionReceipt(collection);
+      const fullHtml = printService.generateHTML(html, `Collection Receipt #COL-${collection.id}`);
+      await printService.print(fullHtml, {
+        title: `Collection Receipt #COL-${collection.id}`,
+        orientation: 'portrait',
+      });
+    } catch (error) {
+      console.error('Print error:', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const handlePrintAllCollections = async () => {
+    try {
+      setIsPrinting(true);
+      
+      // Build filter info for report
+      const filters: any = {};
+      if (dateRange.startDate && dateRange.endDate) {
+        filters.startDate = dateRange.startDate;
+        filters.endDate = dateRange.endDate;
+      }
+      
+      const html = generateCollectionsReport(pagination.items, filters);
+      const fullHtml = printService.generateHTML(html, 'Collections Report');
+      await printService.print(fullHtml, {
+        title: 'Collections Report',
+        orientation: 'landscape',
+      });
+    } catch (error) {
+      console.error('Print error:', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   const renderCollection = ({ item }: { item: Collection }) => (
     <TouchableOpacity style={styles.card} onPress={() => openEditModal(item)}>
       <View style={styles.cardHeader}>
@@ -310,12 +353,21 @@ const CollectionsScreen = () => {
         <Text style={styles.notes}>Note: {item.notes}</Text>
       )}
       
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDelete(item)}
-      >
-        <Text style={styles.deleteText}>Delete</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={styles.printButton}
+          onPress={() => handlePrintReceipt(item)}
+          disabled={isPrinting}
+        >
+          <Text style={styles.printButtonText}>🖨️ Print</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDelete(item)}
+        >
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
@@ -330,8 +382,19 @@ const CollectionsScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Collections</Text>
-        <Text style={styles.count}>{pagination.items.length} loaded</Text>
+        <View>
+          <Text style={styles.title}>Collections</Text>
+          <Text style={styles.count}>{pagination.items.length} loaded</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.printAllButton}
+          onPress={handlePrintAllCollections}
+          disabled={isPrinting || pagination.items.length === 0}
+        >
+          <Text style={styles.printAllButtonText}>
+            {isPrinting ? 'Printing...' : '🖨️ Print All'}
+          </Text>
+        </TouchableOpacity>
       </View>
       
       {/* Search Bar */}
@@ -545,6 +608,9 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,
@@ -706,6 +772,35 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#FF3B30',
     fontSize: 13,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  printButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#E5F0FF',
+    borderRadius: 6,
+    flex: 1,
+  },
+  printButtonText: {
+    color: '#007AFF',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  printAllButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  printAllButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
   },
   buttonRow: {

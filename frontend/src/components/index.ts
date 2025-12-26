@@ -7,3 +7,4 @@ export { default as DateRangePicker } from './DateRangePicker';
 export { default as FloatingActionButton } from './FloatingActionButton';
 export { default as FormModal } from './FormModal';
 export { default as OfflineIndicator } from './OfflineIndicator';
+export { default as PrintButton } from './PrintButton';

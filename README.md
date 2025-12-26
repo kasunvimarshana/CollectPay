@@ -24,6 +24,7 @@ TrackVault is designed for businesses requiring precise tracking of collections,
 - ✅ **Infinite Scroll Pagination** - Efficient data loading with configurable page sizes
 - ✅ **Offline Support** - Work without internet, automatic sync when connection restored
 - ✅ **Advanced Picker Component** - Search, loading states, and pagination support
+- ✅ **Print Functionality** - Print receipts, reports, and balance statements with professional formatting
 
 ## 🚀 Quick Start
 

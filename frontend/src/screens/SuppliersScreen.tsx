@@ -10,9 +10,12 @@ import {
   TextInput,
 } from 'react-native';
 import { supplierService, Supplier, CreateSupplierRequest, UpdateSupplierRequest } from '../api/supplier';
-import { FloatingActionButton, FormModal, Input, Button } from '../components';
+import { FloatingActionButton, FormModal, Input, Button, PrintButton } from '../components';
 import { EMAIL_REGEX } from '../utils/constants';
 import { usePagination } from '../hooks/usePagination';
+import { printService } from '../utils/printService';
+import { generateSupplierBalanceReport, generateSuppliersBalanceReport } from '../utils/printTemplates';
+import { formatAmount } from '../utils/formatters';
 
 const SuppliersScreen = () => {
   const pagination = usePagination<Supplier>({ initialPerPage: 25 });
@@ -25,6 +28,7 @@ const SuppliersScreen = () => {
   const [filterActive, setFilterActive] = useState<boolean | undefined>(undefined);
   const [sortBy, setSortBy] = useState<'name' | 'code' | 'balance'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isPrinting, setIsPrinting] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -231,6 +235,38 @@ const SuppliersScreen = () => {
     );
   };
 
+  const handlePrintBalanceReport = async (supplier: Supplier) => {
+    try {
+      setIsPrinting(true);
+      const html = generateSupplierBalanceReport(supplier);
+      const fullHtml = printService.generateHTML(html, `${supplier.name} - Balance Report`);
+      await printService.print(fullHtml, {
+        title: `${supplier.name} - Balance Report`,
+        orientation: 'portrait',
+      });
+    } catch (error) {
+      console.error('Print error:', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const handlePrintAllSuppliersReport = async () => {
+    try {
+      setIsPrinting(true);
+      const html = generateSuppliersBalanceReport(pagination.items);
+      const fullHtml = printService.generateHTML(html, 'All Suppliers Balance Report');
+      await printService.print(fullHtml, {
+        title: 'All Suppliers Balance Report',
+        orientation: 'landscape',
+      });
+    } catch (error) {
+      console.error('Print error:', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   const renderSupplier = ({ item }: { item: Supplier }) => (
     <TouchableOpacity style={styles.card} onPress={() => openEditModal(item)}>
       <View style={styles.cardHeader}>
@@ -269,12 +305,23 @@ const SuppliersScreen = () => {
         </View>
       )}
       
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDelete(item)}
-      >
-        <Text style={styles.deleteText}>Delete</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        {typeof item.balance !== 'undefined' && (
+          <TouchableOpacity
+            style={styles.printButton}
+            onPress={() => handlePrintBalanceReport(item)}
+            disabled={isPrinting}
+          >
+            <Text style={styles.printButtonText}>🖨️ Print Report</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDelete(item)}
+        >
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
@@ -290,35 +337,46 @@ const SuppliersScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.title}>Suppliers</Text>
-          <View style={styles.pageSizeContainer}>
-            <Text style={styles.pageSizeLabel}>Per page:</Text>
-            {[25, 50, 100].map((size) => (
-              <TouchableOpacity
-                key={size}
-                style={[
-                  styles.pageSizeButton,
-                  pagination.perPage === size && styles.pageSizeButtonActive,
-                ]}
-                onPress={() => {
-                  pagination.setPerPage(size);
-                  pagination.reset();
-                  loadSuppliers(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.pageSizeButtonText,
-                    pagination.perPage === size && styles.pageSizeButtonTextActive,
-                  ]}
-                >
-                  {size}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View>
+            <Text style={styles.title}>Suppliers</Text>
+            <Text style={styles.count}>{pagination.items.length} loaded</Text>
           </View>
+          <TouchableOpacity
+            style={styles.printAllButton}
+            onPress={handlePrintAllSuppliersReport}
+            disabled={isPrinting || pagination.items.length === 0}
+          >
+            <Text style={styles.printAllButtonText}>
+              {isPrinting ? 'Printing...' : '🖨️ Print All'}
+            </Text>
+          </TouchableOpacity>
         </View>
-        <Text style={styles.count}>{pagination.items.length} loaded</Text>
+        <View style={styles.pageSizeContainer}>
+          <Text style={styles.pageSizeLabel}>Per page:</Text>
+          {[25, 50, 100].map((size) => (
+            <TouchableOpacity
+              key={size}
+              style={[
+                styles.pageSizeButton,
+                pagination.perPage === size && styles.pageSizeButtonActive,
+              ]}
+              onPress={() => {
+                pagination.setPerPage(size);
+                pagination.reset();
+                loadSuppliers(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.pageSizeButtonText,
+                  pagination.perPage === size && styles.pageSizeButtonTextActive,
+                ]}
+              >
+                {size}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
       
       {/* Search Bar */}
@@ -715,6 +773,35 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#FF3B30',
     fontSize: 13,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  printButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#E5F0FF',
+    borderRadius: 6,
+    flex: 1,
+  },
+  printButtonText: {
+    color: '#007AFF',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  printAllButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  printAllButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
   },
   balanceContainer: {

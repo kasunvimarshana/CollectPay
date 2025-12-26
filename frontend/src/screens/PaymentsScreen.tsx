@@ -12,10 +12,12 @@ import {
 import { paymentService, Payment, CreatePaymentRequest, UpdatePaymentRequest } from '../api/payment';
 import { supplierService, Supplier } from '../api/supplier';
 import { formatDate, formatAmount } from '../utils/formatters';
-import { FloatingActionButton, FormModal, Input, Button, Picker } from '../components';
+import { FloatingActionButton, FormModal, Input, Button, Picker, PrintButton } from '../components';
 import DateRangePicker, { DateRange } from '../components/DateRangePicker';
 import { PAYMENT_TYPE_OPTIONS, PAYMENT_METHOD_OPTIONS } from '../utils/constants';
 import { usePagination } from '../hooks/usePagination';
+import { printService } from '../utils/printService';
+import { generatePaymentReceipt, generatePaymentsReport } from '../utils/printTemplates';
 
 type PaymentType = 'advance' | 'partial' | 'full';
 
@@ -32,6 +34,7 @@ const PaymentsScreen = () => {
   const [sortBy, setSortBy] = useState<'payment_date' | 'amount' | 'payment_type'>('payment_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: '', endDate: '' });
+  const [isPrinting, setIsPrinting] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -274,6 +277,49 @@ const PaymentsScreen = () => {
     );
   };
 
+  const handlePrintReceipt = async (payment: Payment) => {
+    try {
+      setIsPrinting(true);
+      const html = generatePaymentReceipt(payment);
+      const fullHtml = printService.generateHTML(html, `Payment Receipt #PAY-${payment.id}`);
+      await printService.print(fullHtml, {
+        title: `Payment Receipt #PAY-${payment.id}`,
+        orientation: 'portrait',
+      });
+    } catch (error) {
+      console.error('Print error:', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const handlePrintAllPayments = async () => {
+    try {
+      setIsPrinting(true);
+      
+      // Build filter info for report
+      const filters: any = {};
+      if (dateRange.startDate && dateRange.endDate) {
+        filters.startDate = dateRange.startDate;
+        filters.endDate = dateRange.endDate;
+      }
+      if (filterPaymentType !== 'all') {
+        filters.paymentType = filterPaymentType;
+      }
+      
+      const html = generatePaymentsReport(pagination.items, filters);
+      const fullHtml = printService.generateHTML(html, 'Payments Report');
+      await printService.print(fullHtml, {
+        title: 'Payments Report',
+        orientation: 'landscape',
+      });
+    } catch (error) {
+      console.error('Print error:', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   const getPaymentTypeColor = (type: string) => {
     switch (type) {
       case 'advance':
@@ -331,12 +377,21 @@ const PaymentsScreen = () => {
         <Text style={styles.notes}>Note: {item.notes}</Text>
       )}
       
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDelete(item)}
-      >
-        <Text style={styles.deleteText}>Delete</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={styles.printButton}
+          onPress={() => handlePrintReceipt(item)}
+          disabled={isPrinting}
+        >
+          <Text style={styles.printButtonText}>🖨️ Print</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDelete(item)}
+        >
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
@@ -351,8 +406,19 @@ const PaymentsScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Payments</Text>
-        <Text style={styles.count}>{pagination.items.length} loaded</Text>
+        <View>
+          <Text style={styles.title}>Payments</Text>
+          <Text style={styles.count}>{pagination.items.length} loaded</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.printAllButton}
+          onPress={handlePrintAllPayments}
+          disabled={isPrinting || pagination.items.length === 0}
+        >
+          <Text style={styles.printAllButtonText}>
+            {isPrinting ? 'Printing...' : '🖨️ Print All'}
+          </Text>
+        </TouchableOpacity>
       </View>
       
       {/* Search Bar */}
@@ -605,6 +671,9 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,
@@ -812,6 +881,35 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#FF3B30',
     fontSize: 13,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  printButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#E5F0FF',
+    borderRadius: 6,
+    flex: 1,
+  },
+  printButtonText: {
+    color: '#007AFF',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  printAllButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  printAllButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
   },
   buttonRow: {
