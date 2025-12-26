@@ -4,8 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
@@ -13,47 +11,42 @@ class Supplier extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'code',
         'name',
-        'address',
-        'phone',
         'email',
-        'contact_person',
-        'status',
-        'notes',
+        'phone',
+        'location',
+        'latitude',
+        'longitude',
         'metadata',
+        'status',
         'created_by',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
     ];
 
-    public function creator(): BelongsTo
+    public function collections()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->hasMany(Collection::class);
     }
 
-    public function transactions(): HasMany
-    {
-        return $this->hasMany(Transaction::class);
-    }
-
-    public function payments(): HasMany
+    public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
-    public function rates(): HasMany
+    public function creator()
     {
-        return $this->hasMany(Rate::class);
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function getBalanceAttribute(): float
+    public function getBalanceAttribute()
     {
-        $totalTransactions = $this->transactions()->sum('amount');
         $totalPayments = $this->payments()->sum('amount');
-
-        return $totalTransactions - $totalPayments;
+        $totalDue = $this->collections()->sum('total_amount');
+        return $totalDue - $totalPayments;
     }
 }

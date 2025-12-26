@@ -1,138 +1,327 @@
-"# FieldLedger - Data Collection & Payment Management Application
+"# TransacTrack
 
-A comprehensive, secure, and production-ready offline-first application for field data collection and payment management, built with React Native (Expo) and Laravel.
+A comprehensive, secure, and production-ready data collection and payment management system designed for field workers operating in rural or low-connectivity environments.
 
-## 🚀 Features
+## Overview
+
+TransacTrack is a full-stack application consisting of:
+- **Backend**: Laravel REST API with robust security and sync mechanisms
+- **Frontend**: React Native (Expo) mobile app with offline-first architecture
+
+## Key Features
 
 ### Core Functionality
-- **Supplier Management**: Complete CRUD operations for supplier records
-- **Product Management**: Multi-unit quantity tracking with base and alternate units
-- **Transaction Recording**: Time-based rate tracking with automatic calculations
-- **Payment Management**: Support for advance, partial, and full payments
-- **Balance Tracking**: Real-time supplier balance calculations
+- **Supplier Management**: Detailed profiles with contact info, location, and metadata
+- **Product Collection Tracking**: Multiple unit support (g, kg, ml, l)
+- **Payment Management**: Advance, partial, and full payments with various methods
+- **Dynamic Pricing**: Fluctuating rates with historical tracking
+- **Automatic Calculations**: Transparent payment computation
 
 ### Offline-First Architecture
-- **Primary Online Operation**: Backend as source of truth with real-time persistence
-- **Automatic Offline Support**: Seamless fallback during network outages
-- **Deterministic Synchronization**: Zero data loss with automatic sync on reconnection
-- **Conflict Resolution**: Robust conflict detection and resolution mechanisms
-- **Multi-Device Support**: Concurrent operations across multiple devices
+- **Network Monitoring**: Real-time connectivity detection
+- **Local Storage**: Complete offline functionality
+- **Automatic Sync**: Background synchronization when online
+- **Conflict Resolution**: Robust multi-device conflict handling
+- **Queue Management**: Pending operations tracked and synced
 
-### Security Features
-- **Authentication**: Secure token-based authentication (Laravel Sanctum)
-- **Authorization**: Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC)
-- **Encrypted Storage**: Local data encryption using Expo SecureStore
-- **Encrypted Transmission**: HTTPS/TLS for all API communications
-- **Session Management**: Secure token management and automatic expiration
+### Security
+- **Authentication**: JWT-based authentication with Laravel Sanctum
+- **Authorization**: RBAC (Role-Based Access Control)
+- **Data Encryption**: Secure storage and transmission
+- **Input Validation**: Comprehensive validation on both client and server
+- **SQL Injection Protection**: Eloquent ORM with prepared statements
+- **XSS Protection**: Built-in Laravel security features
 
-### Technical Architecture
-- **Clean Code**: Adheres to SOLID principles and DRY guidelines
-- **Minimal Dependencies**: Native implementations prioritized
-- **Open Source**: Only free, LTS-supported libraries
-- **Type Safety**: Full TypeScript implementation
-- **Scalable Design**: Modular architecture for easy maintenance
+### Architecture
+- **Clean Code**: SOLID principles throughout
+- **DRY**: No code duplication
+- **Separation of Concerns**: Clear layer separation
+- **Minimal Dependencies**: Only essential, LTS-supported libraries
+- **Scalable Design**: Ready for growth
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-FieldLedger/
-├── backend/                    # Laravel Backend API
+TransacTrack/
+├── backend/                 # Laravel API
 │   ├── app/
-│   │   ├── Models/            # Eloquent models
-│   │   ├── Http/Controllers/  # API controllers
-│   │   └── Services/          # Business logic layer
+│   │   ├── Http/
+│   │   │   └── Controllers/
+│   │   │       └── Api/    # API controllers
+│   │   ├── Models/         # Eloquent models
+│   │   ├── Services/       # Business logic
+│   │   └── Repositories/   # Data access layer
+│   ├── config/             # Configuration files
 │   ├── database/
-│   │   └── migrations/        # Database schema
+│   │   └── migrations/     # Database schema
 │   └── routes/
-│       └── api.php            # API routes
+│       └── api.php         # API routes
 │
-├── frontend/                   # React Native (Expo) Mobile App
-│   ├── app/                   # Expo Router pages
-│   │   ├── (auth)/           # Authentication screens
-│   │   └── (tabs)/           # Main app screens
+├── mobile/                  # React Native app
 │   ├── src/
-│   │   ├── api/              # API client
-│   │   ├── database/         # Local SQLite database
-│   │   ├── services/         # Sync manager
-│   │   ├── store/            # State management (Zustand)
-│   │   └── types/            # TypeScript definitions
-│   └── components/           # Reusable components
+│   │   ├── components/     # UI components
+│   │   ├── screens/        # Screen components
+│   │   ├── services/       # API & sync services
+│   │   ├── store/          # Redux state management
+│   │   └── types/          # TypeScript types
+│   └── App.tsx             # Main app component
 │
-└── docs/                      # Documentation
+└── README.md               # This file
 ```
 
-## 🛠️ Technology Stack
+## Getting Started
 
-### Backend
-- **Framework**: Laravel 11.x
-- **Language**: PHP 8.2+
-- **Database**: MySQL 8.0+ / MariaDB 10.3+
-- **Authentication**: Laravel Sanctum
-- **Architecture**: Repository pattern with service layer
+### Prerequisites
 
-### Frontend
-- **Framework**: React Native with Expo
-- **Language**: TypeScript
-- **Navigation**: Expo Router
-- **State Management**: Zustand
-- **Local Database**: Expo SQLite
-- **Secure Storage**: Expo SecureStore
-- **Network Detection**: Expo Network
-- **API Client**: Axios
-- **Data Fetching**: TanStack Query (React Query)
+- **Backend**:
+  - PHP >= 8.1
+  - Composer
+  - MySQL >= 5.7 or MariaDB >= 10.3
 
-## 📋 Prerequisites
-
-### Backend
-- PHP >= 8.2
-- Composer
-- MySQL >= 8.0 or MariaDB >= 10.3
-
-### Frontend
-- Node.js >= 18
-- npm or yarn
-- Expo CLI
-
-## 🚀 Getting Started
+- **Frontend**:
+  - Node.js >= 18
+  - npm or yarn
+  - Expo CLI
 
 ### Backend Setup
 
-1. Navigate to backend directory: `cd backend`
-2. Install dependencies: `composer install`
-3. Configure environment: `cp .env.example .env`
-4. Generate key: `php artisan key:generate`
-5. Run migrations: `php artisan migrate`
-6. Start server: `php artisan serve`
+1. Navigate to backend directory:
+```bash
+cd backend
+```
 
-### Frontend Setup
+2. Install dependencies:
+```bash
+composer install
+```
 
-1. Navigate to frontend directory: `cd frontend`
-2. Install dependencies: `npm install`
-3. Configure API URL in `.env`
-4. Start server: `npm start`
+3. Configure environment:
+```bash
+cp .env.example .env
+# Edit .env with your database credentials
+```
 
-## 📖 API Documentation
+4. Run migrations:
+```bash
+php artisan migrate
+```
 
-See backend/README.md for detailed API documentation.
+5. Start server:
+```bash
+php artisan serve
+```
 
-## 🔒 Security
+API will be available at `http://localhost:8000`
 
-- Token-based authentication (Laravel Sanctum)
-- RBAC and ABAC authorization
-- Encrypted local storage
-- HTTPS/TLS for all communications
-- Password hashing with bcrypt
+See [backend/README.md](backend/README.md) for detailed instructions.
 
-## 📱 Offline Support
+### Mobile App Setup
 
-The application features robust offline-first architecture:
-- Automatic network detection
-- Local SQLite database
-- Sync queue management
-- Conflict resolution
-- Zero data loss guarantee
+1. Navigate to mobile directory:
+```bash
+cd mobile
+```
 
-## 📝 License
+2. Install dependencies:
+```bash
+npm install
+```
 
-MIT License
-" 
+3. Configure API endpoint in `app.json`:
+```json
+{
+  "expo": {
+    "extra": {
+      "apiUrl": "http://localhost:8000/api"
+    }
+  }
+}
+```
+
+4. Start the app:
+```bash
+npm start
+```
+
+See [mobile/README.md](mobile/README.md) for detailed instructions.
+
+## API Documentation
+
+### Authentication Endpoints
+
+- `POST /api/register` - Register new user
+- `POST /api/login` - Login user
+- `POST /api/logout` - Logout user
+- `GET /api/user` - Get authenticated user
+
+### Resource Endpoints
+
+All resource endpoints follow RESTful conventions and require authentication:
+
+- `/api/suppliers` - Supplier management
+- `/api/products` - Product management
+- `/api/collections` - Collection tracking
+- `/api/payments` - Payment management
+
+### Sync Endpoints
+
+- `POST /api/sync` - Synchronize offline data
+- `POST /api/sync/conflicts/{id}/resolve` - Resolve sync conflict
+
+## Database Schema
+
+### Core Tables
+
+- **users**: System users with role-based access
+- **suppliers**: Supplier profiles with location data
+- **products**: Product catalog with unit types
+- **product_rates**: Historical pricing data
+- **collections**: Product collection records
+- **payments**: Payment transactions
+- **sync_conflicts**: Conflict tracking for sync
+
+### Relationships
+
+- User has many Collections, Payments
+- Supplier has many Collections, Payments
+- Product has many Collections, ProductRates
+- Collection belongs to Supplier, Product, User
+- Payment belongs to Supplier, User
+
+## User Roles
+
+- **Admin**: Full system access, user management
+- **Manager**: View reports, manage suppliers/products
+- **Collector**: Record collections and payments
+- **Viewer**: Read-only access to data
+
+## Security Considerations
+
+1. **Authentication**: JWT tokens with expiration
+2. **Authorization**: Role-based access control
+3. **Data Encryption**: Sensitive data encrypted at rest
+4. **Secure Communication**: HTTPS in production
+5. **Input Validation**: Both client and server validation
+6. **SQL Injection**: Protected via ORM
+7. **XSS**: Protected via output escaping
+8. **CSRF**: Protected via Laravel middleware
+
+## Offline-First Strategy
+
+1. **Data Persistence**: Redux Persist with AsyncStorage
+2. **Network Detection**: NetInfo for connectivity monitoring
+3. **Queue Management**: Track pending operations
+4. **Automatic Sync**: Background sync when online
+5. **Conflict Resolution**: Version-based conflict detection
+6. **Optimistic Updates**: Immediate UI updates with rollback
+
+## Development Guidelines
+
+### Code Style
+
+- Follow PSR-12 for PHP
+- Follow Airbnb style guide for TypeScript/React
+- Use meaningful variable and function names
+- Comment complex logic
+
+### Git Workflow
+
+1. Create feature branch from main
+2. Make small, focused commits
+3. Write descriptive commit messages
+4. Submit pull request for review
+5. Merge after approval
+
+### Testing
+
+- Write unit tests for business logic
+- Write integration tests for API endpoints
+- Test offline scenarios thoroughly
+- Test sync conflicts and resolution
+
+## Deployment
+
+### Backend Deployment
+
+1. Set up production server (Linux recommended)
+2. Configure web server (Apache/Nginx)
+3. Set up MySQL database
+4. Configure SSL certificate
+5. Set environment variables
+6. Run migrations
+7. Set up monitoring
+
+### Mobile App Deployment
+
+1. Configure production API URL
+2. Build production bundles
+3. Submit to App Store (iOS)
+4. Submit to Play Store (Android)
+5. Set up crash reporting
+6. Monitor user feedback
+
+## Performance Optimization
+
+- Database indexing on frequently queried columns
+- API response caching where appropriate
+- Pagination for large datasets
+- Lazy loading in mobile app
+- Image optimization
+- Minification and bundling
+
+## Monitoring and Logging
+
+- Error logging on backend
+- User action tracking
+- Sync success/failure rates
+- API response times
+- Database query performance
+- Mobile app crash reports
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Sync not working**: Check network connectivity and API availability
+2. **Login fails**: Verify credentials and API endpoint
+3. **Data not saving offline**: Check Redux Persist configuration
+4. **Conflicts not resolving**: Review conflict resolution logic
+
+## Future Enhancements
+
+- [ ] Real-time notifications
+- [ ] Advanced reporting and analytics
+- [ ] Bulk data import/export
+- [ ] Multi-language support
+- [ ] Photo attachments for collections
+- [ ] GPS tracking for collections
+- [ ] Barcode scanning
+- [ ] Biometric authentication
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Support
+
+For issues and questions:
+- Open an issue on GitHub
+- Contact: support@transactrack.com
+- Documentation: https://docs.transactrack.com
+
+## Acknowledgments
+
+Built with:
+- Laravel - PHP Framework
+- React Native - Mobile Framework
+- Expo - React Native Platform
+- Redux - State Management
+- Laravel Sanctum - Authentication" 

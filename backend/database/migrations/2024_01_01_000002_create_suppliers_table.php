@@ -10,20 +10,20 @@ return new class extends Migration
     {
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
             $table->string('name');
-            $table->text('address')->nullable();
-            $table->string('phone')->nullable();
             $table->string('email')->nullable();
-            $table->string('contact_person')->nullable();
-            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
-            $table->text('notes')->nullable();
+            $table->string('phone');
+            $table->text('location')->nullable();
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
             $table->json('metadata')->nullable();
+            $table->enum('status', ['active', 'inactive', 'blocked'])->default('active');
             $table->foreignId('created_by')->constrained('users');
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['code', 'status']);
+            $table->index(['status', 'created_at']);
+            $table->index('phone');
         });
     }
 

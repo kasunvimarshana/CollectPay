@@ -3,22 +3,22 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
         'email',
         'password',
+        'phone',
         'role',
-        'permissions',
-        'is_active',
+        'status',
+        'device_id',
     ];
 
     protected $hidden = [
@@ -29,8 +29,6 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'permissions' => 'array',
-        'is_active' => 'boolean',
     ];
 
     public function hasRole(string $role): bool
@@ -38,25 +36,18 @@ class User extends Authenticatable
         return $this->role === $role;
     }
 
-    public function hasPermission(string $permission): bool
+    public function hasAnyRole(array $roles): bool
     {
-        if (! $this->permissions) {
-            return false;
-        }
-
-        return in_array($permission, $this->permissions);
+        return in_array($this->role, $roles);
     }
 
-    public function canAccess(string $resource, string $action): bool
+    public function collections()
     {
-        // Admin has full access
-        if ($this->role === 'admin') {
-            return true;
-        }
+        return $this->hasMany(Collection::class);
+    }
 
-        // Check specific permissions
-        $permission = "{$resource}.{$action}";
-
-        return $this->hasPermission($permission);
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 }

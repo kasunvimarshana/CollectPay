@@ -5,134 +5,95 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 class PaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Payment::with(['supplier']);
+        $query = Payment::with(['supplier', 'user']);
 
         if ($request->has('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->user_id);
         }
 
         if ($request->has('payment_type')) {
             $query->where('payment_type', $request->payment_type);
         }
 
-        if ($request->has('from_date')) {
-            $query->where('payment_date', '>=', $request->from_date);
+        if ($request->has('sync_status')) {
+            $query->where('sync_status', $request->sync_status);
         }
 
-        if ($request->has('to_date')) {
-            $query->where('payment_date', '<=', $request->to_date);
+        if ($request->has('date_from')) {
+            $query->where('payment_date', '>=', $request->date_from);
         }
 
-        $payments = $query->orderBy('payment_date', 'desc')->get();
+        if ($request->has('date_to')) {
+            $query->where('payment_date', '<=', $request->date_to);
+        }
+
+        $payments = $query->orderBy('payment_date', 'desc')
+            ->paginate($request->get('per_page', 15));
 
         return response()->json($payments);
     }
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'uuid' => 'nullable|string|unique:payments,uuid',
+        $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'required|numeric|min:0.01',
+            'payment_type' => 'required|in:advance,partial,full',
+            'payment_method' => 'required|in:cash,bank_transfer,mobile_money,check',
+            'reference_number' => 'nullable|string|max:255',
             'payment_date' => 'required|date',
-            'payment_type' => 'required|in:advance,partial,full,adjustment',
-            'payment_method' => 'required|string|max:50',
-            'reference_number' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
-            'metadata' => 'nullable|array',
-            'device_id' => 'nullable|integer',
+            'device_id' => 'nullable|string',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        $validated['user_id'] = $request->user()->id;
 
-        DB::beginTransaction();
-        try {
-            $payment = Payment::create([
-                'uuid' => $request->uuid ?? \Illuminate\Support\Str::uuid(),
-                'supplier_id' => $request->supplier_id,
-                'amount' => $request->amount,
-                'payment_type' => $request->payment_type,
-                'payment_method' => $request->payment_method,
-                'reference_number' => $request->reference_number,
-                'payment_date' => $request->payment_date,
-                'notes' => $request->notes,
-                'metadata' => $request->metadata,
-                'created_by' => auth()->id(),
-                'device_id' => $request->device_id,
-            ]);
+        $payment = Payment::create($validated);
+        $payment->load(['supplier', 'user']);
 
-            DB::commit();
-
-            return response()->json($payment->load(['supplier']), 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json(['error' => 'Failed to create payment: '.$e->getMessage()], 500);
-        }
+        return response()->json($payment, 201);
     }
 
-    public function show($id)
+    public function show(Payment $payment)
     {
-        $payment = Payment::with(['supplier'])->findOrFail($id);
+        $payment->load(['supplier', 'user']);
 
         return response()->json($payment);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Payment $payment)
     {
-        $payment = Payment::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'supplier_id' => 'sometimes|exists:suppliers,id',
-            'amount' => 'sometimes|numeric|min:0',
-            'payment_date' => 'sometimes|date',
-            'payment_type' => 'sometimes|in:advance,partial,full,adjustment',
-            'payment_method' => 'sometimes|string|max:50',
-            'reference_number' => 'nullable|string|max:100',
+        $validated = $request->validate([
+            'supplier_id' => 'sometimes|required|exists:suppliers,id',
+            'amount' => 'sometimes|required|numeric|min:0.01',
+            'payment_type' => 'sometimes|required|in:advance,partial,full',
+            'payment_method' => 'sometimes|required|in:cash,bank_transfer,mobile_money,check',
+            'reference_number' => 'nullable|string|max:255',
+            'payment_date' => 'sometimes|required|date',
             'notes' => 'nullable|string',
-            'metadata' => 'nullable|array',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        $payment->update($validated);
+        $payment->load(['supplier', 'user']);
 
-        DB::beginTransaction();
-        try {
-            $payment->update($validator->validated());
-            DB::commit();
-
-            return response()->json($payment->load(['supplier']));
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json(['error' => 'Failed to update payment: '.$e->getMessage()], 500);
-        }
+        return response()->json($payment);
     }
 
-    public function destroy($id)
+    public function destroy(Payment $payment)
     {
-        $payment = Payment::findOrFail($id);
+        $payment->delete();
 
-        DB::beginTransaction();
-        try {
-            $payment->delete();
-            DB::commit();
-
-            return response()->json(['message' => 'Payment deleted successfully']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json(['error' => 'Failed to delete payment: '.$e->getMessage()], 500);
-        }
+        return response()->json([
+            'message' => 'Payment deleted successfully',
+        ]);
     }
 }

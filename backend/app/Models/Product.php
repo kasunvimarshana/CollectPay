@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
@@ -12,44 +11,34 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'code',
         'name',
         'description',
-        'category',
-        'base_unit',
-        'alternate_units',
-        'status',
+        'unit_type',
+        'base_rate',
         'metadata',
+        'status',
     ];
 
     protected $casts = [
-        'alternate_units' => 'array',
         'metadata' => 'array',
+        'base_rate' => 'decimal:2',
     ];
 
-    public function transactions(): HasMany
+    public function collections()
     {
-        return $this->hasMany(Transaction::class);
+        return $this->hasMany(Collection::class);
     }
 
-    public function rates(): HasMany
+    public function rates()
     {
-        return $this->hasMany(Rate::class);
+        return $this->hasMany(ProductRate::class);
     }
 
-    public function convertToBaseUnit(float $quantity, string $unit): float
+    public function getCurrentRate()
     {
-        if ($unit === $this->base_unit) {
-            return $quantity;
-        }
-
-        $alternateUnits = $this->alternate_units ?? [];
-        foreach ($alternateUnits as $altUnit) {
-            if ($altUnit['unit'] === $unit) {
-                return $quantity * ($altUnit['factor'] ?? 1);
-            }
-        }
-
-        return $quantity;
+        return $this->rates()
+            ->where('effective_from', '<=', now())
+            ->orderBy('effective_from', 'desc')
+            ->first()?->rate ?? $this->base_rate;
     }
 }

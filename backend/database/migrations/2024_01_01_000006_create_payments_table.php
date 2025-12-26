@@ -10,23 +10,24 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->uuid('uuid')->unique();
-            $table->foreignId('supplier_id')->constrained()->cascadeOnDelete();
-            $table->decimal('amount', 12, 2);
-            $table->enum('payment_type', ['advance', 'partial', 'full', 'adjustment'])->default('partial');
-            $table->string('payment_method')->default('cash'); // cash, bank_transfer, cheque
+            $table->foreignId('supplier_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained();
+            $table->decimal('amount', 10, 2);
+            $table->enum('payment_type', ['advance', 'partial', 'full'])->default('partial');
+            $table->enum('payment_method', ['cash', 'bank_transfer', 'mobile_money', 'check'])->default('cash');
             $table->string('reference_number')->nullable();
             $table->timestamp('payment_date');
             $table->text('notes')->nullable();
-            $table->json('metadata')->nullable();
-            $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('device_id')->nullable();
-            $table->timestamp('synced_at')->nullable();
+            $table->string('device_id')->nullable();
+            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('pending');
+            $table->integer('version')->default(1);
+            $table->timestamp('server_timestamp')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             $table->index(['supplier_id', 'payment_date']);
-            $table->index(['uuid']);
+            $table->index(['user_id', 'payment_date']);
+            $table->index(['sync_status', 'device_id']);
         });
     }
 

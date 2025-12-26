@@ -16,18 +16,20 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'sometimes|in:admin,manager,collector,viewer',
+            'phone' => 'nullable|string|max:20',
+            'device_id' => 'nullable|string|max:255',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'collector',
-            'is_active' => true,
+            'phone' => $validated['phone'] ?? null,
+            'device_id' => $validated['device_id'] ?? null,
+            'role' => 'collector',
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $token = $user->createToken('mobile-app')->plainTextToken;
 
         return response()->json([
             'user' => $user,
@@ -40,45 +42,32 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
-            'device_uuid' => 'sometimes|string',
-            'device_name' => 'sometimes|string',
-            'device_type' => 'sometimes|string',
+            'device_id' => 'nullable|string',
         ]);
 
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        if (! $user->is_active) {
+        if ($user->status !== 'active') {
             throw ValidationException::withMessages([
-                'email' => ['Your account has been deactivated.'],
+                'email' => ['Your account is not active.'],
             ]);
         }
 
-        // Register device if provided
-        $device = null;
-        if ($request->has('device_uuid')) {
-            $device = \App\Models\Device::updateOrCreate(
-                ['device_uuid' => $request->device_uuid],
-                [
-                    'device_name' => $request->device_name ?? 'Unknown Device',
-                    'device_type' => $request->device_type ?? 'unknown',
-                    'user_id' => $user->id,
-                    'is_active' => true,
-                ]
-            );
+        if ($request->device_id) {
+            $user->update(['device_id' => $request->device_id]);
         }
 
-        $token = $user->createToken('auth-token', ['*'])->plainTextToken;
+        $token = $user->createToken('mobile-app')->plainTextToken;
 
         return response()->json([
             'user' => $user,
             'token' => $token,
-            'device' => $device,
         ]);
     }
 
@@ -91,10 +80,8 @@ class AuthController extends Controller
         ]);
     }
 
-    public function me(Request $request)
+    public function user(Request $request)
     {
-        return response()->json([
-            'user' => $request->user(),
-        ]);
+        return response()->json($request->user());
     }
 }

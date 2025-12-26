@@ -3,5 +3,9 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return ['status' => 'ok', 'message' => 'FieldLedger API'];
+    return response()->json([
+        'message' => 'TransacTrack API',
+        'version' => '1.0.0',
+        'status' => 'active',
+    ]);
 });

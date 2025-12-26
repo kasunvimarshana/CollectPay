@@ -5,90 +5,73 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('rates')->get();
+        $query = Product::query();
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $products = $query->orderBy('name')
+            ->paginate($request->get('per_page', 15));
 
         return response()->json($products);
     }
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'code' => 'required|string|max:255|unique:products',
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'category' => 'nullable|string|max:100',
-            'base_unit' => 'required|string|max:50',
-            'alternate_units' => 'nullable|array',
-            'alternate_units.*.unit' => 'required|string',
-            'alternate_units.*.factor' => 'required|numeric',
-            'status' => 'nullable|in:active,inactive',
+            'unit_type' => 'required|in:weight,volume',
+            'base_rate' => 'required|numeric|min:0',
             'metadata' => 'nullable|array',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $product = Product::create($validator->validated());
+        $product = Product::create($validated);
 
         return response()->json($product, 201);
     }
 
-    public function show($id)
+    public function show(Product $product)
     {
-        $product = Product::with('rates')->findOrFail($id);
+        $product->load('rates');
+        $product->current_rate = $product->getCurrentRate();
 
         return response()->json($product);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Product $product)
     {
-        $product = Product::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'code' => 'sometimes|string|max:255|unique:products,code,'.$id,
-            'name' => 'sometimes|string|max:255',
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'category' => 'nullable|string|max:100',
-            'base_unit' => 'sometimes|string|max:50',
-            'alternate_units' => 'nullable|array',
-            'alternate_units.*.unit' => 'required|string',
-            'alternate_units.*.factor' => 'required|numeric',
-            'status' => 'nullable|in:active,inactive',
+            'unit_type' => 'sometimes|required|in:weight,volume',
+            'base_rate' => 'sometimes|required|numeric|min:0',
             'metadata' => 'nullable|array',
+            'status' => 'sometimes|in:active,inactive',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $product->update($validator->validated());
+        $product->update($validated);
 
         return response()->json($product);
     }
 
-    public function destroy($id)
+    public function destroy(Product $product)
     {
-        $product = Product::findOrFail($id);
         $product->delete();
 
-        return response()->json(['message' => 'Product deleted successfully']);
-    }
-
-    public function getCurrentRates($id)
-    {
-        $product = Product::findOrFail($id);
-        $currentRates = $product->rates()
-            ->where('effective_from', '<=', now())
-            ->orderBy('effective_from', 'desc')
-            ->first();
-
-        return response()->json($currentRates);
+        return response()->json([
+            'message' => 'Product deleted successfully',
+        ]);
     }
 }

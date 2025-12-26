@@ -10,18 +10,16 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->string('category')->nullable();
-            $table->string('base_unit'); // kg, liter, piece, etc.
-            $table->json('alternate_units')->nullable(); // [{unit: "ton", factor: 1000}, {unit: "gram", factor: 0.001}]
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('unit_type', ['weight', 'volume'])->default('weight');
+            $table->decimal('base_rate', 10, 2)->default(0);
             $table->json('metadata')->nullable();
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['code', 'status']);
+            $table->index(['status', 'created_at']);
         });
     }
 

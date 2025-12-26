@@ -1,35 +1,34 @@
-# FieldLedger Backend API
+# TransacTrack Backend API
 
-A secure, production-ready Laravel backend for the FieldLedger data collection and payment management system.
+Laravel-based REST API for the TransacTrack data collection and payment management system.
 
 ## Features
 
-- **Authentication & Authorization**: Laravel Sanctum with RBAC/ABAC
-- **Supplier Management**: Complete CRUD operations for supplier data
-- **Product Management**: Multi-unit quantity tracking with alternate units
-- **Transaction Management**: Time-based rate tracking and automatic calculations
-- **Payment Management**: Advance, partial, and full payment support
-- **Offline Sync**: Conflict detection and resolution for multi-device operations
-- **Audit Logging**: Comprehensive activity tracking
-- **Security**: Encrypted data storage and transmission
+- **Authentication**: JWT-based authentication using Laravel Sanctum
+- **Supplier Management**: Create, read, update, delete supplier profiles with location tracking
+- **Product Management**: Manage products with flexible unit types and dynamic pricing
+- **Collection Tracking**: Record product collections with automatic payment calculations
+- **Payment Management**: Track advance, partial, and full payments
+- **Offline Sync**: Robust synchronization with conflict detection and resolution
+- **Multi-user Support**: Role-based access control (RBAC) for different user types
+- **Data Security**: Encrypted data handling and secure transactions
 
 ## Requirements
 
-- PHP >= 8.2
-- MySQL >= 8.0 or MariaDB >= 10.3
+- PHP >= 8.1
+- MySQL >= 5.7 or MariaDB >= 10.3
 - Composer
-- Laravel 11.x
 
 ## Installation
 
-1. Install dependencies:
-```bash
-composer install
-```
-
-2. Copy environment file:
+1. Copy environment file:
 ```bash
 cp .env.example .env
+```
+
+2. Install dependencies:
+```bash
+composer install
 ```
 
 3. Generate application key:
@@ -38,11 +37,11 @@ php artisan key:generate
 ```
 
 4. Configure database in `.env`:
-```env
+```
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=fieldledger
+DB_DATABASE=transactrack
 DB_USERNAME=root
 DB_PASSWORD=
 ```
@@ -57,107 +56,88 @@ php artisan migrate
 php artisan db:seed
 ```
 
+7. Start development server:
+```bash
+php artisan serve
+```
+
+The API will be available at `http://localhost:8000`
+
 ## API Endpoints
 
 ### Authentication
 - `POST /api/register` - Register new user
-- `POST /api/login` - Login and get token
-- `POST /api/logout` - Logout (requires auth)
-- `GET /api/me` - Get current user (requires auth)
+- `POST /api/login` - Login user
+- `POST /api/logout` - Logout user
+- `GET /api/user` - Get authenticated user
 
 ### Suppliers
 - `GET /api/suppliers` - List all suppliers
-- `POST /api/suppliers` - Create supplier
+- `POST /api/suppliers` - Create new supplier
 - `GET /api/suppliers/{id}` - Get supplier details
 - `PUT /api/suppliers/{id}` - Update supplier
 - `DELETE /api/suppliers/{id}` - Delete supplier
-- `GET /api/suppliers/{id}/balance` - Get supplier balance
-
-### Synchronization
-- `POST /api/sync/transactions` - Sync transaction data
-- `POST /api/sync/payments` - Sync payment data
-- `GET /api/sync/updates` - Get updates since last sync
-
-### Health Check
-- `GET /api/health` - API health check
-
-## Database Schema
-
-### Users
-- Authentication and authorization
-- Role-based access control (admin, manager, collector, viewer)
-- Attribute-based permissions
-
-### Suppliers
-- Supplier information and contact details
-- Status tracking (active, inactive, suspended)
 
 ### Products
-- Product details with multi-unit support
-- Base unit and alternate unit conversions
+- `GET /api/products` - List all products
+- `POST /api/products` - Create new product
+- `GET /api/products/{id}` - Get product details
+- `PUT /api/products/{id}` - Update product
+- `DELETE /api/products/{id}` - Delete product
 
-### Rates
-- Time-based pricing
-- Supplier-specific and default rates
-- Valid date ranges
-
-### Transactions
-- Purchase/collection records
-- Automatic amount calculation
-- UUID for offline sync
+### Collections
+- `GET /api/collections` - List all collections
+- `POST /api/collections` - Create new collection
+- `GET /api/collections/{id}` - Get collection details
+- `PUT /api/collections/{id}` - Update collection
+- `DELETE /api/collections/{id}` - Delete collection
 
 ### Payments
-- Payment tracking (advance, partial, full)
-- Multiple payment methods
-- Reference numbers for reconciliation
+- `GET /api/payments` - List all payments
+- `POST /api/payments` - Create new payment
+- `GET /api/payments/{id}` - Get payment details
+- `PUT /api/payments/{id}` - Update payment
+- `DELETE /api/payments/{id}` - Delete payment
 
-### Devices
-- Device registration
-- Sync status tracking
+### Sync
+- `POST /api/sync` - Synchronize offline data
+- `POST /api/sync/conflicts/{id}/resolve` - Resolve sync conflict
 
-### Sync Queue
-- Conflict detection
-- Retry mechanism
-- Error logging
+## Security
 
-## Security Features
-
-1. **Authentication**: Laravel Sanctum token-based authentication
-2. **Authorization**: RBAC and ABAC for fine-grained access control
-3. **Data Validation**: Comprehensive input validation
-4. **SQL Injection Prevention**: Eloquent ORM with prepared statements
-5. **XSS Protection**: Built-in Laravel protections
-6. **CSRF Protection**: Token-based CSRF protection
-7. **Rate Limiting**: API rate limiting
-8. **Encrypted Storage**: Sensitive data encryption at rest
+- All API endpoints (except register/login) require authentication
+- Uses Laravel Sanctum for token-based authentication
+- CORS configured for cross-origin requests
+- Input validation on all endpoints
+- SQL injection protection via Eloquent ORM
+- XSS protection via Laravel's built-in escape functions
 
 ## Architecture
 
 The backend follows clean architecture principles:
 
-- **Models**: Eloquent models with relationships
-- **Services**: Business logic layer
-- **Controllers**: API endpoints and request handling
-- **Migrations**: Database schema versioning
-- **Middleware**: Authentication and authorization
+- **Models**: Eloquent models representing database entities
+- **Controllers**: API controllers handling HTTP requests
+- **Migrations**: Database schema definitions
+- **Policies**: Authorization logic (RBAC/ABAC)
+- **Services**: Business logic layer (to be expanded)
+- **Repositories**: Data access layer (to be expanded)
 
-### Service Layer
+## Database Schema
 
-- `PaymentCalculationService`: Handles payment calculations and balance tracking
-- `SyncService`: Manages offline synchronization and conflict resolution
+- `users` - System users with roles
+- `suppliers` - Supplier profiles
+- `products` - Product catalog
+- `product_rates` - Historical product pricing
+- `collections` - Product collection records
+- `payments` - Payment transactions
+- `sync_conflicts` - Conflict tracking for offline sync
 
 ## Testing
 
-Run tests with PHPUnit:
+Run tests with:
 ```bash
 php artisan test
-```
-
-## Code Quality
-
-Check code style with Laravel Pint:
-```bash
-./vendor/bin/pint
 ```
 
 ## License

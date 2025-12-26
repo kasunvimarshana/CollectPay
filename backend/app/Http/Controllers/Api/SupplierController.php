@@ -10,7 +10,7 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Supplier::query();
+        $query = Supplier::with('creator');
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -20,61 +20,55 @@ class SupplierController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        $perPage = $request->input('per_page', 15);
+        $suppliers = $query->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 15));
 
-        return response()->json($query->paginate($perPage));
+        return response()->json($suppliers);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string|unique:suppliers,code',
             'name' => 'required|string|max:255',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string',
-            'email' => 'nullable|email',
-            'contact_person' => 'nullable|string',
-            'status' => 'sometimes|in:active,inactive,suspended',
-            'notes' => 'nullable|string',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'required|string|max:20',
+            'location' => 'nullable|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'metadata' => 'nullable|array',
         ]);
 
-        $supplier = Supplier::create(array_merge($validated, [
-            'created_by' => $request->user()->id,
-        ]));
+        $validated['created_by'] = $request->user()->id;
+
+        $supplier = Supplier::create($validated);
 
         return response()->json($supplier, 201);
     }
 
-    public function show($id)
+    public function show(Supplier $supplier)
     {
-        $supplier = Supplier::with(['transactions', 'payments'])->findOrFail($id);
+        $supplier->load(['creator', 'collections', 'payments']);
+        $supplier->balance = $supplier->balance;
 
-        return response()->json([
-            'supplier' => $supplier,
-            'balance' => $supplier->balance,
-        ]);
+        return response()->json($supplier);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Supplier $supplier)
     {
-        $supplier = Supplier::findOrFail($id);
-
         $validated = $request->validate([
-            'code' => 'sometimes|string|unique:suppliers,code,'.$id,
-            'name' => 'sometimes|string|max:255',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string',
-            'email' => 'nullable|email',
-            'contact_person' => 'nullable|string',
-            'status' => 'sometimes|in:active,inactive,suspended',
-            'notes' => 'nullable|string',
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'sometimes|required|string|max:20',
+            'location' => 'nullable|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'metadata' => 'nullable|array',
+            'status' => 'sometimes|in:active,inactive,blocked',
         ]);
 
         $supplier->update($validated);
@@ -82,21 +76,12 @@ class SupplierController extends Controller
         return response()->json($supplier);
     }
 
-    public function destroy($id)
+    public function destroy(Supplier $supplier)
     {
-        $supplier = Supplier::findOrFail($id);
         $supplier->delete();
 
-        return response()->json(['message' => 'Supplier deleted successfully']);
-    }
-
-    public function balance($id)
-    {
-        $supplier = Supplier::findOrFail($id);
-        $calculationService = new \App\Services\PaymentCalculationService;
-
-        $balance = $calculationService->getSupplierBalance($id);
-
-        return response()->json($balance);
+        return response()->json([
+            'message' => 'Supplier deleted successfully',
+        ]);
     }
 }

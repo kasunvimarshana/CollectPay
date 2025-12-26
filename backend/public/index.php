@@ -1,14 +1,13 @@
 <?php
 
-define('LARAVEL_START', microtime(true));
+$app = require_once __DIR__.'/../bootstrap/app.php';
 
-// Register The Auto Loader
-if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
-    require $maintenance;
-}
+$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
 
-require __DIR__.'/../vendor/autoload.php';
+$response = $kernel->handle(
+    $request = Illuminate\Http\Request::capture()
+);
 
-// Bootstrap Laravel And Handle The Request
-(require_once __DIR__.'/../bootstrap/app.php')
-    ->handleRequest(Illuminate\Http\Request::capture());
+$response->send();
+
+$kernel->terminate($request, $response);
