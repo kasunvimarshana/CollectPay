@@ -7,26 +7,34 @@ use Illuminate\Http\Request;
 
 class CheckRole
 {
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string  ...$roles
+     * @return mixed
+     */
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        $user = $request->user();
-
-        if (!$user) {
+        if (!$request->user()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated',
             ], 401);
         }
 
-        foreach ($roles as $role) {
-            if ($user->role === $role) {
-                return $next($request);
-            }
+        $userRole = $request->user()->role;
+
+        if (!in_array($userRole, $roles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden: Insufficient permissions',
+                'required_roles' => $roles,
+                'user_role' => $userRole,
+            ], 403);
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Insufficient role permissions',
-        ], 403);
+        return $next($request);
     }
 }

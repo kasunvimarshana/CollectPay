@@ -2,49 +2,46 @@
 
 namespace Database\Seeders;
 
-use App\Domain\Supplier\Models\Supplier;
-use App\Domain\User\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
+use App\Models\Supplier;
+use App\Models\User;
 
 class SupplierSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        $collectors = User::where('role', 'collector')->get();
-        
+        $collector = User::where('email', 'john@fieldsyncledger.com')->first();
+
+        if (!$collector) {
+            return;
+        }
+
         $suppliers = [
-            ['name' => 'Ranjith Perera', 'region' => 'Central', 'address' => '123 Kandy Road, Kandy'],
-            ['name' => 'Sunil Fernando', 'region' => 'Central', 'address' => '45 Hill Street, Nuwara Eliya'],
-            ['name' => 'Kumari Silva', 'region' => 'Southern', 'address' => '78 Galle Road, Galle'],
-            ['name' => 'Nimal Jayasinghe', 'region' => 'Southern', 'address' => '12 Beach Road, Matara'],
-            ['name' => 'Kamal Bandara', 'region' => 'Western', 'address' => '56 Main Street, Colombo'],
-            ['name' => 'Saman Kumara', 'region' => 'Western', 'address' => '89 Station Road, Negombo'],
-            ['name' => 'Priya Mendis', 'region' => 'Central', 'address' => '34 Temple Road, Kandy'],
-            ['name' => 'Lakmal Wijesinghe', 'region' => 'Southern', 'address' => '67 Fort Road, Galle'],
+            ['name' => 'Rajapaksa Tea Estate', 'code' => 'SUP001', 'address' => 'Nuwara Eliya District', 'phone' => '+94771234567'],
+            ['name' => 'Silva Plantations', 'code' => 'SUP002', 'address' => 'Kandy District', 'phone' => '+94771234568'],
+            ['name' => 'Fernando Tea Gardens', 'code' => 'SUP003', 'address' => 'Badulla District', 'phone' => '+94771234569'],
+            ['name' => 'Perera Highlands', 'code' => 'SUP004', 'address' => 'Ratnapura District', 'phone' => '+94771234570'],
+            ['name' => 'Wickramasinghe Estate', 'code' => 'SUP005', 'address' => 'Matale District', 'phone' => '+94771234571'],
+            ['name' => 'Jayawardena Farms', 'code' => 'SUP006', 'address' => 'Kegalle District', 'phone' => '+94771234572'],
+            ['name' => 'Gunawardena Tea Co', 'code' => 'SUP007', 'address' => 'Nuwara Eliya District', 'phone' => '+94771234573'],
+            ['name' => 'Dissanayake Plantation', 'code' => 'SUP008', 'address' => 'Kandy District', 'phone' => '+94771234574'],
         ];
 
-        foreach ($suppliers as $supplierData) {
-            // Find appropriate collector for region
-            $collector = $collectors->filter(function($c) use ($supplierData) {
-                $metadata = json_decode($c->metadata ?? '{}', true);
-                return ($metadata['region'] ?? '') === $supplierData['region'];
-            })->first();
-
+        foreach ($suppliers as $supplier) {
             Supplier::create([
-                'name' => $supplierData['name'],
-                'code' => null, // Auto-generated
-                'phone' => '+9477' . rand(1000000, 9999999),
-                'address' => $supplierData['address'],
-                'region' => $supplierData['region'],
-                'bank_name' => 'Bank of Ceylon',
-                'bank_account' => rand(100000000, 999999999),
-                'bank_branch' => $supplierData['region'] . ' Branch',
-                'payment_method' => rand(0, 1) ? 'bank_transfer' : 'cash',
-                'credit_limit' => rand(10, 50) * 10000,
-                'opening_balance' => rand(0, 5) * 1000,
-                'status' => 'active',
-                'collector_id' => $collector?->id,
-                'sync_status' => 'synced',
+                'id' => (string) Str::uuid(),
+                'name' => $supplier['name'],
+                'code' => $supplier['code'],
+                'address' => $supplier['address'],
+                'phone' => $supplier['phone'],
+                'email' => strtolower(str_replace(' ', '', $supplier['code'])) . '@example.com',
+                'notes' => 'Regular supplier',
+                'user_id' => $collector->id,
+                'version' => 1,
             ]);
         }
     }

@@ -1,0 +1,13 @@
+# Root gitignore
+.DS_Store
+*.log
+*.env
+.env.local
+.vscode/
+.idea/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

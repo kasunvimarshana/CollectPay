@@ -2,58 +2,80 @@
 
 namespace Database\Seeders;
 
-use App\Domain\User\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use App\Models\User;
 
 class UserSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
         // Admin user
         User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@fieldsync.local',
-            'password' => Hash::make('admin123'),
-            'phone' => '+94771234567',
+            'id' => (string) Str::uuid(),
+            'name' => 'Admin User',
+            'email' => 'admin@fieldsyncledger.com',
+            'password' => Hash::make('password'),
             'role' => 'admin',
-            'status' => 'active',
-            'email_verified_at' => now(),
-            'sync_status' => 'synced',
+            'permissions' => [
+                'manage_users',
+                'manage_suppliers',
+                'manage_products',
+                'manage_rates',
+                'manage_collections',
+                'manage_payments',
+                'view_reports',
+            ],
+            'version' => 1,
         ]);
 
-        // Manager user
+        // Collector user 1
         User::create([
-            'name' => 'Regional Manager',
-            'email' => 'manager@fieldsync.local',
-            'password' => Hash::make('manager123'),
-            'phone' => '+94772345678',
-            'role' => 'manager',
-            'status' => 'active',
-            'email_verified_at' => now(),
-            'sync_status' => 'synced',
-            'metadata' => json_encode(['region' => 'Central']),
+            'id' => (string) Str::uuid(),
+            'name' => 'John Collector',
+            'email' => 'john@fieldsyncledger.com',
+            'password' => Hash::make('password'),
+            'role' => 'collector',
+            'permissions' => [
+                'manage_suppliers',
+                'manage_collections',
+                'manage_payments',
+                'view_reports',
+            ],
+            'version' => 1,
         ]);
 
-        // Collector users
-        $collectors = [
-            ['name' => 'John Collector', 'email' => 'john@fieldsync.local', 'region' => 'Central'],
-            ['name' => 'Mary Collector', 'email' => 'mary@fieldsync.local', 'region' => 'Southern'],
-            ['name' => 'David Collector', 'email' => 'david@fieldsync.local', 'region' => 'Western'],
-        ];
+        // Collector user 2
+        User::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Jane Collector',
+            'email' => 'jane@fieldsyncledger.com',
+            'password' => Hash::make('password'),
+            'role' => 'collector',
+            'permissions' => [
+                'manage_suppliers',
+                'manage_collections',
+                'manage_payments',
+                'view_reports',
+            ],
+            'version' => 1,
+        ]);
 
-        foreach ($collectors as $collector) {
-            User::create([
-                'name' => $collector['name'],
-                'email' => $collector['email'],
-                'password' => Hash::make('collector123'),
-                'phone' => '+9477' . rand(1000000, 9999999),
-                'role' => 'collector',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'sync_status' => 'synced',
-                'metadata' => json_encode(['region' => $collector['region']]),
-            ]);
-        }
+        // Viewer user
+        User::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Viewer User',
+            'email' => 'viewer@fieldsyncledger.com',
+            'password' => Hash::make('password'),
+            'role' => 'viewer',
+            'permissions' => [
+                'view_reports',
+            ],
+            'version' => 1,
+        ]);
     }
 }

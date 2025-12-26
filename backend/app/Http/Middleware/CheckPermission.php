@@ -4,41 +4,51 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use App\Domain\User\Enums\UserRole;
 
 class CheckPermission
 {
-    public function handle(Request $request, Closure $next, string $permission)
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string  ...$permissions
+     * @return mixed
+     */
+    public function handle(Request $request, Closure $next, ...$permissions)
     {
-        $user = $request->user();
-
-        if (!$user) {
+        if (!$request->user()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated',
             ], 401);
         }
 
-        // Admin has all permissions
-        if ($user->isAdmin()) {
-            return $next($request);
-        }
-
-        // Check role-based permissions
-        $rolePermissions = UserRole::from($user->role)->getPermissions();
+        $userPermissions = $request->user()->permissions ?? [];
         
-        if (in_array($permission, $rolePermissions)) {
-            return $next($request);
+        // If permissions is a JSON string, decode it
+        if (is_string($userPermissions)) {
+            $userPermissions = json_decode($userPermissions, true) ?? [];
         }
 
-        // Check custom permissions
-        if ($user->hasPermission($permission)) {
-            return $next($request);
+        // Check if user has at least one of the required permissions
+        $hasPermission = false;
+        foreach ($permissions as $permission) {
+            if (in_array($permission, $userPermissions)) {
+                $hasPermission = true;
+                break;
+            }
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Permission denied: ' . $permission,
-        ], 403);
+        if (!$hasPermission) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden: Insufficient permissions',
+                'required_permissions' => $permissions,
+                'user_permissions' => $userPermissions,
+            ], 403);
+        }
+
+        return $next($request);
     }
 }
