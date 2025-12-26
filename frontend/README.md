@@ -1,229 +1,144 @@
-# Ledgerly Frontend
+# PayCore Frontend
 
-React Native (Expo) frontend for the Ledgerly Data Collection and Payment Management System.
+## Overview
+React Native (Expo) mobile application for the PayCore Data Collection and Payment Management System.
 
-## Architecture
+## Features
+- **Authentication**: Secure login and registration
+- **Supplier Management**: Create, view, and manage suppliers
+- **Product Management**: Manage products with multi-unit support
+- **Collection Tracking**: Record daily collections with automatic rate application
+- **Payment Management**: Track advance, partial, and full payments
+- **Real-time Data**: Multi-user and multi-device synchronization
+- **Secure Storage**: Encrypted token storage using Expo SecureStore
 
-This frontend follows **Clean Architecture** principles with clear separation of concerns:
+## Tech Stack
+- React Native with Expo
+- TypeScript
+- React Navigation
+- Axios for API calls
+- Expo SecureStore for secure token storage
+- Context API for state management
 
-### Layers
-
-1. **Domain Layer** (`src/domain/`)
-   - **Entities**: Core business entities (TypeScript interfaces)
-   - **Repositories**: Repository interfaces defining data access contracts
-
-2. **Application Layer** (`src/application/`)
-   - **Use Cases**: Application-specific business rules and orchestration
-   - **Services**: Application services for complex operations
-
-3. **Presentation Layer** (`src/presentation/`)
-   - **Screens**: UI screens for each feature
-   - **Components**: Reusable UI components
-   - **Navigation**: Navigation configuration
-
-4. **Infrastructure Layer** (`src/infrastructure/`)
-   - **API**: HTTP client and API integration
-   - **Storage**: Secure local storage (encrypted)
-   - **Auth**: Authentication management
-
-## Key Features
-
-- **Multi-user Support**: Role-based access with RBAC/ABAC
-- **Multi-unit Tracking**: Support for kg, g, liters, etc.
-- **Offline-Ready UI**: Optimistic UI updates with server synchronization
-- **Secure Storage**: Encrypted local storage for sensitive data
-- **Intuitive Interface**: User-friendly screens for data entry and reporting
-
-## Core Screens
-
-### Authentication
-- Login
-- Logout
-
-### Dashboard
-- Overview of recent collections
-- Payment summaries
-- Quick actions
-
-### Suppliers
-- List suppliers
-- Add/Edit supplier
-- View supplier details
-- Collection history per supplier
-
-### Products
-- List products
-- Add/Edit product
-- View product details
-- Rate history
-
-### Collections
-- List collections
-- Add new collection (with multi-unit support)
-- Edit collection
-- View collection details
-
-### Payments
-- List payments
-- Add payment (advance, partial, final)
-- View payment details
-- Payment calculator
-
-### Reports
-- Collection reports by date range
-- Payment summaries
-- Supplier balances
-
-## State Management
-
-Simple React state management with Context API:
-- AuthContext: User authentication state
-- DataContext: Application data (suppliers, products, collections, payments)
-
-## API Integration
-
-REST API integration using Axios:
-- Centralized API client
-- Token-based authentication (Bearer tokens)
-- Error handling and retry logic
-- Request/response interceptors
-
-## Security
-
-### Authentication
-- JWT token-based authentication
-- Secure token storage using expo-secure-store
-- Automatic token refresh
-
-### Data Protection
-- HTTPS-only communication
-- Secure local storage for sensitive data
-- No sensitive data in logs
+## Prerequisites
+- Node.js >= 18
+- npm or yarn
+- Expo CLI
+- iOS Simulator (Mac only) or Android Emulator
 
 ## Installation
 
-```bash
-# Install dependencies
-npm install
+1. **Install Dependencies**
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-# Start development server
-npm start
+2. **Configure API URL**
+   Edit `src/constants/index.ts` to set your backend API URL:
+   ```typescript
+   export const API_BASE_URL = 'http://YOUR_BACKEND_IP:8000/api';
+   ```
 
-# Run on Android
-npm run android
+3. **Start Development Server**
+   ```bash
+   npm start
+   ```
 
-# Run on iOS
-npm run ios
-
-# Run on web
-npm run web
-```
-
-## Testing
-
-```bash
-# Run tests
-npm test
-
-# Run with coverage
-npm test -- --coverage
-```
-
-## Design Principles
-
-### Clean Architecture
-- Dependency inversion: UI depends on domain, not vice versa
-- Clear layer boundaries
-- Testable business logic
-
-### SOLID Principles
-- **S**ingle Responsibility: Each component has one reason to change
-- **O**pen/Closed: Open for extension, closed for modification
-- **L**iskov Substitution: Subtypes must be substitutable
-- **I**nterface Segregation: Many specific interfaces over general ones
-- **D**ependency Inversion: Depend on abstractions, not concretions
-
-### DRY (Don't Repeat Yourself)
-- Reusable components and hooks
-- Shared utilities and helpers
-
-### KISS (Keep It Simple, Stupid)
-- Straightforward implementations
-- Minimal external dependencies
-- Clear, readable code
+4. **Run on Device/Emulator**
+   - Press `a` for Android
+   - Press `i` for iOS (Mac only)
+   - Scan QR code with Expo Go app on physical device
 
 ## Project Structure
 
 ```
 frontend/
 ├── src/
-│   ├── domain/
-│   │   ├── entities/
-│   │   │   ├── User.ts
-│   │   │   ├── Supplier.ts
-│   │   │   ├── Product.ts
-│   │   │   ├── Collection.ts
-│   │   │   └── Payment.ts
-│   │   └── repositories/
-│   │       └── *.ts (interfaces)
-│   ├── application/
-│   │   ├── usecases/
-│   │   │   ├── auth/
-│   │   │   ├── suppliers/
-│   │   │   ├── products/
-│   │   │   ├── collections/
-│   │   │   └── payments/
-│   │   └── services/
-│   ├── presentation/
-│   │   ├── screens/
-│   │   │   ├── Auth/
-│   │   │   ├── Dashboard/
-│   │   │   ├── Suppliers/
-│   │   │   ├── Products/
-│   │   │   ├── Collections/
-│   │   │   └── Payments/
-│   │   ├── components/
-│   │   │   ├── common/
-│   │   │   └── specific/
-│   │   └── navigation/
-│   └── infrastructure/
-│       ├── api/
-│       │   ├── client.ts
-│       │   └── endpoints/
-│       ├── storage/
-│       │   └── SecureStorage.ts
-│       └── auth/
-│           └── AuthManager.ts
-├── __tests__/
-├── assets/
-├── app.json
+│   ├── components/       # Reusable UI components
+│   ├── context/         # React Context providers
+│   │   └── AuthContext.tsx
+│   ├── navigation/      # Navigation configuration
+│   │   └── AppNavigator.tsx
+│   ├── screens/         # Screen components
+│   │   ├── Auth/
+│   │   ├── Home/
+│   │   ├── Suppliers/
+│   │   ├── Products/
+│   │   ├── Collections/
+│   │   └── Payments/
+│   ├── services/        # API services
+│   │   └── api.ts
+│   ├── types/           # TypeScript type definitions
+│   │   └── index.ts
+│   ├── constants/       # App constants and config
+│   │   └── index.ts
+│   └── utils/           # Utility functions
+├── App.tsx              # Root component
 ├── package.json
-└── README.md
+└── tsconfig.json
 ```
 
-## Development Guidelines
+## Key Features Implementation
 
-1. Follow Clean Architecture principles
-2. Keep components small and focused
-3. Use TypeScript for type safety
-4. Write tests for business logic
-5. Use meaningful variable and function names
-6. Document complex logic
-7. Handle errors gracefully
-8. Provide user feedback for all actions
+### Authentication
+- Secure token-based authentication using Laravel Sanctum
+- Persistent login with encrypted token storage
+- Auto-logout on token expiration
 
-## Deployment
+### Multi-Unit Support
+- Configurable unit types (kg, g, l, ml, etc.)
+- Unit conversion support
+- Consistent unit display across app
+
+### Data Integrity
+- Optimistic UI updates with rollback on error
+- Conflict resolution for concurrent operations
+- Local data validation before API calls
+
+### Security
+- Encrypted token storage via Expo SecureStore
+- HTTPS-only API communication
+- No sensitive data in logs or async storage
+
+## Available Scripts
+
+- `npm start` - Start Expo development server
+- `npm run android` - Run on Android emulator
+- `npm run ios` - Run on iOS simulator
+- `npm run web` - Run in web browser
+
+## Building for Production
 
 ### Android
 ```bash
-eas build --platform android
+expo build:android
 ```
 
 ### iOS
 ```bash
-eas build --platform ios
+expo build:ios
 ```
 
-## License
+## API Integration
 
-MIT
+All API calls go through the centralized `ApiService` class located in `src/services/api.ts`. This handles:
+- Authentication token injection
+- Response/error handling
+- Token expiration management
+
+Example usage:
+```typescript
+import ApiService from '../services/api';
+
+const suppliers = await ApiService.getSuppliers({ is_active: true });
+```
+
+## Contributing
+- Follow TypeScript best practices
+- Use functional components with hooks
+- Keep components small and focused
+- Add proper error handling
+
+## License
+Proprietary - All rights reserved

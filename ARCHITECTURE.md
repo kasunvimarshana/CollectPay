@@ -1,398 +1,425 @@
-# Architecture Documentation
+# PayCore System Architecture
 
-## System Architecture Overview
+## Overview
 
-Ledgerly follows a **Clean Architecture** pattern with clear separation between layers and adherence to SOLID principles.
+PayCore follows Clean Architecture principles with clear separation of concerns, ensuring maintainability, testability, and scalability. The system is designed for multi-user, multi-device operations with a focus on data integrity and security.
 
-## Architecture Diagram
+## Architecture Principles
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Presentation Layer                       │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  React Native (Expo) Frontend                              │ │
-│  │  - Screens (UI)                                            │ │
-│  │  - Components (Reusable UI)                                │ │
-│  │  - Navigation                                              │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-                         HTTPS / REST API
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                      Infrastructure Layer                        │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Laravel HTTP Layer                                        │ │
-│  │  - Controllers (API Endpoints)                             │ │
-│  │  - Middleware (Auth, Validation, CORS)                     │ │
-│  │  - Request Validation                                      │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                       Application Layer                          │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Use Cases                                                 │ │
-│  │  - CreateCollection, UpdatePayment, etc.                   │ │
-│  │  - Application Services                                    │ │
-│  │  - DTOs (Data Transfer Objects)                            │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                         Domain Layer                             │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Entities (Business Objects)                               │ │
-│  │  - User, Supplier, Product, Collection, Payment            │ │
-│  │                                                            │ │
-│  │  Repository Interfaces (Contracts)                         │ │
-│  │  - Define data access without implementation              │ │
-│  │                                                            │ │
-│  │  Domain Services                                           │ │
-│  │  - PaymentCalculationService                               │ │
-│  │  - Complex business logic                                  │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                    Infrastructure Layer (Data)                   │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Repository Implementations                                │ │
-│  │  - Eloquent Models                                         │ │
-│  │  - Database Queries                                        │ │
-│  │  - Caching                                                 │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                           Database                               │
-│               MySQL / PostgreSQL                                 │
-│  - users, suppliers, products, collections, payments            │
-│  - product_rates, audit_logs                                    │
-└─────────────────────────────────────────────────────────────────┘
-```
+### 1. Clean Architecture
+- **Independence**: Business logic independent of frameworks, UI, and external agencies
+- **Testability**: Business rules can be tested without UI, database, or external elements
+- **UI Independence**: UI can change without changing business rules
+- **Database Independence**: Business rules not bound to specific database
+- **External Agency Independence**: Business rules don't know about external interfaces
 
-## Layer Responsibilities
+### 2. SOLID Principles
+- **Single Responsibility**: Each class has one reason to change
+- **Open/Closed**: Open for extension, closed for modification
+- **Liskov Substitution**: Objects replaceable with instances of their subtypes
+- **Interface Segregation**: Many specific interfaces better than one general
+- **Dependency Inversion**: Depend on abstractions, not concretions
 
-### 1. Domain Layer (Core)
+### 3. DRY (Don't Repeat Yourself)
+- Reusable components and utilities
+- Shared business logic in models
+- Common API response structures
 
-**Location**: `backend/app/Domain/`
+### 4. KISS (Keep It Simple, Stupid)
+- Straightforward implementation
+- Minimal complexity
+- Clear naming conventions
 
-**Purpose**: Contains pure business logic, independent of frameworks and external concerns.
-
-**Components**:
-- **Entities**: Business objects with behavior (User, Supplier, Product, Collection, Payment, ProductRate)
-- **Repository Interfaces**: Contracts for data access
-- **Domain Services**: Complex business rules (PaymentCalculationService)
-
-**Rules**:
-- No framework dependencies
-- No database queries
-- No HTTP concerns
-- Pure business logic only
-- Entities contain their own validation
-
-### 2. Application Layer
-
-**Location**: `backend/app/Application/`
-
-**Purpose**: Orchestrates business workflows and use cases.
-
-**Components**:
-- **Use Cases**: Application-specific workflows
-- **DTOs**: Data transfer between layers
-- **Application Services**: Coordinate domain services and repositories
-
-**Rules**:
-- Depends on Domain layer only
-- No UI concerns
-- No database implementation details
-- Orchestrates domain logic
-
-### 3. Infrastructure Layer (Backend)
-
-**Location**: `backend/app/Infrastructure/`
-
-**Purpose**: Implements external interfaces and framework-specific code.
-
-**Components**:
-- **Persistence**: Repository implementations using Eloquent
-- **HTTP**: Controllers, middleware, routes
-- **Security**: Authentication, authorization, encryption
-
-**Rules**:
-- Implements domain interfaces
-- Framework-specific code allowed
-- External service integration
-
-### 4. Presentation Layer (Frontend)
-
-**Location**: `frontend/src/presentation/`
-
-**Purpose**: User interface and user interaction.
-
-**Components**:
-- **Screens**: Full-page views
-- **Components**: Reusable UI elements
-- **Navigation**: App navigation structure
-
-**Rules**:
-- Depends on Application layer
-- UI/UX concerns only
-- User input handling
-
-## Data Flow
-
-### Create Collection Example
+## System Components
 
 ```
-1. User enters collection data in UI
-   ↓
-2. Presentation layer validates input
-   ↓
-3. API call to backend /api/collections (POST)
-   ↓
-4. Infrastructure layer (Controller) receives request
-   ↓
-5. Application layer (Use Case) orchestrates
-   ↓
-6. Domain layer validates business rules
-   ↓
-7. Repository saves to database
-   ↓
-8. Response sent back through layers
-   ↓
-9. UI updates with success/error message
+┌─────────────────────────────────────────────────────────┐
+│                    Mobile Clients                       │
+│            (React Native / Expo / TypeScript)            │
+└────────────────────┬────────────────────────────────────┘
+                     │ HTTPS/REST API
+                     │ JSON
+                     │ Bearer Token Auth
+┌────────────────────▼────────────────────────────────────┐
+│                   API Gateway                            │
+│              (Laravel Sanctum Auth)                      │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│              API Controllers Layer                       │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │ AuthController  │ SupplierController             │   │
+│  │ ProductController │ CollectionController         │   │
+│  │ PaymentController │ ProductRateController        │   │
+│  └──────────────────────────────────────────────────┘   │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│               Business Logic Layer                       │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │           Eloquent Models                        │   │
+│  │  • User          • Supplier                      │   │
+│  │  • Product       • ProductRate                   │   │
+│  │  • Collection    • Payment                       │   │
+│  │                                                  │   │
+│  │  Business Logic:                                 │   │
+│  │  - Versioned rate management                    │   │
+│  │  - Automatic total calculations                 │   │
+│  │  - Multi-unit conversions                       │   │
+│  │  - Balance calculations                         │   │
+│  └──────────────────────────────────────────────────┘   │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│               Data Access Layer                          │
+│              (Eloquent ORM)                              │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│                  Database                                │
+│            (MySQL / PostgreSQL)                          │
+│                                                          │
+│  Tables: users, suppliers, products, product_rates,     │
+│          collections, payments, sessions, cache         │
+└──────────────────────────────────────────────────────────┘
 ```
 
-## Dependency Rules
+## Backend Architecture (Laravel)
 
-**The Dependency Rule**: Source code dependencies must point only inward, toward higher-level policies.
+### Layer Structure
+
+#### 1. Presentation Layer (Controllers)
+- **Location**: `app/Http/Controllers/API/`
+- **Responsibility**: Handle HTTP requests, validate input, return responses
+- **Components**:
+  - `AuthController`: Authentication endpoints
+  - `SupplierController`: Supplier CRUD operations
+  - `ProductController`: Product management
+  - `ProductRateController`: Rate versioning
+  - `CollectionController`: Collection tracking
+  - `PaymentController`: Payment management
+
+#### 2. Business Logic Layer (Models)
+- **Location**: `app/Models/`
+- **Responsibility**: Domain logic, calculations, relationships
+- **Key Models**:
+  ```
+  User
+  ├── HasApiTokens (Sanctum)
+  ├── SoftDeletes
+  └── Relationships: suppliers, collections, payments
+  
+  Supplier
+  ├── SoftDeletes
+  ├── Methods: getTotalCollectionsAmount(), getBalanceAmount()
+  └── Relationships: creator, collections, payments
+  
+  Product
+  ├── SoftDeletes
+  ├── Methods: getCurrentRate()
+  └── Relationships: rates, collections
+  
+  ProductRate
+  ├── SoftDeletes
+  ├── Methods: isEffectiveOn()
+  └── Versioned rate management
+  
+  Collection
+  ├── SoftDeletes
+  ├── Auto-calculation of totals
+  └── Automatic rate application
+  
+  Payment
+  ├── SoftDeletes
+  └── Payment tracking and reconciliation
+  ```
+
+#### 3. Data Access Layer
+- **Eloquent ORM**: Database abstraction
+- **Query Builder**: Complex queries
+- **Migrations**: Version-controlled schema
+
+### Database Design
+
+#### Schema Principles
+- **Normalization**: Third Normal Form (3NF)
+- **Foreign Keys**: Referential integrity
+- **Indexes**: Performance optimization
+- **Soft Deletes**: Data preservation
+- **Timestamps**: Audit trail
+
+#### Entity Relationships
+```
+User ─────┬─────> Supplier (created_by)
+          ├─────> Product (created_by)
+          ├─────> ProductRate (created_by)
+          ├─────> Collection (collected_by)
+          └─────> Payment (created_by)
+
+Supplier ─┬─────> Collection (supplier_id)
+          └─────> Payment (supplier_id)
+
+Product ──┬─────> ProductRate (product_id)
+          └─────> Collection (product_id)
+
+ProductRate ────> Collection (product_rate_id, optional)
+```
+
+### Authentication & Authorization
+
+#### Laravel Sanctum
+```
+Client                    API Server
+  │                           │
+  ├─ POST /api/login ────────>│
+  │                           ├─ Validate credentials
+  │                           ├─ Generate token
+  │<──── Token ───────────────┤
+  │                           │
+  ├─ GET /api/suppliers ─────>│
+  │  (Bearer Token)           ├─ Validate token
+  │                           ├─ Check permissions
+  │<──── Data ────────────────┤
+```
+
+#### Role-Based Access Control (RBAC)
+- **Admin**: Full system access
+- **Manager**: Read all, manage reports
+- **Collector**: Create collections, view own data
+
+## Frontend Architecture (React Native)
+
+### Layer Structure
+
+#### 1. Presentation Layer (Screens)
+- **Location**: `src/screens/`
+- **Responsibility**: UI components, user interactions
+- **Structure**:
+  ```
+  screens/
+  ├── Auth/
+  │   ├── LoginScreen.tsx
+  │   └── RegisterScreen.tsx
+  ├── Home/
+  │   └── HomeScreen.tsx
+  ├── Suppliers/
+  │   ├── SuppliersListScreen.tsx
+  │   └── SupplierDetailScreen.tsx
+  ├── Products/
+  │   └── ProductsListScreen.tsx
+  ├── Collections/
+  │   ├── CollectionsListScreen.tsx
+  │   └── CollectionFormScreen.tsx
+  └── Payments/
+      ├── PaymentsListScreen.tsx
+      └── PaymentFormScreen.tsx
+  ```
+
+#### 2. Navigation Layer
+- **React Navigation**: Screen management
+- **Stack Navigator**: Main flow
+- **Tab Navigator**: Bottom tabs for quick access
+- **Authentication Flow**: Conditional rendering based on auth state
+
+#### 3. State Management Layer
+- **Context API**: Global state (Auth)
+- **Local State**: Component-specific state
+- **Secure Storage**: Persistent authentication tokens
+
+#### 4. Business Logic Layer
+- **Services**: API communication
+- **Utils**: Helper functions
+- **Constants**: Configuration values
+
+### Data Flow
 
 ```
-Presentation → Application → Domain
-Infrastructure → Application → Domain
-Infrastructure → Domain
-```
-
-**Key Point**: Domain layer depends on NOTHING. It's the center of the architecture.
-
-## Design Patterns Used
-
-### 1. Repository Pattern
-- Abstracts data access
-- Domain defines interfaces
-- Infrastructure provides implementations
-
-### 2. Dependency Injection
-- Constructor injection
-- Interfaces over concrete classes
-- Testability
-
-### 3. Factory Pattern
-- Entity creation
-- Complex object construction
-
-### 4. Service Pattern
-- Domain Services for complex business logic
-- Application Services for orchestration
-
-### 5. DTO Pattern
-- Data transfer between layers
-- Validation and transformation
-
-## Multi-User Concurrency
-
-### Optimistic Locking
-
-```php
-// Version column tracks changes
-$collection = Collection::find($id);
-$collection->quantity = 100;
-$collection->version = $collection->version + 1;
-$collection->save();
-
-// If version changed, save fails
-// Frontend must refresh and retry
-```
-
-### Transaction Management
-
-```php
-DB::beginTransaction();
-try {
-    // Multiple operations
-    $collection->save();
-    $audit->save();
-    DB::commit();
-} catch (Exception $e) {
-    DB::rollback();
-    throw $e;
-}
+User Action
+    ↓
+Screen Component
+    ↓
+API Service (axios)
+    ↓
+Backend API
+    ↓
+Database
+    ↓
+Backend API (Response)
+    ↓
+API Service
+    ↓
+Context/State Update
+    ↓
+UI Re-render
 ```
 
 ## Security Architecture
 
-### Authentication Flow
+### 1. Authentication
+- **Token-Based**: Bearer tokens via Laravel Sanctum
+- **Secure Storage**: Expo SecureStore (encrypted)
+- **Token Rotation**: On login/logout
+- **Expiration Handling**: Auto-logout on 401
 
+### 2. Authorization
+- **Role Checking**: Server-side role validation
+- **Route Protection**: Middleware guards
+- **UI Conditional**: Role-based UI elements
+
+### 3. Data Protection
+- **HTTPS Only**: All API communication encrypted
+- **SQL Injection**: Eloquent ORM prepared statements
+- **XSS Protection**: Input sanitization
+- **CSRF**: Laravel CSRF tokens
+- **Password Hashing**: Bcrypt algorithm
+
+### 4. API Security
+- **Rate Limiting**: Throttle requests per IP/user
+- **Input Validation**: Request validation rules
+- **Output Sanitization**: Response filtering
+- **Error Handling**: No sensitive data in errors
+
+## Data Integrity
+
+### 1. Transactional Operations
+```php
+DB::transaction(function () {
+    // Multiple database operations
+    // All or nothing
+});
 ```
-1. User logs in (email/password)
-   ↓
-2. Backend validates credentials
-   ↓
-3. JWT token generated
-   ↓
-4. Token stored securely (expo-secure-store)
-   ↓
-5. Token sent with each API request (Authorization header)
-   ↓
-6. Backend validates token on each request
-   ↓
-7. Token refreshed before expiry
+
+### 2. Optimistic Locking
+- Timestamp-based conflict detection
+- Version number tracking
+- Last-write-wins with user notification
+
+### 3. Soft Deletes
+- Historical data preservation
+- Audit trail maintenance
+- Recoverable deletions
+
+### 4. Automated Calculations
+```php
+// Collection model automatically:
+// 1. Fetches current rate
+// 2. Calculates total amount
+// 3. Links to product rate
+
+protected static function boot() {
+    static::creating(function ($collection) {
+        $rate = Product::find($collection->product_id)
+            ->getCurrentRate($collection->unit);
+        $collection->rate_applied = $rate->rate;
+        $collection->total_amount = 
+            $collection->quantity * $rate->rate;
+    });
+}
 ```
-
-### Authorization (RBAC/ABAC)
-
-```
-1. Request reaches backend
-   ↓
-2. Middleware extracts user from token
-   ↓
-3. Check user roles (admin, manager, collector)
-   ↓
-4. Check specific permissions (collections.create)
-   ↓
-5. Check resource ownership (ABAC)
-   ↓
-6. Allow/Deny request
-```
-
-## Database Design
-
-### Normalization
-- 3rd Normal Form (3NF)
-- No redundant data
-- Foreign key constraints
-
-### Indexing Strategy
-- Primary keys (auto-indexed)
-- Foreign keys
-- Frequently queried columns
-- Composite indexes for common queries
-
-### Audit Trail
-- audit_logs table
-- Captures all CRUD operations
-- User, timestamp, IP address
-- Old and new values (JSON)
-
-## Testing Strategy
-
-### Backend Tests
-- **Unit Tests**: Domain entities and services
-- **Integration Tests**: Repository implementations
-- **Feature Tests**: API endpoints
-
-### Frontend Tests
-- **Unit Tests**: Business logic functions
-- **Component Tests**: UI components
-- **Integration Tests**: API integration
 
 ## Performance Optimization
 
 ### Backend
-- Database query optimization
-- Eager loading relationships
-- Caching frequently accessed data
-- Pagination for large datasets
+- **Query Optimization**: Eager loading relationships
+- **Caching**: Config, route, view caching
+- **Indexing**: Database indexes on foreign keys
+- **Connection Pooling**: Persistent connections
 
 ### Frontend
-- Lazy loading screens
-- Image optimization
-- Local caching
-- Optimistic UI updates
+- **Pagination**: Load data in chunks
+- **Lazy Loading**: Load screens on demand
+- **Memoization**: Cache computed values
+- **Image Optimization**: Compressed assets
 
 ## Scalability Considerations
 
 ### Horizontal Scaling
-- Stateless API design
-- Load balancer compatible
-- Shared session storage (Redis)
+- **Stateless API**: Easy to replicate servers
+- **Load Balancer**: Distribute traffic
+- **Shared Storage**: Centralized file storage
+- **Database Replication**: Read replicas
 
 ### Vertical Scaling
-- Database optimization
-- Query performance
-- Efficient algorithms
+- **Cache Layer**: Redis for session/cache
+- **Queue System**: Background jobs
+- **CDN**: Static asset delivery
+- **Database Optimization**: Indexes, partitioning
 
-### Future Enhancements
-- Message queue for async operations
-- Microservices for specific domains
-- Read replicas for reporting
-- Caching layer (Redis)
+## Error Handling
+
+### Backend
+```php
+try {
+    // Operation
+} catch (Exception $e) {
+    Log::error($e->getMessage());
+    return response()->json([
+        'message' => 'Operation failed'
+    ], 500);
+}
+```
+
+### Frontend
+```typescript
+try {
+    await ApiService.createCollection(data);
+} catch (error) {
+    Alert.alert('Error', error.response?.data?.message);
+}
+```
+
+## Testing Strategy
+
+### Backend
+- **Unit Tests**: Model logic
+- **Feature Tests**: API endpoints
+- **Integration Tests**: Full workflows
+
+### Frontend
+- **Component Tests**: UI components
+- **Integration Tests**: Screen flows
+- **E2E Tests**: Complete user journeys
 
 ## Deployment Architecture
 
-### Production Setup
-
 ```
-┌─────────────────┐
-│  Load Balancer  │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼──┐  ┌──▼───┐
-│ API  │  │ API  │  (Multiple instances)
-│Server│  │Server│
-└───┬──┘  └──┬───┘
-    │         │
-    └────┬────┘
-         │
-┌────────▼────────┐
-│    Database     │
-│  (Primary +     │
-│   Replicas)     │
-└─────────────────┘
+┌─────────────────────────────────────────────┐
+│              Load Balancer                  │
+│             (SSL Termination)               │
+└──────────────────┬──────────────────────────┘
+                   │
+      ┌────────────┴────────────┐
+      │                         │
+┌─────▼──────┐          ┌──────▼──────┐
+│  App       │          │  App        │
+│  Server 1  │          │  Server 2   │
+│  (Laravel) │          │  (Laravel)  │
+└─────┬──────┘          └──────┬──────┘
+      │                         │
+      └────────────┬────────────┘
+                   │
+           ┌───────▼────────┐
+           │  Database      │
+           │  (MySQL)       │
+           │  + Replication │
+           └────────────────┘
 ```
 
-### Environment Requirements
-- PHP 8.1+
-- MySQL 8.0+ / PostgreSQL 13+
-- Node.js 18+ (for frontend build)
-- HTTPS/SSL certificate
-- Redis (optional, for caching)
-
-## Monitoring and Logging
+## Monitoring & Logging
 
 ### Application Logs
-- Error logs
-- Audit logs
-- Performance logs
+- Laravel Log: `/storage/logs/laravel.log`
+- Database Queries: Query log
+- API Access: Access logs
 
-### Monitoring Metrics
-- API response times
+### Metrics
+- Response times
 - Error rates
-- Database query performance
-- User activity
+- Database performance
+- Active users
 
-## Backup Strategy
+---
 
-### Database Backups
-- Daily automated backups
-- Point-in-time recovery
-- Backup retention policy
-
-### Code Backups
-- Git version control
-- Automated deployments
-- Rollback capability
-
-## Conclusion
-
-This architecture ensures:
-- ✅ Clean separation of concerns
-- ✅ Testable code
-- ✅ Maintainable codebase
-- ✅ Scalable system
-- ✅ Secure by design
-- ✅ Performance optimized
+**Document Version**: 1.0  
+**Last Updated**: 2025-12-25  
+**Maintained By**: PayCore Development Team
