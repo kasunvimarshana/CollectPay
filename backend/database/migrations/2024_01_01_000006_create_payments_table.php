@@ -6,41 +6,36 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->uuid('uuid')->unique();
+            $table->string('uuid')->unique();
             $table->foreignId('supplier_id')->constrained()->onDelete('cascade');
+            $table->string('payment_type')->default('full'); // advance, partial, full
+            $table->decimal('amount', 10, 2);
             $table->date('payment_date');
-            $table->decimal('amount', 12, 2);
-            $table->enum('payment_type', ['advance', 'partial', 'full', 'adjustment'])->default('partial');
-            $table->string('payment_method')->nullable(); // cash, bank_transfer, check, etc.
-            $table->string('reference_number')->nullable(); // Transaction/check number
+            $table->time('payment_time')->nullable();
+            $table->string('payment_method')->nullable(); // cash, bank_transfer, check
+            $table->string('reference_number')->nullable();
+            $table->decimal('outstanding_before', 10, 2)->default(0);
+            $table->decimal('outstanding_after', 10, 2)->default(0);
             $table->text('notes')->nullable();
-            $table->json('allocation')->nullable(); // How payment was allocated to collections
-            $table->boolean('is_synced')->default(false);
-            $table->timestamp('synced_at')->nullable();
-            $table->foreignId('processed_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->json('calculation_details')->nullable(); // Audit trail for auto-calculations
+            $table->foreignId('processed_by')->constrained('users');
+            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();
             $table->softDeletes();
             $table->integer('version')->default(1);
+            $table->timestamp('synced_at')->nullable();
             
-            $table->index(['uuid', 'is_synced']);
             $table->index(['supplier_id', 'payment_date']);
-            $table->index('payment_date');
-            $table->index('payment_type');
+            $table->index(['uuid']);
+            $table->index('synced_at');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('payments');

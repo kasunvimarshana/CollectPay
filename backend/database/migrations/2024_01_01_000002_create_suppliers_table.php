@@ -6,36 +6,29 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
-            $table->uuid('uuid')->unique(); // For offline-first sync
+            $table->string('code')->unique();
             $table->string('name');
             $table->string('contact_person')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
             $table->text('address')->nullable();
-            $table->string('registration_number')->nullable();
+            $table->string('status')->default('active'); // active, inactive, suspended
             $table->json('metadata')->nullable(); // Additional flexible data
-            $table->boolean('is_active')->default(true);
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();
             $table->softDeletes();
-            $table->integer('version')->default(1); // Optimistic locking
+            $table->integer('version')->default(1);
             
-            $table->index(['uuid', 'is_active']);
-            $table->index('name');
+            $table->index(['code', 'status']);
+            $table->index('created_at');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('suppliers');

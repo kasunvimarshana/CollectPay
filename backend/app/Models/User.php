@@ -24,6 +24,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'deleted_at',
     ];
 
     protected $casts = [
@@ -31,46 +32,30 @@ class User extends Authenticatable
         'password' => 'hashed',
         'permissions' => 'array',
         'is_active' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    // Relationships
-    public function createdSuppliers()
-    {
-        return $this->hasMany(Supplier::class, 'created_by');
-    }
-
-    public function createdProducts()
-    {
-        return $this->hasMany(Product::class, 'created_by');
-    }
-
-    public function collections()
-    {
-        return $this->hasMany(Collection::class, 'collected_by');
-    }
-
-    public function processedPayments()
-    {
-        return $this->hasMany(Payment::class, 'processed_by');
-    }
-
-    public function syncLogs()
-    {
-        return $this->hasMany(SyncLog::class);
-    }
-
-    // Authorization helpers (RBAC + ABAC)
-    public function hasRole($role)
+    /**
+     * Check if user has a specific role (RBAC)
+     */
+    public function hasRole(string $role): bool
     {
         return $this->role === $role;
     }
 
-    public function hasAnyRole(array $roles)
+    /**
+     * Check if user has any of the given roles
+     */
+    public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role, $roles);
     }
 
-    public function hasPermission($permission)
+    /**
+     * Check if user has a specific permission (ABAC)
+     */
+    public function hasPermission(string $permission): bool
     {
         if (!$this->permissions) {
             return false;
@@ -79,25 +64,26 @@ class User extends Authenticatable
         return in_array($permission, $this->permissions);
     }
 
-    public function can($ability, $arguments = [])
+    /**
+     * Check if user can perform action on resource (ABAC)
+     */
+    public function can($ability, $arguments = []): bool
     {
         // Admin has all permissions
         if ($this->role === 'admin') {
             return true;
         }
 
-        // Check specific permissions
-        return $this->hasPermission($ability) || parent::can($ability, $arguments);
+        return parent::can($ability, $arguments);
     }
 
-    // Scopes
-    public function scopeActive($query)
+    public function collections()
     {
-        return $query->where('is_active', true);
+        return $this->hasMany(Collection::class, 'collected_by');
     }
 
-    public function scopeByRole($query, $role)
+    public function payments()
     {
-        return $query->where('role', $role);
+        return $this->hasMany(Payment::class, 'processed_by');
     }
 }

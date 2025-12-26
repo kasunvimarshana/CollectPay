@@ -2,257 +2,147 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePaymentRequest;
 use App\Models\Payment;
-use App\Models\Supplier;
+use App\Services\PaymentCalculationService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
-class PaymentController extends ApiController
+class PaymentController extends Controller
 {
-    /**
-     * Get all payments
-     */
+    private PaymentCalculationService $paymentService;
+    private AuditService $auditService;
+
+    public function __construct(
+        PaymentCalculationService $paymentService,
+        AuditService $auditService
+    ) {
+        $this->paymentService = $paymentService;
+        $this->auditService = $auditService;
+    }
+
     public function index(Request $request)
     {
-        $query = Payment::query()->with(['supplier', 'processor']);
+        $query = Payment::with(['supplier', 'processor']);
 
         if ($request->has('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->has('from_date')) {
+            $query->where('payment_date', '>=', $request->from_date);
+        }
+
+        if ($request->has('to_date')) {
+            $query->where('payment_date', '<=', $request->to_date);
         }
 
         if ($request->has('payment_type')) {
             $query->where('payment_type', $request->payment_type);
         }
 
-        if ($request->has('is_synced')) {
-            $query->where('is_synced', $request->boolean('is_synced'));
-        }
+        $payments = $query->orderBy('payment_date', 'desc')->paginate(50);
 
-        if ($request->has('start_date')) {
-            $query->where('payment_date', '>=', $request->start_date);
-        }
-
-        if ($request->has('end_date')) {
-            $query->where('payment_date', '<=', $request->end_date);
-        }
-
-        $perPage = $request->get('per_page', 50);
-        $payments = $query->orderBy('payment_date', 'desc')->paginate($perPage);
-
-        return $this->success($payments);
+        return response()->json($payments);
     }
 
-    /**
-     * Get single payment
-     */
-    public function show($id)
+    public function store(StorePaymentRequest $request)
     {
-        $payment = Payment::with(['supplier', 'processor', 'creator'])->find($id);
+        // Validate payment amount
+        $validation = $this->paymentService->validatePaymentAmount(
+            $request->supplier_id,
+            $request->amount
+        );
 
-        if (!$payment) {
-            return $this->notFound('Payment not found');
+        if (!$validation['is_valid'] && $request->payment_type !== 'advance') {
+            return response()->json([
+                'message' => $validation['message'],
+                'validation' => $validation,
+            ], 422);
         }
 
-        return $this->success($payment);
+        $payment = $this->paymentService->processPayment($request->validated());
+        
+        $this->auditService->log(
+            'payment',
+            $payment->id,
+            'created',
+            null,
+            $payment->toArray(),
+            $request
+        );
+
+        return response()->json($payment, 201);
     }
 
-    /**
-     * Create new payment
-     */
-    public function store(Request $request)
+    public function show(Payment $payment)
     {
-        $validated = $request->validate([
-            'uuid' => 'sometimes|uuid|unique:payments,uuid',
-            'supplier_id' => 'required|exists:suppliers,id',
-            'payment_date' => 'required|date',
-            'amount' => 'required|numeric|min:0.01',
-            'payment_type' => 'required|in:advance,partial,full,adjustment',
-            'payment_method' => 'nullable|string|max:50',
-            'reference_number' => 'nullable|string|max:100',
-            'notes' => 'nullable|string',
-            'allocation' => 'nullable|array',
-            'is_synced' => 'sometimes|boolean',
-            'version' => 'sometimes|integer',
-        ]);
+        $payment->load(['supplier', 'processor']);
 
-        if (isset($validated['uuid'])) {
-            $existing = Payment::where('uuid', $validated['uuid'])->first();
-            if ($existing) {
-                if (isset($validated['version']) && $existing->version != $validated['version']) {
-                    return $this->conflict([
-                        'server_version' => $existing->version,
-                        'server_data' => $existing->load('supplier'),
-                    ], 'Version conflict detected');
-                }
-                return $this->update($request, $existing->id);
-            }
-        }
-
-        DB::beginTransaction();
-        try {
-            $validated['processed_by'] = $request->user()->id;
-            $validated['created_by'] = $request->user()->id;
-
-            $payment = Payment::create($validated);
-
-            DB::commit();
-            return $this->success(
-                $payment->load('supplier'),
-                'Payment created successfully',
-                201
-            );
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->error('Failed to create payment: ' . $e->getMessage(), 500);
-        }
+        return response()->json($payment);
     }
 
-    /**
-     * Update payment
-     */
-    public function update(Request $request, $id)
+    public function update(Request $request, Payment $payment)
     {
-        $payment = Payment::find($id);
-
-        if (!$payment) {
-            return $this->notFound('Payment not found');
-        }
-
-        $validated = $request->validate([
-            'supplier_id' => 'sometimes|exists:suppliers,id',
-            'payment_date' => 'sometimes|date',
+        $request->validate([
             'amount' => 'sometimes|numeric|min:0.01',
-            'payment_type' => 'sometimes|in:advance,partial,full,adjustment',
-            'payment_method' => 'nullable|string|max:50',
+            'payment_date' => 'sometimes|date',
+            'payment_time' => 'nullable|date_format:H:i:s',
+            'payment_method' => 'nullable|in:cash,bank_transfer,check,mobile_money',
             'reference_number' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
-            'allocation' => 'nullable|array',
-            'is_synced' => 'sometimes|boolean',
-            'version' => 'sometimes|integer',
         ]);
 
-        if (isset($validated['version']) && $payment->version != $validated['version']) {
-            return $this->conflict([
-                'server_version' => $payment->version,
-                'server_data' => $payment->load('supplier'),
-            ], 'Version conflict detected');
-        }
+        $oldValues = $payment->toArray();
+        
+        $payment->update($request->all());
+        
+        $this->auditService->log(
+            'payment',
+            $payment->id,
+            'updated',
+            $oldValues,
+            $payment->toArray(),
+            $request
+        );
 
-        DB::beginTransaction();
-        try {
-            $validated['updated_by'] = $request->user()->id;
-            $payment->update($validated);
+        return response()->json($payment);
+    }
 
-            DB::commit();
-            return $this->success(
-                $payment->load('supplier'),
-                'Payment updated successfully'
-            );
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->error('Failed to update payment: ' . $e->getMessage(), 500);
-        }
+    public function destroy(Request $request, Payment $payment)
+    {
+        $oldValues = $payment->toArray();
+        
+        $payment->delete();
+        
+        $this->auditService->log(
+            'payment',
+            $payment->id,
+            'deleted',
+            $oldValues,
+            null,
+            $request
+        );
+
+        return response()->json(['message' => 'Payment deleted successfully']);
     }
 
     /**
-     * Delete payment
+     * Validate payment amount before processing
      */
-    public function destroy($id)
+    public function validateAmount(Request $request)
     {
-        $payment = Payment::find($id);
-
-        if (!$payment) {
-            return $this->notFound('Payment not found');
-        }
-
-        try {
-            $payment->delete();
-            return $this->success(null, 'Payment deleted successfully');
-        } catch (\Exception $e) {
-            return $this->error('Failed to delete payment: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Calculate payment allocation
-     */
-    public function calculateAllocation(Request $request)
-    {
-        $validated = $request->validate([
+        $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'amount' => 'required|numeric|min:0.01',
-            'payment_date' => 'sometimes|date',
         ]);
 
-        $supplier = Supplier::with([
-            'collections' => function ($query) use ($validated) {
-                $query->where('collection_date', '<=', $validated['payment_date'] ?? now())
-                    ->orderBy('collection_date', 'asc');
-            }
-        ])->find($validated['supplier_id']);
+        $validation = $this->paymentService->validatePaymentAmount(
+            $request->supplier_id,
+            $request->amount
+        );
 
-        // Get existing payments
-        $totalPaid = $supplier->payments()
-            ->where('payment_date', '<=', $validated['payment_date'] ?? now())
-            ->sum('amount');
-
-        $totalCollected = $supplier->collections
-            ->sum('total_amount');
-
-        $balance = $totalCollected - $totalPaid;
-
-        $allocation = [
-            'supplier_id' => $supplier->id,
-            'supplier_name' => $supplier->name,
-            'total_collected' => $totalCollected,
-            'total_paid' => $totalPaid,
-            'current_balance' => $balance,
-            'payment_amount' => $validated['amount'],
-            'remaining_balance' => max(0, $balance - $validated['amount']),
-            'collections' => $supplier->collections->map(function ($collection) {
-                return [
-                    'id' => $collection->id,
-                    'collection_date' => $collection->collection_date,
-                    'product_name' => $collection->product->name ?? 'Unknown',
-                    'quantity' => $collection->quantity,
-                    'amount' => $collection->total_amount,
-                ];
-            }),
-        ];
-
-        return $this->success($allocation);
-    }
-
-    /**
-     * Get payment summary
-     */
-    public function summary(Request $request)
-    {
-        $query = Payment::query();
-
-        if ($request->has('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
-        }
-
-        if ($request->has('start_date')) {
-            $query->where('payment_date', '>=', $request->start_date);
-        }
-
-        if ($request->has('end_date')) {
-            $query->where('payment_date', '<=', $request->end_date);
-        }
-
-        $summary = [
-            'total_payments' => $query->count(),
-            'total_amount' => $query->sum('amount'),
-            'synced_count' => (clone $query)->where('is_synced', true)->count(),
-            'pending_count' => (clone $query)->where('is_synced', false)->count(),
-            'by_type' => (clone $query)
-                ->select('payment_type', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
-                ->groupBy('payment_type')
-                ->get(),
-        ];
-
-        return $this->success($summary);
+        return response()->json($validation);
     }
 }

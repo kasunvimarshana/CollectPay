@@ -1,470 +1,481 @@
-# PayTrack Architecture Documentation
+# SyncLedger Architecture Documentation
 
-## System Overview
+## Overview
 
-PayTrack is an offline-first data collection and payment management system built with a decoupled architecture featuring a Laravel backend API and React Native (Expo) mobile frontend.
+SyncLedger follows Clean Architecture principles with clear separation of concerns across three main layers: Domain, Data, and Presentation. This architecture ensures maintainability, testability, and scalability.
 
-## Architecture Principles
+## Architecture Layers
 
-### 1. Clean Architecture
-- **Separation of Concerns**: Each layer has a single responsibility
-- **Dependency Rule**: Inner layers don't depend on outer layers
-- **Testability**: Business logic independent of frameworks
-- **Maintainability**: Easy to modify and extend
+### 1. Domain Layer (Business Logic)
+- **Entities**: Core business objects (Supplier, Product, Collection, Payment)
+- **Use Cases**: Business rules and operations
+- **Interfaces**: Abstract contracts for repositories and services
 
-### 2. SOLID Principles
-- **Single Responsibility**: Classes have one reason to change
-- **Open/Closed**: Open for extension, closed for modification
-- **Liskov Substitution**: Subtypes must be substitutable
-- **Interface Segregation**: Specific interfaces over general ones
-- **Dependency Inversion**: Depend on abstractions, not concretions
+**Characteristics:**
+- No dependencies on frameworks or external libraries
+- Pure business logic
+- Framework-agnostic
+- Highly testable
 
-### 3. DRY (Don't Repeat Yourself)
-- Reusable components and services
-- Shared utilities and helpers
-- Common validation logic
-- Centralized configuration
+### 2. Data Layer (Data Access)
+- **Repositories**: Implementation of data access patterns
+- **Data Sources**: Local (SQLite) and Remote (API)
+- **Models**: Data transfer objects
+- **Mappers**: Convert between domain entities and data models
 
-### 4. KISS (Keep It Simple, Stupid)
-- Simple, readable code
-- Minimal complexity
-- Clear naming conventions
-- Straightforward logic flow
+**Characteristics:**
+- Implements domain interfaces
+- Handles data persistence
+- Manages data synchronization
+- Abstracts data source details
 
-## Backend Architecture
+### 3. Infrastructure Layer (System Services)
+- **Database**: SQLite management and queries
+- **Network**: API client and network monitoring
+- **Storage**: Secure storage for sensitive data
+- **Sync**: Synchronization engine and queue management
 
-### Layer Structure
+**Characteristics:**
+- Platform-specific implementations
+- External service integrations
+- System-level operations
+- Cross-cutting concerns
 
-```
-┌─────────────────────────────────────┐
-│         API Layer (Routes)          │
-│  - RESTful endpoints                │
-│  - Authentication middleware        │
-│  - Rate limiting                    │
-└─────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────┐
-│      Controller Layer               │
-│  - Request validation               │
-│  - Response formatting              │
-│  - Error handling                   │
-└─────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────┐
-│       Service Layer                 │
-│  - Business logic                   │
-│  - Sync operations                  │
-│  - Calculations                     │
-└─────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────┐
-│      Repository Layer               │
-│  - Data access                      │
-│  - Query optimization               │
-│  - Cache management                 │
-└─────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────┐
-│       Model Layer                   │
-│  - Eloquent models                  │
-│  - Relationships                    │
-│  - Accessors/Mutators               │
-└─────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────┐
-│        Database Layer               │
-│  - MySQL database                   │
-│  - Migrations                       │
-│  - Indexes                          │
-└─────────────────────────────────────┘
-```
+### 4. Presentation Layer (UI)
+- **Screens**: User interface components
+- **Navigation**: App routing and flow
+- **State Management**: UI state and user interactions
+- **View Models**: Presentation logic
 
-### Backend Components
-
-**Controllers** (`app/Http/Controllers/Api/`)
-- Handle HTTP requests
-- Validate input
-- Call services
-- Format responses
-- Example: `SupplierController`, `SyncController`
-
-**Models** (`app/Models/`)
-- Eloquent ORM models
-- Define relationships
-- Business logic helpers
-- Example: `Supplier`, `Collection`, `Payment`
-
-**Services** (`app/Services/`)
-- Business logic implementation
-- Complex operations
-- External integrations
-- Example: `SyncService`, `PaymentCalculator`
-
-**Repositories** (`app/Repositories/`)
-- Data access abstraction
-- Query optimization
-- Caching layer
-- Example: `SupplierRepository`
-
-## Frontend Architecture
-
-### Layer Structure
-
-```
-┌─────────────────────────────────────┐
-│       Presentation Layer            │
-│  - React components                 │
-│  - Screens/Pages                    │
-│  - UI logic                         │
-└─────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────┐
-│       State Management              │
-│  - React Query                      │
-│  - Context API                      │
-│  - Local state                      │
-└─────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────┐
-│        Service Layer                │
-│  - API service                      │
-│  - Sync service                     │
-│  - Business logic                   │
-└─────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────┐
-│       Database Layer                │
-│  - SQLite operations                │
-│  - Local storage                    │
-│  - Sync queue                       │
-└─────────────────────────────────────┘
-```
-
-### Frontend Components
-
-**Screens** (`app/`)
-- User interface pages
-- Navigation structure
-- User interactions
-- Example: `suppliers/index.tsx`, `collections/create.tsx`
-
-**Components** (`components/`)
-- Reusable UI components
-- Presentational components
-- Custom hooks
-- Example: `Button`, `FormInput`, `SyncIndicator`
-
-**Services** (`services/`)
-- API client
-- Sync engine
-- Network monitoring
-- Example: `api.ts`, `syncService.ts`
-
-**Database** (`database/`)
-- SQLite setup
-- Schema definition
-- Query helpers
-- Example: `index.ts`
-
-**Hooks** (`hooks/`)
-- Custom React hooks
-- State management
-- Side effects
-- Example: `useAuth`, `useSync`, `useSuppliers`
+**Characteristics:**
+- Framework-dependent (React Native)
+- User interaction handling
+- UI state management
+- Minimal business logic
 
 ## Data Flow
 
-### Online Mode
+### Write Operations (Create/Update/Delete)
 
 ```
-User Action → UI Update (Optimistic) → API Request → Server Validation
-   ↓                                         ↓
-Cache Update ← Response Received ← Database Update
+User Action
+    ↓
+Presentation Layer (Screen)
+    ↓
+Repository (Data Layer)
+    ↓
+Local Database (Infrastructure)
+    ↓
+Sync Queue (Infrastructure)
+    ↓
+[When Online] Sync Engine
+    ↓
+API Client (Infrastructure)
+    ↓
+Backend API
+    ↓
+Database (Server)
 ```
 
-### Offline Mode
+### Read Operations
 
 ```
-User Action → UI Update → SQLite Write → Sync Queue Entry
-                                              ↓
-                                    [Waiting for Network]
-                                              ↓
-Network Available → Sync Service → API Request → Conflict Check
-                                        ↓
-                                  Server Process → Response
-                                        ↓
-                              Local Update ← Success
+User Request
+    ↓
+Presentation Layer (Screen)
+    ↓
+Repository (Data Layer)
+    ↓
+Local Database (Infrastructure)
+    ↓
+Return Data
 ```
 
-## Database Design
-
-### Entity Relationship
+### Sync Flow
 
 ```
-Users ──┐
-        ├── Created Suppliers
-        ├── Created Products
-        ├── Collections (collected_by)
-        └── Payments (processed_by)
-
-Suppliers ──┬── Rates
-            ├── Collections
-            └── Payments
-
-Products ──┬── Rates
-           └── Collections
-
-Rates ──→ Collections (rate_id)
-
-Collections ──→ Payments (via allocation)
+Sync Trigger
+    ↓
+Sync Engine
+    ↓
+Fetch Pending Queue Items
+    ↓
+Batch Operations
+    ↓
+API Client → Backend
+    ↓
+Process Server Response
+    ↓
+Update Local Database
+    ↓
+Remove from Queue
+    ↓
+Pull Remote Changes
+    ↓
+Apply to Local DB
+    ↓
+Update Last Sync Time
 ```
 
-### Key Tables
+## Synchronization Strategy
 
-**users**: Authentication and authorization
-**suppliers**: Supplier profiles and contacts
-**products**: Product catalog
-**rates**: Time-based pricing with versioning
-**collections**: Daily collection records
-**payments**: Payment transactions
-**sync_logs**: Sync audit trail
+### Online-First Approach
+1. Always attempt remote operation first when online
+2. On success, update local cache
+3. On failure, fallback to offline mode
 
-## Synchronization Architecture
+### Offline Operation
+1. Store operation in local database
+2. Add to sync queue
+3. Continue with local data
+4. Sync when connection restored
 
-### Sync Strategy
+### Conflict Resolution
+1. **Version-Based**: Compare version numbers
+2. **Timestamp-Based**: Compare updated_at timestamps
+3. **Server-Wins**: Default strategy (server data takes precedence)
+4. **Manual Resolution**: Flag conflicts for user review
 
+### Idempotency
+- UUID-based entity identification
+- Duplicate detection on server
+- Skip already-synced operations
+- Return existing entity on duplicate
+
+## Database Schema
+
+### Local (SQLite)
+
+```sql
+-- Suppliers
+CREATE TABLE suppliers (
+  id INTEGER PRIMARY KEY,
+  server_id INTEGER,
+  code TEXT UNIQUE,
+  name TEXT,
+  -- ... other fields
+  version INTEGER DEFAULT 1,
+  synced INTEGER DEFAULT 0,
+  created_at TEXT,
+  updated_at TEXT
+);
+
+-- Products
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  server_id INTEGER,
+  code TEXT UNIQUE,
+  name TEXT,
+  -- ... other fields
+  version INTEGER DEFAULT 1,
+  synced INTEGER DEFAULT 0
+);
+
+-- Rates
+CREATE TABLE rates (
+  id INTEGER PRIMARY KEY,
+  server_id INTEGER,
+  product_id INTEGER,
+  supplier_id INTEGER,
+  rate REAL,
+  effective_from TEXT,
+  effective_to TEXT,
+  -- ... other fields
+  version INTEGER DEFAULT 1,
+  synced INTEGER DEFAULT 0
+);
+
+-- Collections
+CREATE TABLE collections (
+  id INTEGER PRIMARY KEY,
+  server_id INTEGER,
+  uuid TEXT UNIQUE,
+  supplier_id INTEGER,
+  product_id INTEGER,
+  rate_id INTEGER,
+  quantity REAL,
+  rate_applied REAL,
+  total_amount REAL,
+  collection_date TEXT,
+  -- ... other fields
+  version INTEGER DEFAULT 1,
+  synced INTEGER DEFAULT 0
+);
+
+-- Payments
+CREATE TABLE payments (
+  id INTEGER PRIMARY KEY,
+  server_id INTEGER,
+  uuid TEXT UNIQUE,
+  supplier_id INTEGER,
+  amount REAL,
+  payment_date TEXT,
+  outstanding_before REAL,
+  outstanding_after REAL,
+  -- ... other fields
+  version INTEGER DEFAULT 1,
+  synced INTEGER DEFAULT 0
+);
+
+-- Sync Queue
+CREATE TABLE sync_queue (
+  id INTEGER PRIMARY KEY,
+  entity_type TEXT,
+  entity_id INTEGER,
+  operation TEXT,
+  payload TEXT,
+  status TEXT DEFAULT 'pending',
+  retry_count INTEGER DEFAULT 0,
+  created_at TEXT
+);
+
+-- Sync Metadata
+CREATE TABLE sync_metadata (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at TEXT
+);
 ```
-┌──────────────┐     Push      ┌──────────────┐
-│   Client     │ ──────────→   │    Server    │
-│   (Mobile)   │               │   (Laravel)  │
-│              │ ←──────────   │              │
-└──────────────┘     Pull      └──────────────┘
-```
 
-### Conflict Resolution Flow
+### Server (MySQL)
 
-```
-Client Change → Sync Queue → Server Check → Version Compare
-                                    ↓
-                            Conflict Detected?
-                        Yes ↓           ↓ No
-                    Server Data    Accept Change
-                        ↓               ↓
-                    Update Client   Update Server
-                        ↓               ↓
-                    Notify User     Success
-```
+See `backend/database/migrations/` for complete schema.
+
+Key differences:
+- Server uses auto-increment IDs
+- Server has audit fields (created_by, updated_by)
+- Server has soft deletes
+- Server tracks sync status per entity
 
 ## Security Architecture
 
-### Defense Layers
+### Authentication Flow
 
 ```
-┌─────────────────────────────────────┐
-│      Transport Security (HTTPS)     │  ← TLS encryption
-├─────────────────────────────────────┤
-│    Authentication (Bearer Token)    │  ← Sanctum tokens
-├─────────────────────────────────────┤
-│   Authorization (RBAC + ABAC)       │  ← Role/permission checks
-├─────────────────────────────────────┤
-│     Validation (Input/Output)       │  ← Laravel validation
-├─────────────────────────────────────┤
-│   Data Protection (Encryption)      │  ← At rest encryption
-└─────────────────────────────────────┘
+Login Request
+    ↓
+Backend validates credentials
+    ↓
+Generate JWT token
+    ↓
+Return token + user data
+    ↓
+Store in SecureStore (encrypted)
+    ↓
+Include in all API requests
 ```
 
-## API Design
+### Authorization
 
-### RESTful Principles
+**RBAC (Role-Based Access Control)**
+- Admin: Full access
+- Manager: Read all, limited write
+- Collector: Read assigned, write collections
 
-- **Resources**: Nouns (suppliers, products, collections)
-- **HTTP Verbs**: GET, POST, PUT, DELETE
-- **Status Codes**: Semantic HTTP codes
-- **Stateless**: No server-side session
-- **Versioned**: `/api/v1/`
+**ABAC (Attribute-Based Access Control)**
+- Check user permissions array
+- Validate resource ownership
+- Enforce data isolation
 
-### Response Format
+### Data Encryption
 
-```json
-{
-  "success": boolean,
-  "message": string,
-  "data": object | array,
-  "meta": {
-    "pagination": { ... },
-    "timing": { ... }
+**At Rest:**
+- SecureStore for tokens and credentials
+- SQLite database (optional encryption)
+- Backend database encryption (server-level)
+
+**In Transit:**
+- HTTPS/TLS for all API communication
+- Certificate pinning (recommended for production)
+
+## Performance Optimization
+
+### Database
+- Indexes on frequently queried columns
+- Prepared statements (SQL injection prevention)
+- Connection pooling
+- Query result caching
+
+### Network
+- Request batching (max 100 items)
+- Response compression
+- Conditional requests (ETags)
+- Request debouncing
+
+### Sync
+- Incremental sync (only changed data)
+- Background sync (don't block UI)
+- Exponential backoff on failures
+- Priority queue (important data first)
+
+### UI
+- Lazy loading
+- Pagination
+- Virtual lists for large datasets
+- Optimistic UI updates
+
+## Error Handling
+
+### Network Errors
+```javascript
+try {
+  await ApiClient.sync(data);
+} catch (error) {
+  if (error.code === 'NETWORK_ERROR') {
+    // Store in queue, retry later
+    await addToSyncQueue(data);
+  } else {
+    // Handle other errors
+    showError(error.message);
   }
 }
 ```
 
-## Performance Optimization
+### Sync Conflicts
+```javascript
+if (response.results.conflicts) {
+  for (const conflict of response.results.conflicts) {
+    // Store conflict for resolution
+    await storeConflict(conflict);
+    // Notify user
+    showConflictNotification(conflict);
+  }
+}
+```
 
-### Backend
-
-1. **Database Indexing**: On frequently queried fields
-2. **Query Optimization**: Eager loading, select specific columns
-3. **Response Caching**: Cache frequently accessed data
-4. **API Rate Limiting**: Prevent abuse
-5. **Queue Jobs**: Background processing
-
-### Frontend
-
-1. **Local Caching**: Reduce API calls
-2. **Optimistic Updates**: Immediate UI feedback
-3. **Lazy Loading**: Load data on demand
-4. **Batch Operations**: Combine multiple requests
-5. **Image Optimization**: Compressed, cached images
-
-## Scalability
-
-### Horizontal Scaling
-
-- **Load Balancer**: Distribute traffic
-- **Stateless API**: Any server can handle any request
-- **Shared Cache**: Redis for session/cache
-- **Queue Workers**: Multiple worker processes
-- **Database Replicas**: Read/write separation
-
-### Vertical Scaling
-
-- **Server Resources**: More CPU/RAM
-- **Database Optimization**: Tuning, indexing
-- **Code Optimization**: Profiling, refactoring
-
-## Monitoring & Observability
-
-### Metrics
-
-- **Performance**: Response times, throughput
-- **Errors**: Error rates, types
-- **Business**: Collections, payments, users
-- **System**: CPU, memory, disk usage
-
-### Logging
-
-- **Application Logs**: Business events
-- **Error Logs**: Exceptions, failures
-- **Access Logs**: API requests
-- **Sync Logs**: Synchronization events
-
-### Alerting
-
-- **Critical**: Service down, database unavailable
-- **Warning**: High error rate, slow responses
-- **Info**: Deployment completed, backup finished
+### Validation Errors
+```javascript
+try {
+  await createCollection(data);
+} catch (error) {
+  if (error.response?.status === 422) {
+    // Validation error
+    showValidationErrors(error.response.data.errors);
+  }
+}
+```
 
 ## Testing Strategy
 
-### Backend Testing
+### Unit Tests
+- Business logic (services)
+- Data transformations (mappers)
+- Utility functions
+- Repository methods
 
-```
-Unit Tests → Integration Tests → Feature Tests → E2E Tests
-```
+### Integration Tests
+- API endpoints
+- Database operations
+- Sync process
+- Authentication flow
 
-### Frontend Testing
-
-```
-Component Tests → Integration Tests → E2E Tests
-```
-
-### Test Coverage Goals
-
-- Critical paths: 100%
-- Business logic: >90%
-- UI components: >80%
-- Overall: >80%
+### E2E Tests
+- User workflows
+- Offline scenarios
+- Sync recovery
+- Conflict resolution
 
 ## Deployment Architecture
 
-### Production Environment
+### Backend
 
 ```
-┌────────────────┐
-│  Load Balancer │
-└────────┬───────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼──┐  ┌──▼───┐
-│ API  │  │ API  │  Web Servers
-│Server│  │Server│
-└───┬──┘  └──┬───┘
-    │         │
-    └────┬────┘
-         │
-    ┌────▼────┐
-    │ MySQL   │  Database
-    │ Primary │
-    └────┬────┘
-         │
-    ┌────▼────┐
-    │ MySQL   │  Read Replica
-    │ Replica │
-    └─────────┘
+Internet
+    ↓
+Load Balancer
+    ↓
+Web Server (Nginx)
+    ↓
+PHP-FPM
+    ↓
+Laravel Application
+    ↓
+MySQL Database
 ```
 
-### Development Workflow
+### Frontend
 
 ```
-Local Development → Git Push → CI/CD → Staging → Production
-                                 ↓
-                            Run Tests
-                                 ↓
-                         Build & Deploy
+Mobile Device
+    ↓
+React Native App
+    ↓
+SQLite Database (local)
+    ↓
+[Network] ←→ Backend API
 ```
 
-## Technology Decisions
+## Scalability Considerations
 
-### Why Laravel?
-- Mature PHP framework
-- Excellent ORM (Eloquent)
-- Built-in authentication
-- Great documentation
-- Active community
+### Horizontal Scaling
+- Stateless API design
+- Session storage in database/Redis
+- Load balancer for multiple servers
 
-### Why React Native (Expo)?
-- Cross-platform (iOS/Android)
-- JavaScript ecosystem
-- Hot reload
-- Over-the-air updates
-- Native performance
+### Vertical Scaling
+- Database optimization
+- Caching layer (Redis)
+- CDN for static assets
 
-### Why SQLite?
-- Embedded database
-- No server required
-- Fast for local operations
-- ACID compliant
-- Reliable
+### Data Growth
+- Archive old data
+- Partition tables by date
+- Implement data retention policies
 
-### Why Laravel Sanctum?
-- Simple token authentication
-- SPA/mobile friendly
-- Built into Laravel
-- Well documented
-- Production ready
+## Monitoring and Logging
+
+### Application Logs
+- Error tracking
+- Performance metrics
+- Sync statistics
+- User activity
+
+### Infrastructure Logs
+- Server resources
+- Database performance
+- Network latency
+- API response times
+
+### Alerting
+- Failed syncs
+- High error rates
+- Performance degradation
+- Security incidents
+
+## Maintenance
+
+### Regular Tasks
+- Database backups (daily)
+- Log rotation (weekly)
+- Cache clearing (as needed)
+- Security updates (monthly)
+
+### Monitoring
+- Sync success rate
+- API response times
+- Database query performance
+- Storage usage
+
+### Optimization
+- Identify slow queries
+- Optimize indexes
+- Review sync batch sizes
+- Update dependencies
 
 ## Future Enhancements
 
 ### Planned Features
-- Real-time sync via WebSockets
-- Advanced analytics dashboard
-- Multi-language support
+- Real-time sync with WebSockets
+- Advanced conflict resolution UI
+- Offline map support
 - Biometric authentication
-- Offline reports
-- Export functionality
+- Push notifications
+- Multi-language support
 
 ### Technical Improvements
 - GraphQL API option
-- Microservices architecture
-- Event sourcing
-- CQRS pattern
+- End-to-end encryption
+- Automated testing suite
+- CI/CD pipeline
 - Docker containerization
 - Kubernetes orchestration
-
-## References
-
-- [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-- [SOLID Principles](https://en.wikipedia.org/wiki/SOLID)
-- [Laravel Documentation](https://laravel.com/docs)
-- [React Native Documentation](https://reactnative.dev/docs/getting-started)
-- [Expo Documentation](https://docs.expo.dev/)

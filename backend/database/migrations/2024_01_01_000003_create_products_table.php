@@ -6,35 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->uuid('uuid')->unique();
+            $table->string('code')->unique();
             $table->string('name');
-            $table->string('code')->unique()->nullable();
             $table->text('description')->nullable();
-            $table->string('unit')->default('kg'); // kg, liters, pieces, etc.
+            $table->string('unit')->default('kg'); // kg, liter, piece, etc.
             $table->string('category')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->json('metadata')->nullable();
+            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();
             $table->softDeletes();
             $table->integer('version')->default(1);
             
-            $table->index(['uuid', 'is_active']);
-            $table->index('name');
-            $table->index('code');
+            $table->index(['code', 'is_active']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('products');

@@ -1,80 +1,157 @@
-"# PayTrack - Complete Data Collection & Payment Management System
+"# SyncLedger - Data Collection and Payment Management System
 
 ## Overview
 
-PayTrack is a production-ready, offline-first data collection and payment management application with React Native (Expo) frontend and Laravel backend. The system provides seamless operation across all network conditions with automatic synchronization, conflict resolution, and zero data loss.
+SyncLedger is a production-ready, offline-first data collection and payment management application designed for field operations. It features a React Native (Expo) mobile frontend and a Laravel backend API, with comprehensive sync capabilities, conflict resolution, and strong data consistency guarantees.
 
-## Architecture
-
-### Backend (Laravel)
-- **Clean Architecture** with separation of concerns
-- **RESTful API** with versioning (v1)
-- **Authentication**: Laravel Sanctum (Bearer tokens)
-- **Authorization**: RBAC (Role-Based) + ABAC (Attribute-Based)
-- **Database**: MySQL with migrations
-- **Sync Engine**: Bidirectional sync with conflict resolution
-- **Security**: Encrypted data, validated inputs, transactional operations
-
-### Frontend (React Native/Expo)
-- **Offline-First**: SQLite for local data storage
-- **Auto-Sync**: Event-driven synchronization
-- **State Management**: React Query + Context API
-- **Network Monitoring**: Automatic network detection
-- **Secure Storage**: Expo SecureStore for tokens
-- **Clean Architecture**: Services, repositories, hooks pattern
-
-## Features
+## Key Features
 
 ### Core Functionality
-1. **Supplier Management** - Full CRUD with balance tracking
-2. **Product Management** - Catalog with units and categories
-3. **Rate Management** - Time-based versioned rates with history
-4. **Collection Tracking** - Daily records with auto-calculations
-5. **Payment Processing** - Multiple types with auto-allocation
+- **Supplier Management**: Complete supplier profiles with contact details and status tracking
+- **Product Management**: Multi-unit product catalog with categories
+- **Rate Management**: Time-based and versioned product rates with supplier-specific pricing
+- **Collection Tracking**: Detailed collection records with automatic rate application
+- **Payment Processing**: Advanced payment management with automated balance calculations
+- **Multi-user Support**: Role-based access control (Admin, Manager, Collector)
 
-### Sync & Offline Features
-- **Online-First** with offline fallback
-- **Auto-Sync Triggers**: Network regain, app foreground, authentication
-- **Manual Sync**: User-triggered with status indicators
-- **Conflict Resolution**: Version-based with server-wins strategy
-- **Idempotent Operations**: No data duplication
-- **Optimized Sync**: Minimal data transfer
+### Synchronization
+- **Online-First Architecture**: Backend as single source of truth
+- **Controlled Auto-Sync**: Event-driven synchronization (network regain, app foreground, post-auth)
+- **Manual Sync Option**: User-initiated sync with clear status indicators
+- **Idempotent Operations**: UUID-based deduplication prevents data duplication
+- **Conflict Detection**: Version-based conflict detection with server-wins strategy
+- **Offline Resilience**: Full offline operation with local SQLite storage
+
+### Security
+- **Authentication**: Token-based auth with Laravel Sanctum
+- **Authorization**: Combined RBAC (role-based) and ABAC (attribute-based)
+- **Encrypted Storage**: Expo SecureStore for sensitive data
+- **API Security**: HTTPS, CORS, request validation, SQL injection prevention
+- **Audit Trail**: Comprehensive logging of all operations
+
+### Architecture
+- **Clean Architecture**: Clear separation of domain, data, and presentation layers
+- **SOLID Principles**: Maintainable, testable, and extensible code
+- **Repository Pattern**: Abstracted data access layer
+- **Service Layer**: Encapsulated business logic
+
+## Technology Stack
+
+### Backend
+- **Framework**: Laravel 10+ (PHP 8.1+)
+- **Database**: MySQL/MariaDB
+- **Authentication**: Laravel Sanctum
+- **API**: RESTful JSON API
+
+### Frontend
+- **Framework**: React Native with Expo
+- **Navigation**: React Navigation
+- **Local Storage**: Expo SQLite
+- **Secure Storage**: Expo SecureStore
+- **Network**: Axios with interceptors
+- **State Management**: React Hooks and Context API
+
+## Project Structure
+
+```
+SyncLedger/
+├── backend/                    # Laravel API
+│   ├── app/
+│   │   ├── Models/            # Eloquent models
+│   │   ├── Http/Controllers/  # API controllers
+│   │   ├── Services/          # Business logic
+│   │   └── Providers/         # Service providers
+│   ├── database/
+│   │   └── migrations/        # Database migrations
+│   ├── routes/
+│   │   └── api.php           # API routes
+│   └── config/               # Configuration files
+│
+├── frontend/                  # React Native app
+│   ├── src/
+│   │   ├── domain/           # Business entities and use cases
+│   │   ├── data/             # Repositories and models
+│   │   ├── infrastructure/   # Database, network, sync
+│   │   └── presentation/     # UI screens and components
+│   ├── App.js               # Main app entry
+│   └── app.json             # Expo configuration
+│
+└── docs/                     # Documentation
+```
 
 ## Quick Start
 
 ### Backend Setup
-```bash
-cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan serve
-```
+
+1. **Prerequisites**: PHP 8.1+, Composer, MySQL
+2. **Install**:
+   ```bash
+   cd backend
+   composer install
+   cp .env.example .env
+   php artisan key:generate
+   ```
+3. **Configure** `.env` with database credentials
+4. **Migrate**: `php artisan migrate`
+5. **Run**: `php artisan serve`
 
 ### Frontend Setup
-```bash
-cd frontend
-npm install
-echo "EXPO_PUBLIC_API_URL=http://localhost:8000/api/v1" > .env
-npx expo start
-```
 
-## Documentation
+1. **Prerequisites**: Node.js 16+, Expo CLI
+2. **Install**:
+   ```bash
+   cd frontend
+   npm install
+   ```
+3. **Configure** API URL in `app.json`
+4. **Run**: `npm start`
 
-- [Backend API Documentation](backend/README.md)
-- [Frontend Documentation](frontend/README.md)
-- [API Endpoints](docs/API.md)
-- [Sync Strategy](docs/SYNC.md)
-- [Security Guide](docs/SECURITY.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
+## Features Overview
 
-## Technology Stack
+### Offline-First Operation
+- Works completely offline with local SQLite database
+- Automatic sync when connection restored
+- Queue-based sync with retry logic
+- Clear visual indicators for sync status
 
-**Backend**: Laravel 10, MySQL, Sanctum  
-**Frontend**: React Native (Expo 50), SQLite, Axios  
-**All Open Source & LTS**
+### Rate Management
+- Time-based rate versioning
+- Supplier-specific and general rates
+- Historical rate preservation
+- Automatic rate application on collections
+
+### Payment Calculations
+- Automated outstanding balance tracking
+- Advance, partial, and full payment support
+- Payment validation against outstanding
+- Audit trail with calculation details
+
+### Conflict Resolution
+- Version-based optimistic locking
+- Timestamp-based freshness checks
+- Server-wins strategy (configurable)
+- Manual resolution for complex conflicts
+
+## API Documentation
+
+See `/docs/API.md` for complete API reference with examples.
+
+## Deployment
+
+### Production Checklist
+- [ ] Configure production `.env` files
+- [ ] Set up SSL certificates
+- [ ] Configure database backups
+- [ ] Enable error logging
+- [ ] Set up monitoring
+- [ ] Test sync in production network
+- [ ] Configure rate limiting
+- [ ] Review security settings
 
 ## License
 
-MIT" 
+MIT License
+
+## Version
+
+**v1.0.0** - Production Release" 

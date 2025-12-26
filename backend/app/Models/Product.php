@@ -5,20 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'uuid',
-        'name',
         'code',
+        'name',
         'description',
         'unit',
         'category',
         'is_active',
+        'metadata',
         'created_by',
         'updated_by',
         'version',
@@ -26,39 +26,24 @@ class Product extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'version' => 'integer',
+        'metadata' => 'array',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     protected $hidden = [
         'deleted_at',
     ];
 
-    protected static function boot()
+    public function creator(): BelongsTo
     {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = (string) Str::uuid();
-            }
-        });
-
-        static::updating(function ($model) {
-            $model->version++;
-        });
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Relationships
-    public function suppliers()
+    public function updater(): BelongsTo
     {
-        return $this->belongsToMany(Supplier::class, 'rates')
-            ->withPivot(['rate', 'effective_from', 'effective_to', 'is_active'])
-            ->withTimestamps();
-    }
-
-    public function rates()
-    {
-        return $this->hasMany(Rate::class);
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     public function collections()
@@ -66,36 +51,26 @@ class Product extends Model
         return $this->hasMany(Collection::class);
     }
 
-    public function creator()
+    public function rates()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->hasMany(Rate::class);
     }
 
-    public function updater()
+    protected static function boot()
     {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
+        parent::boot();
 
-    // Scopes
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
 
-    // Helpers
-    public function getCurrentRate($supplierId, $date = null)
-    {
-        $date = $date ?? now()->toDateString();
-        
-        return $this->rates()
-            ->where('supplier_id', $supplierId)
-            ->where('effective_from', '<=', $date)
-            ->where(function ($query) use ($date) {
-                $query->whereNull('effective_to')
-                      ->orWhere('effective_to', '>=', $date);
-            })
-            ->where('is_active', true)
-            ->orderBy('effective_from', 'desc')
-            ->first();
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+            $model->version++;
+        });
     }
 }

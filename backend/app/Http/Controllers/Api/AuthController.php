@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
-class AuthController extends ApiController
+class AuthController extends Controller
 {
     /**
      * Register a new user
      */
     public function register(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
@@ -22,20 +23,19 @@ class AuthController extends ApiController
         ]);
 
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'collector',
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role ?? 'collector',
             'is_active' => true,
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('mobile-app')->plainTextToken;
 
-        return $this->success([
+        return response()->json([
             'user' => $user,
             'token' => $token,
-            'token_type' => 'Bearer',
-        ], 'User registered successfully', 201);
+        ], 201);
     }
 
     /**
@@ -58,28 +58,35 @@ class AuthController extends ApiController
         }
 
         if (!$user->is_active) {
-            return $this->error('Your account has been deactivated', 403);
+            throw ValidationException::withMessages([
+                'email' => ['Your account is inactive.'],
+            ]);
         }
 
-        // Create token with device_id if provided
-        $tokenName = $request->device_id ?? 'auth_token';
+        // Create token with device ID
+        $tokenName = $request->device_id 
+            ? "mobile-app-{$request->device_id}"
+            : 'mobile-app';
+
         $token = $user->createToken($tokenName)->plainTextToken;
 
-        return $this->success([
+        return response()->json([
             'user' => $user,
             'token' => $token,
-            'token_type' => 'Bearer',
-        ], 'Login successful');
+            'permissions' => $user->permissions ?? [],
+        ]);
     }
 
     /**
-     * Logout user (revoke token)
+     * Logout user
      */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
 
-        return $this->success(null, 'Logged out successfully');
+        return response()->json([
+            'message' => 'Logged out successfully',
+        ]);
     }
 
     /**
@@ -87,7 +94,10 @@ class AuthController extends ApiController
      */
     public function me(Request $request)
     {
-        return $this->success($request->user());
+        return response()->json([
+            'user' => $request->user(),
+            'permissions' => $request->user()->permissions ?? [],
+        ]);
     }
 
     /**
@@ -96,39 +106,12 @@ class AuthController extends ApiController
     public function refresh(Request $request)
     {
         $user = $request->user();
-        
-        // Delete current token
         $request->user()->currentAccessToken()->delete();
-        
-        // Create new token
-        $token = $user->createToken('auth_token')->plainTextToken;
 
-        return $this->success([
-            'user' => $user,
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
             'token' => $token,
-            'token_type' => 'Bearer',
-        ], 'Token refreshed successfully');
-    }
-
-    /**
-     * Update user profile
-     */
-    public function updateProfile(Request $request)
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'password' => 'sometimes|string|min:8|confirmed',
         ]);
-
-        if (isset($validated['password'])) {
-            $validated['password'] = Hash::make($validated['password']);
-        }
-
-        $user->update($validated);
-
-        return $this->success($user, 'Profile updated successfully');
     }
 }

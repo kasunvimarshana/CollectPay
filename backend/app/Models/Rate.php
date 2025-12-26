@@ -5,20 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Rate extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'uuid',
-        'supplier_id',
         'product_id',
+        'supplier_id',
         'rate',
         'effective_from',
         'effective_to',
         'is_active',
+        'applied_scope',
         'notes',
         'created_by',
         'updated_by',
@@ -30,37 +30,33 @@ class Rate extends Model
         'effective_from' => 'date',
         'effective_to' => 'date',
         'is_active' => 'boolean',
-        'version' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     protected $hidden = [
         'deleted_at',
     ];
 
-    protected static function boot()
+    public function product(): BelongsTo
     {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = (string) Str::uuid();
-            }
-        });
-
-        static::updating(function ($model) {
-            $model->version++;
-        });
+        return $this->belongsTo(Product::class);
     }
 
-    // Relationships
-    public function supplier()
+    public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function product()
+    public function creator(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     public function collections()
@@ -68,40 +64,55 @@ class Rate extends Model
         return $this->hasMany(Collection::class);
     }
 
-    public function creator()
+    /**
+     * Get the applicable rate for a specific date, product, and optionally supplier
+     */
+    public static function getApplicableRate(int $productId, string $date, ?int $supplierId = null): ?self
     {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updater()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
-
-    // Scopes
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    public function scopeCurrent($query, $date = null)
-    {
-        $date = $date ?? now()->toDateString();
-        
-        return $query->where('effective_from', '<=', $date)
+        $query = static::where('product_id', $productId)
+            ->where('is_active', true)
+            ->where('effective_from', '<=', $date)
             ->where(function ($q) use ($date) {
                 $q->whereNull('effective_to')
-                  ->orWhere('effective_to', '>=', $date);
+                    ->orWhere('effective_to', '>=', $date);
             });
+
+        // Check for supplier-specific rate first
+        if ($supplierId) {
+            $supplierRate = (clone $query)
+                ->where('supplier_id', $supplierId)
+                ->where('applied_scope', 'supplier_specific')
+                ->orderBy('effective_from', 'desc')
+                ->first();
+
+            if ($supplierRate) {
+                return $supplierRate;
+            }
+        }
+
+        // Fall back to general rate
+        return $query
+            ->where('applied_scope', 'general')
+            ->whereNull('supplier_id')
+            ->orderBy('effective_from', 'desc')
+            ->first();
     }
 
-    // Helpers
-    public function isCurrentlyActive($date = null)
+    protected static function boot()
     {
-        $date = $date ?? now()->toDateString();
-        
-        return $this->is_active &&
-               $this->effective_from <= $date &&
-               ($this->effective_to === null || $this->effective_to >= $date);
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
+
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+            $model->version++;
+        });
     }
 }

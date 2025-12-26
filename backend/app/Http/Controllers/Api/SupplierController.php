@@ -2,203 +2,109 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Supplier;
+use App\Services\PaymentCalculationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
-class SupplierController extends ApiController
+class SupplierController extends Controller
 {
-    /**
-     * Get all suppliers
-     */
+    private PaymentCalculationService $paymentService;
+
+    public function __construct(PaymentCalculationService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
+
     public function index(Request $request)
     {
-        $query = Supplier::query()->with(['creator', 'updater']);
+        $query = Supplier::query();
 
-        // Filter by active status
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
         }
 
-        // Search
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('contact_person', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
-        // Pagination
-        $perPage = $request->get('per_page', 50);
-        $suppliers = $query->orderBy('name')->paginate($perPage);
+        $suppliers = $query->orderBy('name')->paginate(50);
 
-        return $this->success($suppliers);
+        return response()->json($suppliers);
     }
 
-    /**
-     * Get single supplier
-     */
-    public function show($id)
-    {
-        $supplier = Supplier::with(['rates.product', 'creator', 'updater'])->find($id);
-
-        if (!$supplier) {
-            return $this->notFound('Supplier not found');
-        }
-
-        // Include balance information
-        $supplier->total_collections = $supplier->getTotalCollections();
-        $supplier->total_payments = $supplier->getTotalPayments();
-        $supplier->balance = $supplier->getBalance();
-
-        return $this->success($supplier);
-    }
-
-    /**
-     * Create new supplier
-     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'uuid' => 'sometimes|uuid|unique:suppliers,uuid',
+        $request->validate([
+            'code' => 'required|string|unique:suppliers,code',
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
-            'registration_number' => 'nullable|string|max:100',
+            'status' => 'nullable|in:active,inactive,suspended',
             'metadata' => 'nullable|array',
-            'is_active' => 'sometimes|boolean',
-            'version' => 'sometimes|integer',
         ]);
 
-        // Check for version conflict (optimistic locking)
-        if (isset($validated['uuid'])) {
-            $existing = Supplier::where('uuid', $validated['uuid'])->first();
-            if ($existing) {
-                if (isset($validated['version']) && $existing->version != $validated['version']) {
-                    return $this->conflict([
-                        'server_version' => $existing->version,
-                        'server_data' => $existing,
-                    ], 'Version conflict detected');
-                }
-                // Update existing instead
-                return $this->update($request, $existing->id);
-            }
-        }
+        $supplier = Supplier::create($request->all());
 
-        DB::beginTransaction();
-        try {
-            $validated['created_by'] = $request->user()->id;
-            $supplier = Supplier::create($validated);
-
-            DB::commit();
-            return $this->success($supplier, 'Supplier created successfully', 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->error('Failed to create supplier: ' . $e->getMessage(), 500);
-        }
+        return response()->json($supplier, 201);
     }
 
-    /**
-     * Update supplier
-     */
-    public function update(Request $request, $id)
+    public function show(Supplier $supplier)
     {
-        $supplier = Supplier::find($id);
+        $supplier->load(['creator', 'collections', 'payments']);
+        
+        // Get outstanding balance
+        $outstanding = $this->paymentService->calculateOutstanding($supplier->id);
 
-        if (!$supplier) {
-            return $this->notFound('Supplier not found');
-        }
+        return response()->json([
+            'supplier' => $supplier,
+            'outstanding' => $outstanding,
+        ]);
+    }
 
-        $validated = $request->validate([
+    public function update(Request $request, Supplier $supplier)
+    {
+        $request->validate([
+            'code' => 'sometimes|string|unique:suppliers,code,' . $supplier->id,
             'name' => 'sometimes|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
-            'registration_number' => 'nullable|string|max:100',
+            'status' => 'nullable|in:active,inactive,suspended',
             'metadata' => 'nullable|array',
-            'is_active' => 'sometimes|boolean',
-            'version' => 'sometimes|integer',
         ]);
 
-        // Check version conflict
-        if (isset($validated['version']) && $supplier->version != $validated['version']) {
-            return $this->conflict([
-                'server_version' => $supplier->version,
-                'server_data' => $supplier,
-            ], 'Version conflict detected');
-        }
+        $supplier->update($request->all());
 
-        DB::beginTransaction();
-        try {
-            $validated['updated_by'] = $request->user()->id;
-            $supplier->update($validated);
+        return response()->json($supplier);
+    }
 
-            DB::commit();
-            return $this->success($supplier, 'Supplier updated successfully');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->error('Failed to update supplier: ' . $e->getMessage(), 500);
-        }
+    public function destroy(Supplier $supplier)
+    {
+        $supplier->delete();
+
+        return response()->json(['message' => 'Supplier deleted successfully']);
     }
 
     /**
-     * Delete supplier
+     * Get supplier balance details
      */
-    public function destroy($id)
+    public function balance(Supplier $supplier, Request $request)
     {
-        $supplier = Supplier::find($id);
+        $details = $this->paymentService->getCalculationDetails(
+            $supplier->id,
+            $request->from_date,
+            $request->to_date
+        );
 
-        if (!$supplier) {
-            return $this->notFound('Supplier not found');
-        }
-
-        try {
-            $supplier->delete();
-            return $this->success(null, 'Supplier deleted successfully');
-        } catch (\Exception $e) {
-            return $this->error('Failed to delete supplier: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Get supplier balance and transactions
-     */
-    public function balance(Request $request, $id)
-    {
-        $supplier = Supplier::find($id);
-
-        if (!$supplier) {
-            return $this->notFound('Supplier not found');
-        }
-
-        $startDate = $request->get('start_date');
-        $endDate = $request->get('end_date');
-
-        $data = [
-            'supplier' => $supplier,
-            'total_collections' => $supplier->getTotalCollections($startDate, $endDate),
-            'total_payments' => $supplier->getTotalPayments($startDate, $endDate),
-            'balance' => $supplier->getBalance($startDate, $endDate),
-            'recent_collections' => $supplier->collections()
-                ->when($startDate, fn($q) => $q->where('collection_date', '>=', $startDate))
-                ->when($endDate, fn($q) => $q->where('collection_date', '<=', $endDate))
-                ->with('product')
-                ->orderBy('collection_date', 'desc')
-                ->limit(10)
-                ->get(),
-            'recent_payments' => $supplier->payments()
-                ->when($startDate, fn($q) => $q->where('payment_date', '>=', $startDate))
-                ->when($endDate, fn($q) => $q->where('payment_date', '<=', $endDate))
-                ->orderBy('payment_date', 'desc')
-                ->limit(10)
-                ->get(),
-        ];
-
-        return $this->success($data);
+        return response()->json($details);
     }
 }
