@@ -194,11 +194,17 @@ class ProductController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $product = DB::transaction(function () use ($validated) {
-            return Product::create($validated);
-        });
-
-        return response()->json($product, 201);
+        try {
+            $dto = CreateProductDTO::fromArray($validated);
+            $product = $this->createProductUseCase->execute($dto);
+            
+            return response()->json($product->toArray(), 201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create product', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to create product'], 500);
+        }
     }
 
     /**
@@ -242,11 +248,25 @@ class ProductController extends Controller
      */
     public function show(string $id)
     {
-        $product = Product::with(['rates' => function ($query) {
-            $query->orderBy('effective_date', 'desc');
-        }])->findOrFail($id);
-
-        return response()->json($product);
+        try {
+            $product = $this->getProductUseCase->execute((int) $id);
+            
+            // Load relationships using model temporarily
+            // TODO: Move relationship loading to use case or create a dedicated DTO
+            $model = Product::with(['rates' => function ($query) {
+                $query->orderBy('effective_date', 'desc');
+            }])->findOrFail($id);
+            
+            $data = $product->toArray();
+            $data['rates'] = $model->rates;
+            
+            return response()->json($data);
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            \Log::error('Failed to retrieve product', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to retrieve product'], 500);
+        }
     }
 
     /**
@@ -294,8 +314,6 @@ class ProductController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $product = Product::findOrFail($id);
-
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'code' => 'sometimes|required|string|max:255|unique:products,code,' . $id,
@@ -307,16 +325,21 @@ class ProductController extends Controller
             'version' => 'required|integer',
         ]);
 
-        DB::transaction(function () use ($product, $validated) {
-            if ($product->version != $validated['version']) {
-                throw new \Exception('Version mismatch. Please refresh and try again.');
-            }
-
-            $validated['version'] = $product->version + 1;
-            $product->update($validated);
-        });
-
-        return response()->json($product);
+        try {
+            $dto = UpdateProductDTO::fromArray((int) $id, $validated);
+            $product = $this->updateProductUseCase->execute($dto);
+            
+            return response()->json($product->toArray());
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (VersionConflictException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update product', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to update product'], 500);
+        }
     }
 
     /**
@@ -346,9 +369,17 @@ class ProductController extends Controller
      */
     public function destroy(string $id)
     {
-        $product = Product::findOrFail($id);
-        $product->delete();
+        try {
+            $deleted = $this->deleteProductUseCase->execute((int) $id);
 
-        return response()->json(['message' => 'Product deleted successfully']);
+            if (!$deleted) {
+                return response()->json(['error' => 'Product not found'], 404);
+            }
+
+            return response()->json(['message' => 'Product deleted successfully']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete product', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to delete product'], 500);
+        }
     }
 }

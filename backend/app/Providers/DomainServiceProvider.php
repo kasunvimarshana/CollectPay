@@ -10,6 +10,7 @@ use App\Domain\Repositories\CollectionRepositoryInterface;
 use App\Domain\Repositories\PaymentRepositoryInterface;
 use App\Domain\Repositories\ProductRepositoryInterface;
 use App\Domain\Repositories\ProductRateRepositoryInterface;
+use App\Domain\Repositories\UserRepositoryInterface;
 
 // Repository Implementations
 use App\Infrastructure\Repositories\EloquentSupplierRepository;
@@ -17,6 +18,7 @@ use App\Infrastructure\Repositories\EloquentCollectionRepository;
 use App\Infrastructure\Repositories\EloquentPaymentRepository;
 use App\Infrastructure\Repositories\EloquentProductRepository;
 use App\Infrastructure\Repositories\EloquentProductRateRepository;
+use App\Infrastructure\Repositories\EloquentUserRepository;
 
 // Use Cases
 use App\Application\UseCases\CreateSupplierUseCase;
@@ -38,6 +40,9 @@ use App\Application\UseCases\CreateProductRateUseCase;
 use App\Application\UseCases\UpdateProductRateUseCase;
 use App\Application\UseCases\GetProductRateUseCase;
 use App\Application\UseCases\DeleteProductRateUseCase;
+use App\Application\UseCases\RegisterUserUseCase;
+use App\Application\UseCases\LoginUserUseCase;
+use App\Application\UseCases\BatchSyncUseCase;
 
 // Domain Services
 use App\Domain\Services\SupplierBalanceService;
@@ -76,6 +81,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(PaymentRepositoryInterface::class, EloquentPaymentRepository::class);
         $this->app->bind(ProductRepositoryInterface::class, EloquentProductRepository::class);
         $this->app->bind(ProductRateRepositoryInterface::class, EloquentProductRateRepository::class);
+        $this->app->bind(UserRepositoryInterface::class, EloquentUserRepository::class);
     }
 
     /**
@@ -210,6 +216,42 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(DeleteProductRateUseCase::class, function ($app) {
             return new DeleteProductRateUseCase(
                 $app->make(ProductRateRepositoryInterface::class)
+            );
+        });
+
+        // User Use Cases
+        $this->app->bind(RegisterUserUseCase::class, function ($app) {
+            return new RegisterUserUseCase(
+                $app->make(UserRepositoryInterface::class)
+            );
+        });
+
+        $this->app->bind(LoginUserUseCase::class, function ($app) {
+            return new LoginUserUseCase(
+                $app->make(UserRepositoryInterface::class)
+            );
+        });
+
+        // Sync Use Cases
+        $this->app->bind(BatchSyncUseCase::class, function ($app) {
+            return new BatchSyncUseCase(
+                $app->make(CreateSupplierUseCase::class),
+                $app->make(UpdateSupplierUseCase::class),
+                $app->make(CreateProductUseCase::class),
+                $app->make(UpdateProductUseCase::class),
+                $app->make(CreateProductRateUseCase::class),
+                $app->make(UpdateProductRateUseCase::class),
+                $app->make(CreateCollectionUseCase::class),
+                $app->make(UpdateCollectionUseCase::class),
+                $app->make(DeleteCollectionUseCase::class),
+                $app->make(CreatePaymentUseCase::class),
+                $app->make(UpdatePaymentUseCase::class),
+                $app->make(DeletePaymentUseCase::class),
+                $app->make(SupplierRepositoryInterface::class),
+                $app->make(ProductRepositoryInterface::class),
+                $app->make(ProductRateRepositoryInterface::class),
+                $app->make(CollectionRepositoryInterface::class),
+                $app->make(PaymentRepositoryInterface::class)
             );
         });
     }

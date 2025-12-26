@@ -3,12 +3,39 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Application\UseCases\CreateProductRateUseCase;
+use App\Application\UseCases\UpdateProductRateUseCase;
+use App\Application\UseCases\GetProductRateUseCase;
+use App\Application\UseCases\DeleteProductRateUseCase;
+use App\Application\DTOs\CreateProductRateDTO;
+use App\Application\DTOs\UpdateProductRateDTO;
+use App\Domain\Repositories\ProductRateRepositoryInterface;
+use App\Domain\Exceptions\EntityNotFoundException;
+use App\Domain\Exceptions\VersionConflictException;
 use App\Models\ProductRate;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ProductRateController extends Controller
 {
+    private ProductRateRepositoryInterface $productRateRepository;
+    private CreateProductRateUseCase $createProductRateUseCase;
+    private UpdateProductRateUseCase $updateProductRateUseCase;
+    private GetProductRateUseCase $getProductRateUseCase;
+    private DeleteProductRateUseCase $deleteProductRateUseCase;
+
+    public function __construct(
+        ProductRateRepositoryInterface $productRateRepository,
+        CreateProductRateUseCase $createProductRateUseCase,
+        UpdateProductRateUseCase $updateProductRateUseCase,
+        GetProductRateUseCase $getProductRateUseCase,
+        DeleteProductRateUseCase $deleteProductRateUseCase
+    ) {
+        $this->productRateRepository = $productRateRepository;
+        $this->createProductRateUseCase = $createProductRateUseCase;
+        $this->updateProductRateUseCase = $updateProductRateUseCase;
+        $this->getProductRateUseCase = $getProductRateUseCase;
+        $this->deleteProductRateUseCase = $deleteProductRateUseCase;
+    }
     /**
      * @OA\Get(
      *     path="/api/product-rates",
@@ -89,35 +116,41 @@ class ProductRateController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ProductRate::with('product');
+        $filters = [
+            'product_id' => $request->input('product_id'),
+            'unit' => $request->input('unit'),
+            'is_active' => $request->input('is_active'),
+            'sort_by' => $request->input('sort_by', 'effective_date'),
+            'sort_order' => $request->input('sort_order', 'desc'),
+        ];
 
-        if ($request->has('product_id')) {
-            $query->where('product_id', $request->product_id);
-        }
+        $page = (int) $request->input('page', 1);
+        $perPage = min((int) $request->input('per_page', 15), 100);
 
-        if ($request->has('unit')) {
-            $query->where('unit', $request->unit);
-        }
+        $rates = $this->productRateRepository->findAll($filters, $page, $perPage);
+        $total = $this->productRateRepository->count($filters);
 
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
+        // Convert entities to arrays and include product relationship
+        $data = array_map(function($rate) {
+            $rateData = $rate->toArray();
+            
+            // Load product relationship using model temporarily
+            // TODO: Move this to use case or create a dedicated DTO
+            $model = ProductRate::with('product')->find($rate->getId());
+            if ($model) {
+                $rateData['product'] = $model->product;
+            }
+            
+            return $rateData;
+        }, $rates);
 
-        // Server-side sorting
-        $sortBy = $request->get('sort_by', 'effective_date');
-        $sortOrder = $request->get('sort_order', 'desc');
-        
-        // Validate sort parameters
-        $allowedSortFields = ['effective_date', 'rate', 'unit', 'created_at', 'updated_at'];
-        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'effective_date';
-        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
-        
-        $query->orderBy($sortBy, $sortOrder);
-
-        $perPage = $request->get('per_page', 15);
-        $rates = $query->paginate($perPage);
-
-        return response()->json($rates);
+        return response()->json([
+            'data' => $data,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'last_page' => ceil($total / $perPage),
+        ]);
     }
 
     /**
@@ -169,11 +202,20 @@ class ProductRateController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $rate = DB::transaction(function () use ($validated) {
-            return ProductRate::create($validated);
-        });
-
-        return response()->json($rate->load('product'), 201);
+        try {
+            $dto = CreateProductRateDTO::fromArray($validated);
+            $rate = $this->createProductRateUseCase->execute($dto);
+            
+            // Load product relationship for response
+            $model = ProductRate::with('product')->find($rate->getId());
+            
+            return response()->json($model, 201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create product rate', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to create product rate'], 500);
+        }
     }
 
     /**
@@ -215,8 +257,19 @@ class ProductRateController extends Controller
      */
     public function show(string $id)
     {
-        $rate = ProductRate::with('product')->findOrFail($id);
-        return response()->json($rate);
+        try {
+            $rate = $this->getProductRateUseCase->execute((int) $id);
+            
+            // Load product relationship for response
+            $model = ProductRate::with('product')->findOrFail($id);
+            
+            return response()->json($model);
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            \Log::error('Failed to retrieve product rate', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to retrieve product rate'], 500);
+        }
     }
 
     /**
@@ -264,8 +317,6 @@ class ProductRateController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $rate = ProductRate::findOrFail($id);
-
         $validated = $request->validate([
             'product_id' => 'sometimes|required|exists:products,id',
             'unit' => 'sometimes|required|string|max:50',
@@ -277,16 +328,24 @@ class ProductRateController extends Controller
             'version' => 'required|integer',
         ]);
 
-        DB::transaction(function () use ($rate, $validated) {
-            if ($rate->version != $validated['version']) {
-                throw new \Exception('Version mismatch. Please refresh and try again.');
-            }
-
-            $validated['version'] = $rate->version + 1;
-            $rate->update($validated);
-        });
-
-        return response()->json($rate->load('product'));
+        try {
+            $dto = UpdateProductRateDTO::fromArray((int) $id, $validated);
+            $rate = $this->updateProductRateUseCase->execute($dto);
+            
+            // Load product relationship for response
+            $model = ProductRate::with('product')->find($rate->getId());
+            
+            return response()->json($model);
+        } catch (EntityNotFoundException $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        } catch (VersionConflictException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update product rate', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to update product rate'], 500);
+        }
     }
 
     /**
@@ -316,9 +375,17 @@ class ProductRateController extends Controller
      */
     public function destroy(string $id)
     {
-        $rate = ProductRate::findOrFail($id);
-        $rate->delete();
+        try {
+            $deleted = $this->deleteProductRateUseCase->execute((int) $id);
 
-        return response()->json(['message' => 'Product rate deleted successfully']);
+            if (!$deleted) {
+                return response()->json(['error' => 'Product rate not found'], 404);
+            }
+
+            return response()->json(['message' => 'Product rate deleted successfully']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete product rate', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to delete product rate'], 500);
+        }
     }
 }

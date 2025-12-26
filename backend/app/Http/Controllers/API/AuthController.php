@@ -3,14 +3,21 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Application\UseCases\RegisterUserUseCase;
+use App\Application\UseCases\LoginUserUseCase;
+use App\Application\DTOs\RegisterUserDTO;
+use App\Application\DTOs\LoginUserDTO;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private RegisterUserUseCase $registerUserUseCase,
+        private LoginUserUseCase $loginUserUseCase
+    ) {
+    }
     /**
      * @OA\Post(
      *     path="/api/auth/register",
@@ -51,28 +58,30 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'role' => 'sometimes|in:admin,collector,finance',
         ]);
 
-        // Only admins can create other admins, default role is collector
-        $role = 'collector';
-        if ($request->user() && $request->user()->role === 'admin' && $request->has('role')) {
-            $role = $request->input('role');
+        try {
+            // Get requesting user's role if authenticated
+            $requestingUserRole = $request->user() ? $request->user()->role : null;
+            
+            $dto = RegisterUserDTO::fromArray($validated);
+            $userEntity = $this->registerUserUseCase->execute($dto, $requestingUserRole);
+            
+            // Get the created user model to generate token
+            $user = User::find($userEntity->getId());
+            $token = $user->createToken('auth-token')->plainTextToken;
+
+            return response()->json([
+                'user' => $userEntity->toArray(),
+                'token' => $token,
+            ], 201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to register user', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to register user'], 500);
         }
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $role,
-            'is_active' => true,
-        ]);
-
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 201);
     }
 
     /**
@@ -107,31 +116,29 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        try {
+            $dto = LoginUserDTO::fromArray($validated);
+            $userEntity = $this->loginUserUseCase->execute($dto);
+            
+            // Get the user model to generate token
+            $user = User::find($userEntity->getId());
+            $token = $user->createToken('auth-token')->plainTextToken;
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+            return response()->json([
+                'user' => $userEntity->toArray(),
+                'token' => $token,
             ]);
+        } catch (ValidationException $e) {
+            throw $e; // Re-throw validation exceptions
+        } catch (\Exception $e) {
+            \Log::error('Failed to login user', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to login'], 500);
         }
-
-        if (!$user->is_active) {
-            throw ValidationException::withMessages([
-                'email' => ['This account is inactive.'],
-            ]);
-        }
-
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ]);
     }
 
     /**
