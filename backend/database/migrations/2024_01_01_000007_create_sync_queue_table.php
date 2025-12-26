@@ -10,23 +10,20 @@ return new class extends Migration
     {
         Schema::create('sync_queue', function (Blueprint $table) {
             $table->id();
-            $table->string('entity_type'); // supplier, product, rate, collection, payment
+            $table->foreignId('device_id')->constrained()->cascadeOnDelete();
+            $table->string('entity_type'); // transaction, payment, etc.
             $table->unsignedBigInteger('entity_id')->nullable();
             $table->string('operation'); // create, update, delete
-            $table->json('payload');
-            $table->string('client_uuid')->nullable();
-            $table->string('device_id')->nullable();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('status')->default('pending'); // pending, processing, completed, failed, conflict
-            $table->text('error_message')->nullable();
+            $table->json('data');
+            $table->string('hash')->unique();
+            $table->enum('status', ['pending', 'synced', 'conflict', 'failed'])->default('pending');
             $table->integer('retry_count')->default(0);
-            $table->timestamp('processed_at')->nullable();
+            $table->text('error_message')->nullable();
+            $table->timestamp('synced_at')->nullable();
             $table->timestamps();
-            
-            $table->index(['entity_type', 'entity_id']);
-            $table->index(['status', 'created_at']);
-            $table->index(['user_id', 'device_id']);
-            $table->index('client_uuid');
+
+            $table->index(['device_id', 'status']);
+            $table->index(['hash']);
         });
     }
 

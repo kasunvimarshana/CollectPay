@@ -12,20 +12,18 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique();
             $table->string('name');
-            $table->string('contact_person')->nullable();
+            $table->text('address')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
-            $table->text('address')->nullable();
-            $table->string('status')->default('active'); // active, inactive, suspended
-            $table->json('metadata')->nullable(); // Additional flexible data
+            $table->string('contact_person')->nullable();
+            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
+            $table->text('notes')->nullable();
+            $table->json('metadata')->nullable();
             $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();
             $table->softDeletes();
-            $table->integer('version')->default(1);
-            
+
             $table->index(['code', 'status']);
-            $table->index('created_at');
         });
     }
 

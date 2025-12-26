@@ -4,8 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
 {
@@ -14,26 +15,18 @@ class Supplier extends Model
     protected $fillable = [
         'code',
         'name',
-        'contact_person',
+        'address',
         'phone',
         'email',
-        'address',
+        'contact_person',
         'status',
+        'notes',
         'metadata',
         'created_by',
-        'updated_by',
-        'version',
     ];
 
     protected $casts = [
         'metadata' => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
-    ];
-
-    protected $hidden = [
-        'deleted_at',
     ];
 
     public function creator(): BelongsTo
@@ -41,41 +34,26 @@ class Supplier extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater(): BelongsTo
+    public function transactions(): HasMany
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->hasMany(Transaction::class);
     }
 
-    public function collections()
-    {
-        return $this->hasMany(Collection::class);
-    }
-
-    public function payments()
+    public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
-    public function rates()
+    public function rates(): HasMany
     {
         return $this->hasMany(Rate::class);
     }
 
-    protected static function boot()
+    public function getBalanceAttribute(): float
     {
-        parent::boot();
+        $totalTransactions = $this->transactions()->sum('amount');
+        $totalPayments = $this->payments()->sum('amount');
 
-        static::creating(function ($model) {
-            if (auth()->check()) {
-                $model->created_by = auth()->id();
-            }
-        });
-
-        static::updating(function ($model) {
-            if (auth()->check()) {
-                $model->updated_by = auth()->id();
-            }
-            $model->version++;
-        });
+        return $totalTransactions - $totalPayments;
     }
 }

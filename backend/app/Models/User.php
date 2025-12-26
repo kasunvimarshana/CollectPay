@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
@@ -24,7 +24,6 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'deleted_at',
     ];
 
     protected $casts = [
@@ -32,58 +31,32 @@ class User extends Authenticatable
         'password' => 'hashed',
         'permissions' => 'array',
         'is_active' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
-    /**
-     * Check if user has a specific role (RBAC)
-     */
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
     }
 
-    /**
-     * Check if user has any of the given roles
-     */
-    public function hasAnyRole(array $roles): bool
-    {
-        return in_array($this->role, $roles);
-    }
-
-    /**
-     * Check if user has a specific permission (ABAC)
-     */
     public function hasPermission(string $permission): bool
     {
-        if (!$this->permissions) {
+        if (! $this->permissions) {
             return false;
         }
 
         return in_array($permission, $this->permissions);
     }
 
-    /**
-     * Check if user can perform action on resource (ABAC)
-     */
-    public function can($ability, $arguments = []): bool
+    public function canAccess(string $resource, string $action): bool
     {
-        // Admin has all permissions
+        // Admin has full access
         if ($this->role === 'admin') {
             return true;
         }
 
-        return parent::can($ability, $arguments);
-    }
+        // Check specific permissions
+        $permission = "{$resource}.{$action}";
 
-    public function collections()
-    {
-        return $this->hasMany(Collection::class, 'collected_by');
-    }
-
-    public function payments()
-    {
-        return $this->hasMany(Payment::class, 'processed_by');
+        return $this->hasPermission($permission);
     }
 }

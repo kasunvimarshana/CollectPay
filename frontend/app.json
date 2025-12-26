@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SyncLedger",
-    "slug": "syncledger-mobile",
+    "name": "FieldLedger",
+    "slug": "fieldledger",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,24 +16,27 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.syncledger.mobile"
+      "bundleIdentifier": "com.fieldledger.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.syncledger.mobile",
+      "package": "com.fieldledger.app",
       "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "apiUrl": "http://localhost:8000/api"
-    }
+    "scheme": "fieldledger",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite"
+    ]
   }
 }

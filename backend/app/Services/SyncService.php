@@ -2,296 +2,211 @@
 
 namespace App\Services;
 
-use App\Models\Collection;
+use App\Models\Device;
 use App\Models\Payment;
-use App\Models\Supplier;
-use App\Models\Product;
-use App\Models\Rate;
-use App\Models\User;
+use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class SyncService
 {
-    private const BATCH_SIZE = 100;
-
-    /**
-     * Process incoming sync data from client
-     */
-    public function processSyncBatch(array $syncData, User $user, string $deviceId): array
+    public function syncTransactions(array $transactions, int $deviceId): array
     {
         $results = [
-            'success' => [],
-            'failed' => [],
+            'synced' => [],
             'conflicts' => [],
+            'errors' => [],
         ];
 
-        DB::beginTransaction();
-        try {
-            foreach ($syncData as $item) {
-                try {
-                    $result = $this->processSyncItem($item, $user, $deviceId);
-                    
-                    if ($result['status'] === 'conflict') {
-                        $results['conflicts'][] = $result;
-                    } else {
-                        $results['success'][] = $result;
-                    }
-                } catch (\Exception $e) {
-                    Log::error('Sync item failed', [
-                        'item' => $item,
-                        'error' => $e->getMessage(),
-                    ]);
-                    
-                    $results['failed'][] = [
-                        'item' => $item,
-                        'error' => $e->getMessage(),
-                    ];
-                }
-            }
+        foreach ($transactions as $transactionData) {
+            try {
+                DB::beginTransaction();
 
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+                $result = $this->syncTransaction($transactionData, $deviceId);
+
+                if ($result['status'] === 'conflict') {
+                    $results['conflicts'][] = $result;
+                } else {
+                    $results['synced'][] = $result;
+                }
+
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Transaction sync error: '.$e->getMessage(), [
+                    'transaction' => $transactionData,
+                    'device_id' => $deviceId,
+                ]);
+
+                $results['errors'][] = [
+                    'uuid' => $transactionData['uuid'] ?? null,
+                    'error' => $e->getMessage(),
+                ];
+            }
         }
 
         return $results;
     }
 
-    /**
-     * Process a single sync item
-     */
-    private function processSyncItem(array $item, User $user, string $deviceId): array
+    public function syncPayments(array $payments, int $deviceId): array
     {
-        $entityType = $item['entity_type'];
-        $operation = $item['operation'];
-        $data = $item['data'];
-        $clientVersion = $item['version'] ?? 1;
+        $results = [
+            'synced' => [],
+            'conflicts' => [],
+            'errors' => [],
+        ];
 
-        // Check for conflicts
-        if ($operation === 'update' || $operation === 'delete') {
-            $conflict = $this->detectConflict($entityType, $data['id'] ?? null, $clientVersion);
-            if ($conflict) {
-                return [
-                    'status' => 'conflict',
-                    'entity_type' => $entityType,
-                    'client_data' => $data,
-                    'server_data' => $conflict,
+        foreach ($payments as $paymentData) {
+            try {
+                DB::beginTransaction();
+
+                $result = $this->syncPayment($paymentData, $deviceId);
+
+                if ($result['status'] === 'conflict') {
+                    $results['conflicts'][] = $result;
+                } else {
+                    $results['synced'][] = $result;
+                }
+
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Payment sync error: '.$e->getMessage(), [
+                    'payment' => $paymentData,
+                    'device_id' => $deviceId,
+                ]);
+
+                $results['errors'][] = [
+                    'uuid' => $paymentData['uuid'] ?? null,
+                    'error' => $e->getMessage(),
                 ];
             }
         }
 
-        // Process based on entity type and operation
-        $result = match ($entityType) {
-            'supplier' => $this->syncSupplier($operation, $data, $user),
-            'product' => $this->syncProduct($operation, $data, $user),
-            'rate' => $this->syncRate($operation, $data, $user),
-            'collection' => $this->syncCollection($operation, $data, $user),
-            'payment' => $this->syncPayment($operation, $data, $user),
-            default => throw new \Exception("Unknown entity type: {$entityType}"),
-        };
-
-        return [
-            'status' => 'success',
-            'entity_type' => $entityType,
-            'operation' => $operation,
-            'data' => $result,
-        ];
+        return $results;
     }
 
-    /**
-     * Detect conflicts based on version numbers and timestamps
-     */
-    private function detectConflict(string $entityType, ?int $id, int $clientVersion): ?array
+    private function syncTransaction(array $data, int $deviceId): array
     {
-        if (!$id) {
-            return null;
-        }
+        $uuid = $data['uuid'];
+        $existing = Transaction::where('uuid', $uuid)->first();
 
-        $model = match ($entityType) {
-            'supplier' => Supplier::find($id),
-            'product' => Product::find($id),
-            'rate' => Rate::find($id),
-            'collection' => Collection::find($id),
-            'payment' => Payment::find($id),
-            default => null,
-        };
+        if ($existing) {
+            // Check for conflicts
+            if ($this->hasConflict($existing, $data)) {
+                return [
+                    'status' => 'conflict',
+                    'uuid' => $uuid,
+                    'server_data' => $existing,
+                    'client_data' => $data,
+                    'resolution' => 'server_wins', // Default resolution strategy
+                ];
+            }
 
-        if (!$model) {
-            return null;
-        }
+            // Update if client version is newer
+            if (isset($data['updated_at']) && $data['updated_at'] > $existing->updated_at) {
+                $existing->update($data);
+                $existing->synced_at = now();
+                $existing->save();
 
-        // Check version mismatch
-        if ($model->version > $clientVersion) {
+                return [
+                    'status' => 'updated',
+                    'uuid' => $uuid,
+                    'id' => $existing->id,
+                ];
+            }
+
             return [
-                'id' => $model->id,
-                'version' => $model->version,
-                'updated_at' => $model->updated_at->toIso8601String(),
-                'data' => $model->toArray(),
+                'status' => 'unchanged',
+                'uuid' => $uuid,
+                'id' => $existing->id,
             ];
         }
 
-        return null;
-    }
-
-    /**
-     * Sync supplier
-     */
-    private function syncSupplier(string $operation, array $data, User $user): array
-    {
-        return match ($operation) {
-            'create' => $this->createOrUpdateByUuid(Supplier::class, $data),
-            'update' => $this->updateEntity(Supplier::class, $data),
-            'delete' => $this->deleteEntity(Supplier::class, $data['id']),
-            default => throw new \Exception("Unknown operation: {$operation}"),
-        };
-    }
-
-    /**
-     * Sync product
-     */
-    private function syncProduct(string $operation, array $data, User $user): array
-    {
-        return match ($operation) {
-            'create' => $this->createOrUpdateByUuid(Product::class, $data),
-            'update' => $this->updateEntity(Product::class, $data),
-            'delete' => $this->deleteEntity(Product::class, $data['id']),
-            default => throw new \Exception("Unknown operation: {$operation}"),
-        };
-    }
-
-    /**
-     * Sync rate
-     */
-    private function syncRate(string $operation, array $data, User $user): array
-    {
-        return match ($operation) {
-            'create' => $this->createEntity(Rate::class, $data),
-            'update' => $this->updateEntity(Rate::class, $data),
-            'delete' => $this->deleteEntity(Rate::class, $data['id']),
-            default => throw new \Exception("Unknown operation: {$operation}"),
-        };
-    }
-
-    /**
-     * Sync collection
-     */
-    private function syncCollection(string $operation, array $data, User $user): array
-    {
-        if ($operation === 'create') {
-            // Check for duplicate UUID (idempotency)
-            $existing = Collection::where('uuid', $data['uuid'])->first();
-            if ($existing) {
-                return $existing->toArray();
-            }
-        }
-
-        return match ($operation) {
-            'create' => $this->createEntity(Collection::class, $data),
-            'update' => $this->updateEntity(Collection::class, $data),
-            'delete' => $this->deleteEntity(Collection::class, $data['id']),
-            default => throw new \Exception("Unknown operation: {$operation}"),
-        };
-    }
-
-    /**
-     * Sync payment
-     */
-    private function syncPayment(string $operation, array $data, User $user): array
-    {
-        if ($operation === 'create') {
-            // Check for duplicate UUID (idempotency)
-            $existing = Payment::where('uuid', $data['uuid'])->first();
-            if ($existing) {
-                return $existing->toArray();
-            }
-        }
-
-        return match ($operation) {
-            'create' => $this->createEntity(Payment::class, $data),
-            'update' => $this->updateEntity(Payment::class, $data),
-            'delete' => $this->deleteEntity(Payment::class, $data['id']),
-            default => throw new \Exception("Unknown operation: {$operation}"),
-        };
-    }
-
-    /**
-     * Create or update entity by UUID (for idempotent creates)
-     */
-    private function createOrUpdateByUuid(string $modelClass, array $data): array
-    {
-        $model = $modelClass::updateOrCreate(
-            ['code' => $data['code']],
-            $data
-        );
-
-        return $model->fresh()->toArray();
-    }
-
-    /**
-     * Create entity
-     */
-    private function createEntity(string $modelClass, array $data): array
-    {
-        $model = $modelClass::create($data);
-        return $model->fresh()->toArray();
-    }
-
-    /**
-     * Update entity
-     */
-    private function updateEntity(string $modelClass, array $data): array
-    {
-        $model = $modelClass::findOrFail($data['id']);
-        $model->update($data);
-        return $model->fresh()->toArray();
-    }
-
-    /**
-     * Delete entity
-     */
-    private function deleteEntity(string $modelClass, int $id): array
-    {
-        $model = $modelClass::findOrFail($id);
-        $model->delete();
-        return ['id' => $id, 'deleted' => true];
-    }
-
-    /**
-     * Get changes since last sync
-     */
-    public function getChangesSince(string $timestamp, User $user): array
-    {
-        $since = \Carbon\Carbon::parse($timestamp);
+        // Create new transaction
+        $transaction = Transaction::create(array_merge($data, [
+            'device_id' => $deviceId,
+            'synced_at' => now(),
+        ]));
 
         return [
-            'suppliers' => Supplier::where('updated_at', '>', $since)->get(),
-            'products' => Product::where('updated_at', '>', $since)->get(),
-            'rates' => Rate::where('updated_at', '>', $since)->get(),
-            'collections' => Collection::where('updated_at', '>', $since)->get(),
-            'payments' => Payment::where('updated_at', '>', $since)->get(),
-            'timestamp' => now()->toIso8601String(),
+            'status' => 'created',
+            'uuid' => $uuid,
+            'id' => $transaction->id,
         ];
     }
 
-    /**
-     * Get full sync data for initial sync
-     */
-    public function getFullSyncData(User $user): array
+    private function syncPayment(array $data, int $deviceId): array
     {
+        $uuid = $data['uuid'];
+        $existing = Payment::where('uuid', $uuid)->first();
+
+        if ($existing) {
+            // Check for conflicts
+            if ($this->hasConflict($existing, $data)) {
+                return [
+                    'status' => 'conflict',
+                    'uuid' => $uuid,
+                    'server_data' => $existing,
+                    'client_data' => $data,
+                    'resolution' => 'server_wins',
+                ];
+            }
+
+            // Update if client version is newer
+            if (isset($data['updated_at']) && $data['updated_at'] > $existing->updated_at) {
+                $existing->update($data);
+                $existing->synced_at = now();
+                $existing->save();
+
+                return [
+                    'status' => 'updated',
+                    'uuid' => $uuid,
+                    'id' => $existing->id,
+                ];
+            }
+
+            return [
+                'status' => 'unchanged',
+                'uuid' => $uuid,
+                'id' => $existing->id,
+            ];
+        }
+
+        // Create new payment
+        $payment = Payment::create(array_merge($data, [
+            'device_id' => $deviceId,
+            'synced_at' => now(),
+        ]));
+
         return [
-            'suppliers' => Supplier::all(),
-            'products' => Product::where('is_active', true)->get(),
-            'rates' => Rate::where('is_active', true)->get(),
-            'collections' => Collection::where('created_by', $user->id)
-                ->orWhere('collected_by', $user->id)
-                ->get(),
-            'payments' => Payment::where('created_by', $user->id)
-                ->orWhere('processed_by', $user->id)
-                ->get(),
-            'timestamp' => now()->toIso8601String(),
+            'status' => 'created',
+            'uuid' => $uuid,
+            'id' => $payment->id,
         ];
+    }
+
+    private function hasConflict($existing, array $data): bool
+    {
+        // Conflict if both server and client have been updated since last sync
+        if (isset($data['updated_at']) && isset($data['synced_at'])) {
+            $clientUpdated = strtotime($data['updated_at']);
+            $clientSynced = strtotime($data['synced_at']);
+            $serverUpdated = $existing->updated_at->timestamp;
+
+            // If server was updated after client last synced, and client also updated, it's a conflict
+            if ($serverUpdated > $clientSynced && $clientUpdated > $clientSynced) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function updateDeviceSync(int $deviceId): void
+    {
+        $device = Device::findOrFail($deviceId);
+        $device->last_sync_at = now();
+        $device->save();
     }
 }

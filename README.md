@@ -1,157 +1,138 @@
-"# SyncLedger - Data Collection and Payment Management System
+"# FieldLedger - Data Collection & Payment Management Application
 
-## Overview
+A comprehensive, secure, and production-ready offline-first application for field data collection and payment management, built with React Native (Expo) and Laravel.
 
-SyncLedger is a production-ready, offline-first data collection and payment management application designed for field operations. It features a React Native (Expo) mobile frontend and a Laravel backend API, with comprehensive sync capabilities, conflict resolution, and strong data consistency guarantees.
-
-## Key Features
+## 🚀 Features
 
 ### Core Functionality
-- **Supplier Management**: Complete supplier profiles with contact details and status tracking
-- **Product Management**: Multi-unit product catalog with categories
-- **Rate Management**: Time-based and versioned product rates with supplier-specific pricing
-- **Collection Tracking**: Detailed collection records with automatic rate application
-- **Payment Processing**: Advanced payment management with automated balance calculations
-- **Multi-user Support**: Role-based access control (Admin, Manager, Collector)
+- **Supplier Management**: Complete CRUD operations for supplier records
+- **Product Management**: Multi-unit quantity tracking with base and alternate units
+- **Transaction Recording**: Time-based rate tracking with automatic calculations
+- **Payment Management**: Support for advance, partial, and full payments
+- **Balance Tracking**: Real-time supplier balance calculations
 
-### Synchronization
-- **Online-First Architecture**: Backend as single source of truth
-- **Controlled Auto-Sync**: Event-driven synchronization (network regain, app foreground, post-auth)
-- **Manual Sync Option**: User-initiated sync with clear status indicators
-- **Idempotent Operations**: UUID-based deduplication prevents data duplication
-- **Conflict Detection**: Version-based conflict detection with server-wins strategy
-- **Offline Resilience**: Full offline operation with local SQLite storage
+### Offline-First Architecture
+- **Primary Online Operation**: Backend as source of truth with real-time persistence
+- **Automatic Offline Support**: Seamless fallback during network outages
+- **Deterministic Synchronization**: Zero data loss with automatic sync on reconnection
+- **Conflict Resolution**: Robust conflict detection and resolution mechanisms
+- **Multi-Device Support**: Concurrent operations across multiple devices
 
-### Security
-- **Authentication**: Token-based auth with Laravel Sanctum
-- **Authorization**: Combined RBAC (role-based) and ABAC (attribute-based)
-- **Encrypted Storage**: Expo SecureStore for sensitive data
-- **API Security**: HTTPS, CORS, request validation, SQL injection prevention
-- **Audit Trail**: Comprehensive logging of all operations
+### Security Features
+- **Authentication**: Secure token-based authentication (Laravel Sanctum)
+- **Authorization**: Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC)
+- **Encrypted Storage**: Local data encryption using Expo SecureStore
+- **Encrypted Transmission**: HTTPS/TLS for all API communications
+- **Session Management**: Secure token management and automatic expiration
 
-### Architecture
-- **Clean Architecture**: Clear separation of domain, data, and presentation layers
-- **SOLID Principles**: Maintainable, testable, and extensible code
-- **Repository Pattern**: Abstracted data access layer
-- **Service Layer**: Encapsulated business logic
+### Technical Architecture
+- **Clean Code**: Adheres to SOLID principles and DRY guidelines
+- **Minimal Dependencies**: Native implementations prioritized
+- **Open Source**: Only free, LTS-supported libraries
+- **Type Safety**: Full TypeScript implementation
+- **Scalable Design**: Modular architecture for easy maintenance
 
-## Technology Stack
-
-### Backend
-- **Framework**: Laravel 10+ (PHP 8.1+)
-- **Database**: MySQL/MariaDB
-- **Authentication**: Laravel Sanctum
-- **API**: RESTful JSON API
-
-### Frontend
-- **Framework**: React Native with Expo
-- **Navigation**: React Navigation
-- **Local Storage**: Expo SQLite
-- **Secure Storage**: Expo SecureStore
-- **Network**: Axios with interceptors
-- **State Management**: React Hooks and Context API
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-SyncLedger/
-├── backend/                    # Laravel API
+FieldLedger/
+├── backend/                    # Laravel Backend API
 │   ├── app/
 │   │   ├── Models/            # Eloquent models
 │   │   ├── Http/Controllers/  # API controllers
-│   │   ├── Services/          # Business logic
-│   │   └── Providers/         # Service providers
+│   │   └── Services/          # Business logic layer
 │   ├── database/
-│   │   └── migrations/        # Database migrations
-│   ├── routes/
-│   │   └── api.php           # API routes
-│   └── config/               # Configuration files
+│   │   └── migrations/        # Database schema
+│   └── routes/
+│       └── api.php            # API routes
 │
-├── frontend/                  # React Native app
+├── frontend/                   # React Native (Expo) Mobile App
+│   ├── app/                   # Expo Router pages
+│   │   ├── (auth)/           # Authentication screens
+│   │   └── (tabs)/           # Main app screens
 │   ├── src/
-│   │   ├── domain/           # Business entities and use cases
-│   │   ├── data/             # Repositories and models
-│   │   ├── infrastructure/   # Database, network, sync
-│   │   └── presentation/     # UI screens and components
-│   ├── App.js               # Main app entry
-│   └── app.json             # Expo configuration
+│   │   ├── api/              # API client
+│   │   ├── database/         # Local SQLite database
+│   │   ├── services/         # Sync manager
+│   │   ├── store/            # State management (Zustand)
+│   │   └── types/            # TypeScript definitions
+│   └── components/           # Reusable components
 │
-└── docs/                     # Documentation
+└── docs/                      # Documentation
 ```
 
-## Quick Start
+## 🛠️ Technology Stack
+
+### Backend
+- **Framework**: Laravel 11.x
+- **Language**: PHP 8.2+
+- **Database**: MySQL 8.0+ / MariaDB 10.3+
+- **Authentication**: Laravel Sanctum
+- **Architecture**: Repository pattern with service layer
+
+### Frontend
+- **Framework**: React Native with Expo
+- **Language**: TypeScript
+- **Navigation**: Expo Router
+- **State Management**: Zustand
+- **Local Database**: Expo SQLite
+- **Secure Storage**: Expo SecureStore
+- **Network Detection**: Expo Network
+- **API Client**: Axios
+- **Data Fetching**: TanStack Query (React Query)
+
+## 📋 Prerequisites
+
+### Backend
+- PHP >= 8.2
+- Composer
+- MySQL >= 8.0 or MariaDB >= 10.3
+
+### Frontend
+- Node.js >= 18
+- npm or yarn
+- Expo CLI
+
+## 🚀 Getting Started
 
 ### Backend Setup
 
-1. **Prerequisites**: PHP 8.1+, Composer, MySQL
-2. **Install**:
-   ```bash
-   cd backend
-   composer install
-   cp .env.example .env
-   php artisan key:generate
-   ```
-3. **Configure** `.env` with database credentials
-4. **Migrate**: `php artisan migrate`
-5. **Run**: `php artisan serve`
+1. Navigate to backend directory: `cd backend`
+2. Install dependencies: `composer install`
+3. Configure environment: `cp .env.example .env`
+4. Generate key: `php artisan key:generate`
+5. Run migrations: `php artisan migrate`
+6. Start server: `php artisan serve`
 
 ### Frontend Setup
 
-1. **Prerequisites**: Node.js 16+, Expo CLI
-2. **Install**:
-   ```bash
-   cd frontend
-   npm install
-   ```
-3. **Configure** API URL in `app.json`
-4. **Run**: `npm start`
+1. Navigate to frontend directory: `cd frontend`
+2. Install dependencies: `npm install`
+3. Configure API URL in `.env`
+4. Start server: `npm start`
 
-## Features Overview
+## 📖 API Documentation
 
-### Offline-First Operation
-- Works completely offline with local SQLite database
-- Automatic sync when connection restored
-- Queue-based sync with retry logic
-- Clear visual indicators for sync status
+See backend/README.md for detailed API documentation.
 
-### Rate Management
-- Time-based rate versioning
-- Supplier-specific and general rates
-- Historical rate preservation
-- Automatic rate application on collections
+## 🔒 Security
 
-### Payment Calculations
-- Automated outstanding balance tracking
-- Advance, partial, and full payment support
-- Payment validation against outstanding
-- Audit trail with calculation details
+- Token-based authentication (Laravel Sanctum)
+- RBAC and ABAC authorization
+- Encrypted local storage
+- HTTPS/TLS for all communications
+- Password hashing with bcrypt
 
-### Conflict Resolution
-- Version-based optimistic locking
-- Timestamp-based freshness checks
-- Server-wins strategy (configurable)
-- Manual resolution for complex conflicts
+## 📱 Offline Support
 
-## API Documentation
+The application features robust offline-first architecture:
+- Automatic network detection
+- Local SQLite database
+- Sync queue management
+- Conflict resolution
+- Zero data loss guarantee
 
-See `/docs/API.md` for complete API reference with examples.
-
-## Deployment
-
-### Production Checklist
-- [ ] Configure production `.env` files
-- [ ] Set up SSL certificates
-- [ ] Configure database backups
-- [ ] Enable error logging
-- [ ] Set up monitoring
-- [ ] Test sync in production network
-- [ ] Configure rate limiting
-- [ ] Review security settings
-
-## License
+## 📝 License
 
 MIT License
-
-## Version
-
-**v1.0.0** - Production Release" 
+" 

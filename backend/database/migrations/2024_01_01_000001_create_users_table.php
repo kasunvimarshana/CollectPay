@@ -14,19 +14,34 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default('collector'); // admin, manager, collector
-            $table->json('permissions')->nullable(); // ABAC permissions
+            $table->enum('role', ['admin', 'manager', 'collector', 'viewer'])->default('collector');
+            $table->json('permissions')->nullable();
             $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
-            
-            $table->index(['email', 'is_active']);
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
         });
     }
 
     public function down(): void
     {
         Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
     }
 };

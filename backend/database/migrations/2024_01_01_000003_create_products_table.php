@@ -13,17 +13,15 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->string('unit')->default('kg'); // kg, liter, piece, etc.
             $table->string('category')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->string('base_unit'); // kg, liter, piece, etc.
+            $table->json('alternate_units')->nullable(); // [{unit: "ton", factor: 1000}, {unit: "gram", factor: 0.001}]
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->json('metadata')->nullable();
-            $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();
             $table->softDeletes();
-            $table->integer('version')->default(1);
-            
-            $table->index(['code', 'is_active']);
+
+            $table->index(['code', 'status']);
         });
     }
 

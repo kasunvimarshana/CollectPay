@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Product extends Model
 {
@@ -15,62 +15,41 @@ class Product extends Model
         'code',
         'name',
         'description',
-        'unit',
         'category',
-        'is_active',
+        'base_unit',
+        'alternate_units',
+        'status',
         'metadata',
-        'created_by',
-        'updated_by',
-        'version',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'alternate_units' => 'array',
         'metadata' => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
 
-    protected $hidden = [
-        'deleted_at',
-    ];
-
-    public function creator(): BelongsTo
+    public function transactions(): HasMany
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->hasMany(Transaction::class);
     }
 
-    public function updater(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
-
-    public function collections()
-    {
-        return $this->hasMany(Collection::class);
-    }
-
-    public function rates()
+    public function rates(): HasMany
     {
         return $this->hasMany(Rate::class);
     }
 
-    protected static function boot()
+    public function convertToBaseUnit(float $quantity, string $unit): float
     {
-        parent::boot();
+        if ($unit === $this->base_unit) {
+            return $quantity;
+        }
 
-        static::creating(function ($model) {
-            if (auth()->check()) {
-                $model->created_by = auth()->id();
+        $alternateUnits = $this->alternate_units ?? [];
+        foreach ($alternateUnits as $altUnit) {
+            if ($altUnit['unit'] === $unit) {
+                return $quantity * ($altUnit['factor'] ?? 1);
             }
-        });
+        }
 
-        static::updating(function ($model) {
-            if (auth()->check()) {
-                $model->updated_by = auth()->id();
-            }
-            $model->version++;
-        });
+        return $quantity;
     }
 }

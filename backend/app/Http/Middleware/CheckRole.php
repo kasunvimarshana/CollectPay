@@ -10,27 +10,21 @@ class CheckRole
 {
     /**
      * Handle an incoming request.
-     * RBAC middleware for role-based authorization
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'Unauthenticated.',
-            ], 401);
+        if (! auth()->check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // Admin always has access
-        if ($user->role === 'admin') {
-            return $next($request);
-        }
+        $user = auth()->user();
 
-        // Check if user has required role
-        if (!in_array($user->role, $roles)) {
+        if (! in_array($user->role, $roles)) {
             return response()->json([
-                'message' => 'Forbidden. Required role(s): ' . implode(', ', $roles),
+                'error' => 'Forbidden',
+                'message' => 'You do not have permission to access this resource',
             ], 403);
         }
 

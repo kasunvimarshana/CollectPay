@@ -1,596 +1,547 @@
-# SyncLedger API Documentation
+# FieldLedger API Documentation
+
+Complete REST API documentation for the FieldLedger backend.
 
 ## Base URL
+
 ```
-http://localhost:8000/api
+Production: https://api.fieldledger.com/api
+Development: http://localhost:8000/api
 ```
 
 ## Authentication
 
-All authenticated endpoints require the `Authorization` header:
-```
-Authorization: Bearer {token}
-```
+All authenticated endpoints require a Bearer token in the Authorization header.
 
-### Login
 ```http
-POST /login
-Content-Type: application/json
+Authorization: Bearer {your-token-here}
+```
 
-{
-  "email": "user@example.com",
-  "password": "password123",
-  "device_id": "uuid-device-identifier"
-}
+## Response Format
 
-Response 200:
+### Success Response
+```json
 {
-  "user": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "user@example.com",
-    "role": "collector"
-  },
-  "token": "1|abcdef...",
-  "permissions": []
+  "data": { ... },
+  "message": "Success message",
+  "status": 200
 }
 ```
 
-### Register
+### Error Response
+```json
+{
+  "message": "Error message",
+  "errors": {
+    "field": ["Validation error message"]
+  },
+  "status": 422
+}
+```
+
+## Authentication Endpoints
+
+### Register User
+Creates a new user account.
+
 ```http
 POST /register
 Content-Type: application/json
+```
 
+**Request Body:**
+```json
 {
   "name": "John Doe",
-  "email": "user@example.com",
+  "email": "john@example.com",
   "password": "password123",
   "password_confirmation": "password123",
   "role": "collector"
 }
+```
 
-Response 201:
+**Response:** `201 Created`
+```json
 {
-  "user": {...},
-  "token": "1|abcdef..."
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "collector",
+    "is_active": true
+  },
+  "token": "1|abc123xyz..."
 }
 ```
 
-## Sync Endpoints
+### Login
+Authenticates a user and returns a token.
 
-### Sync Data
 ```http
-POST /sync
-Authorization: Bearer {token}
+POST /login
 Content-Type: application/json
+```
 
+**Request Body:**
+```json
 {
-  "device_id": "uuid-device-identifier",
-  "sync_data": [
-    {
-      "entity_type": "collection",
-      "operation": "create",
-      "data": {
-        "uuid": "collection-uuid",
-        "supplier_id": 1,
-        "product_id": 2,
-        "quantity": 10.5,
-        "collection_date": "2024-01-15"
-      },
-      "version": 1
-    }
-  ]
-}
-
-Response 200:
-{
-  "status": "success",
-  "results": {
-    "success": [...],
-    "conflicts": [],
-    "failed": []
-  },
-  "server_timestamp": "2024-01-15T10:30:00Z"
+  "email": "john@example.com",
+  "password": "password123",
+  "device_uuid": "unique-device-id",
+  "device_name": "iPhone 14",
+  "device_type": "ios"
 }
 ```
 
-### Pull Changes
+**Response:** `200 OK`
+```json
+{
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "collector"
+  },
+  "token": "1|abc123xyz...",
+  "device": {
+    "id": 1,
+    "device_uuid": "unique-device-id",
+    "device_name": "iPhone 14",
+    "device_type": "ios"
+  }
+}
+```
+
+### Logout
+Revokes the current access token.
+
 ```http
-GET /sync/pull?since=2024-01-15T09:00:00Z
+POST /logout
 Authorization: Bearer {token}
+```
 
-Response 200:
+**Response:** `200 OK`
+```json
 {
-  "status": "success",
-  "changes": {
-    "suppliers": [...],
-    "products": [...],
-    "rates": [...],
-    "collections": [...],
-    "payments": [...]
-  },
-  "server_timestamp": "2024-01-15T10:30:00Z"
+  "message": "Logged out successfully"
 }
 ```
 
-### Full Sync
+### Get Current User
+Returns the authenticated user's information.
+
 ```http
-GET /sync/full
+GET /me
 Authorization: Bearer {token}
+```
 
-Response 200:
+**Response:** `200 OK`
+```json
 {
-  "status": "success",
-  "data": {
-    "suppliers": [...],
-    "products": [...],
-    "rates": [...],
-    "collections": [...],
-    "payments": [...]
-  },
-  "server_timestamp": "2024-01-15T10:30:00Z"
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "collector",
+    "permissions": ["suppliers.create", "transactions.create"],
+    "is_active": true
+  }
 }
 ```
 
-## Suppliers
+## Supplier Endpoints
 
 ### List Suppliers
-```http
-GET /suppliers?status=active&search=john
-Authorization: Bearer {token}
+Get paginated list of suppliers.
 
-Response 200:
+```http
+GET /suppliers?page=1&per_page=15&status=active&search=ABC
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `per_page` (optional): Items per page (default: 15)
+- `status` (optional): Filter by status (active, inactive, suspended)
+- `search` (optional): Search by name, code, or phone
+
+**Response:** `200 OK`
+```json
 {
   "data": [
     {
       "id": 1,
       "code": "SUP001",
-      "name": "John's Farm",
-      "contact_person": "John Doe",
+      "name": "ABC Suppliers",
+      "address": "123 Main St",
       "phone": "+1234567890",
-      "email": "john@farm.com",
-      "address": "123 Farm Road",
+      "email": "abc@example.com",
+      "contact_person": "Jane Smith",
       "status": "active",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
+      "notes": "Regular supplier",
+      "created_by": 1,
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z"
     }
   ],
-  "links": {...},
-  "meta": {...}
+  "current_page": 1,
+  "total": 50,
+  "per_page": 15,
+  "last_page": 4
+}
+```
+
+### Get Supplier Details
+Get detailed information about a specific supplier.
+
+```http
+GET /suppliers/{id}
+Authorization: Bearer {token}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "supplier": {
+    "id": 1,
+    "code": "SUP001",
+    "name": "ABC Suppliers",
+    "address": "123 Main St",
+    "phone": "+1234567890",
+    "email": "abc@example.com",
+    "status": "active",
+    "transactions": [
+      {
+        "id": 1,
+        "amount": 5000.00,
+        "transaction_date": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "payments": [
+      {
+        "id": 1,
+        "amount": 2000.00,
+        "payment_date": "2024-01-16T10:30:00Z"
+      }
+    ]
+  },
+  "balance": 3000.00
 }
 ```
 
 ### Create Supplier
+Create a new supplier.
+
 ```http
 POST /suppliers
 Authorization: Bearer {token}
 Content-Type: application/json
+```
 
+**Request Body:**
+```json
 {
   "code": "SUP001",
-  "name": "John's Farm",
-  "contact_person": "John Doe",
+  "name": "ABC Suppliers",
+  "address": "123 Main St",
   "phone": "+1234567890",
-  "email": "john@farm.com",
-  "address": "123 Farm Road",
-  "status": "active"
-}
-
-Response 201:
-{
-  "id": 1,
-  "code": "SUP001",
-  ...
+  "email": "abc@example.com",
+  "contact_person": "Jane Smith",
+  "status": "active",
+  "notes": "Regular supplier"
 }
 ```
 
-### Get Supplier
-```http
-GET /suppliers/1
-Authorization: Bearer {token}
-
-Response 200:
+**Response:** `201 Created`
+```json
 {
-  "supplier": {...},
-  "outstanding": {
-    "supplier_id": 1,
-    "supplier_name": "John's Farm",
-    "total_collections": 1500.00,
-    "total_payments": 1000.00,
-    "outstanding_balance": 500.00,
-    "calculated_at": "2024-01-15T10:30:00Z"
-  }
+  "id": 1,
+  "code": "SUP001",
+  "name": "ABC Suppliers",
+  "created_at": "2024-01-15T10:30:00Z"
 }
 ```
 
 ### Update Supplier
+Update an existing supplier.
+
 ```http
-PUT /suppliers/1
+PUT /suppliers/{id}
 Authorization: Bearer {token}
 Content-Type: application/json
+```
 
+**Request Body:**
+```json
 {
-  "name": "John's Updated Farm",
-  "status": "inactive"
+  "name": "ABC Suppliers Updated",
+  "phone": "+1234567899",
+  "status": "active"
 }
+```
 
-Response 200:
+**Response:** `200 OK`
+```json
 {
   "id": 1,
-  "name": "John's Updated Farm",
-  ...
+  "code": "SUP001",
+  "name": "ABC Suppliers Updated",
+  "updated_at": "2024-01-15T11:30:00Z"
+}
+```
+
+### Delete Supplier
+Soft delete a supplier.
+
+```http
+DELETE /suppliers/{id}
+Authorization: Bearer {token}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Supplier deleted successfully"
 }
 ```
 
 ### Get Supplier Balance
-```http
-GET /suppliers/1/balance?from_date=2024-01-01&to_date=2024-01-31
-Authorization: Bearer {token}
+Get detailed balance information for a supplier.
 
-Response 200:
+```http
+GET /suppliers/{id}/balance
+Authorization: Bearer {token}
+```
+
+**Response:** `200 OK`
+```json
 {
-  "collections": [
+  "supplier_id": 1,
+  "supplier_name": "ABC Suppliers",
+  "total_debit": 15000.00,
+  "total_credit": 8000.00,
+  "balance": 7000.00,
+  "as_of": "2024-01-15T12:00:00Z"
+}
+```
+
+## Synchronization Endpoints
+
+### Sync Transactions
+Synchronize offline transactions with the server.
+
+```http
+POST /sync/transactions
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "device_id": 1,
+  "transactions": [
     {
-      "id": 1,
-      "date": "2024-01-15",
-      "product": "Milk",
-      "quantity": 10.5,
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "supplier_id": 1,
+      "product_id": 1,
+      "quantity": 100,
+      "unit": "kg",
       "rate": 50.00,
-      "amount": 525.00
+      "amount": 5000.00,
+      "transaction_date": "2024-01-15T10:30:00Z",
+      "notes": "Morning collection",
+      "created_by": 1,
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "synced": [
+    {
+      "status": "created",
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "id": 1
     }
   ],
+  "conflicts": [],
+  "errors": []
+}
+```
+
+### Sync Payments
+Synchronize offline payments with the server.
+
+```http
+POST /sync/payments
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "device_id": 1,
   "payments": [
     {
-      "id": 1,
-      "date": "2024-01-20",
-      "type": "partial",
-      "amount": 300.00,
-      "method": "cash"
-    }
-  ],
-  "summary": {
-    "total_collections": 525.00,
-    "total_payments": 300.00,
-    "outstanding_balance": 225.00
-  }
-}
-```
-
-## Products
-
-### List Products
-```http
-GET /products?is_active=1&search=milk
-Authorization: Bearer {token}
-
-Response 200:
-{
-  "data": [
-    {
-      "id": 1,
-      "code": "PROD001",
-      "name": "Fresh Milk",
-      "description": "Organic fresh milk",
-      "unit": "liter",
-      "category": "dairy",
-      "is_active": true,
-      "created_at": "2024-01-01T00:00:00Z"
-    }
-  ]
-}
-```
-
-### Create Product
-```http
-POST /products
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "code": "PROD001",
-  "name": "Fresh Milk",
-  "description": "Organic fresh milk",
-  "unit": "liter",
-  "category": "dairy",
-  "is_active": true
-}
-
-Response 201:
-{
-  "id": 1,
-  ...
-}
-```
-
-## Rates
-
-### List Rates
-```http
-GET /rates?product_id=1&is_active=1&effective_date=2024-01-15
-Authorization: Bearer {token}
-
-Response 200:
-{
-  "data": [
-    {
-      "id": 1,
-      "product_id": 1,
-      "supplier_id": null,
-      "rate": 50.00,
-      "effective_from": "2024-01-01",
-      "effective_to": null,
-      "is_active": true,
-      "applied_scope": "general",
-      "product": {...},
-      "supplier": null
-    }
-  ]
-}
-```
-
-### Get Applicable Rate
-```http
-GET /rates/applicable?product_id=1&date=2024-01-15&supplier_id=1
-Authorization: Bearer {token}
-
-Response 200:
-{
-  "id": 1,
-  "product_id": 1,
-  "rate": 50.00,
-  ...
-}
-```
-
-### Create Rate
-```http
-POST /rates
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "product_id": 1,
-  "supplier_id": null,
-  "rate": 50.00,
-  "effective_from": "2024-01-01",
-  "effective_to": null,
-  "is_active": true,
-  "applied_scope": "general",
-  "notes": "Standard rate for 2024"
-}
-
-Response 201:
-{
-  "id": 1,
-  ...
-}
-```
-
-## Collections
-
-### List Collections
-```http
-GET /collections?supplier_id=1&from_date=2024-01-01&to_date=2024-01-31
-Authorization: Bearer {token}
-
-Response 200:
-{
-  "data": [
-    {
-      "id": 1,
-      "uuid": "collection-uuid",
+      "uuid": "660e8400-e29b-41d4-a716-446655440000",
       "supplier_id": 1,
-      "product_id": 1,
-      "rate_id": 1,
-      "quantity": 10.5,
-      "rate_applied": 50.00,
-      "total_amount": 525.00,
-      "collection_date": "2024-01-15",
-      "collection_time": "08:30:00",
-      "notes": null,
-      "supplier": {...},
-      "product": {...},
-      "rate": {...}
-    }
-  ]
-}
-```
-
-### Create Collection
-```http
-POST /collections
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "uuid": "collection-uuid",
-  "supplier_id": 1,
-  "product_id": 1,
-  "quantity": 10.5,
-  "collection_date": "2024-01-15",
-  "collection_time": "08:30:00",
-  "notes": "Morning collection"
-}
-
-Response 201:
-{
-  "id": 1,
-  "uuid": "collection-uuid",
-  "rate_applied": 50.00,
-  "total_amount": 525.00,
-  ...
-}
-```
-
-### Get Collection Summary
-```http
-GET /collections/summary?supplier_id=1&from_date=2024-01-01&to_date=2024-01-31
-Authorization: Bearer {token}
-
-Response 200:
-{
-  "supplier_id": 1,
-  "from_date": "2024-01-01",
-  "to_date": "2024-01-31",
-  "products": [
-    {
-      "product_id": 1,
-      "product_name": "Fresh Milk",
-      "product_unit": "liter",
-      "total_quantity": 315.5,
-      "total_amount": 15775.00,
-      "collection_count": 30
-    }
-  ],
-  "grand_total": 15775.00
-}
-```
-
-## Payments
-
-### List Payments
-```http
-GET /payments?supplier_id=1&from_date=2024-01-01&payment_type=partial
-Authorization: Bearer {token}
-
-Response 200:
-{
-  "data": [
-    {
-      "id": 1,
-      "uuid": "payment-uuid",
-      "supplier_id": 1,
+      "amount": 2000.00,
       "payment_type": "partial",
-      "amount": 500.00,
-      "payment_date": "2024-01-20",
       "payment_method": "cash",
-      "reference_number": "REF001",
-      "outstanding_before": 1000.00,
-      "outstanding_after": 500.00,
-      "calculation_details": {...},
-      "supplier": {...}
+      "payment_date": "2024-01-15T10:30:00Z",
+      "reference_number": "PAY001",
+      "notes": "Cash payment",
+      "created_by": 1,
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z"
     }
   ]
 }
 ```
 
-### Create Payment
+**Response:** `200 OK`
+```json
+{
+  "synced": [
+    {
+      "status": "created",
+      "uuid": "660e8400-e29b-41d4-a716-446655440000",
+      "id": 1
+    }
+  ],
+  "conflicts": [],
+  "errors": []
+}
+```
+
+### Get Updates
+Get updates from the server since last sync.
+
 ```http
-POST /payments
+GET /sync/updates?device_id=1&last_sync=2024-01-15T10:00:00Z
 Authorization: Bearer {token}
-Content-Type: application/json
+```
 
-{
-  "uuid": "payment-uuid",
-  "supplier_id": 1,
-  "payment_type": "partial",
-  "amount": 500.00,
-  "payment_date": "2024-01-20",
-  "payment_method": "cash",
-  "reference_number": "REF001",
-  "notes": "Partial payment"
-}
+**Query Parameters:**
+- `device_id` (required): Device ID
+- `last_sync` (optional): Last sync timestamp
 
-Response 201:
+**Response:** `200 OK`
+```json
 {
-  "id": 1,
-  "outstanding_before": 1000.00,
-  "outstanding_after": 500.00,
-  ...
+  "transactions": [...],
+  "payments": [...],
+  "suppliers": [...],
+  "products": [...],
+  "rates": [...],
+  "sync_timestamp": "2024-01-15T12:00:00Z"
 }
 ```
 
-### Validate Payment Amount
+## Health Check
+
+### API Health
+Check API health and status.
+
 ```http
-POST /payments/validate-amount
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "supplier_id": 1,
-  "amount": 500.00
-}
-
-Response 200:
-{
-  "is_valid": true,
-  "amount": 500.00,
-  "outstanding": 1000.00,
-  "message": "Payment amount is valid"
-}
+GET /health
 ```
 
-## Error Responses
-
-### 400 Bad Request
+**Response:** `200 OK`
 ```json
 {
-  "message": "Validation failed",
-  "errors": {
-    "email": ["The email field is required."]
-  }
+  "status": "ok",
+  "timestamp": "2024-01-15T12:00:00Z"
 }
 ```
 
-### 401 Unauthorized
-```json
-{
-  "message": "Unauthenticated"
-}
-```
+## Error Codes
 
-### 404 Not Found
-```json
-{
-  "message": "Resource not found"
-}
-```
-
-### 422 Unprocessable Entity
-```json
-{
-  "message": "The given data was invalid.",
-  "errors": {
-    "amount": ["Payment amount exceeds outstanding balance"]
-  }
-}
-```
-
-### 500 Internal Server Error
-```json
-{
-  "message": "Server error",
-  "error": "Error details..."
-}
-```
+| Code | Description |
+|------|-------------|
+| 200 | Success |
+| 201 | Created |
+| 400 | Bad Request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Not Found |
+| 422 | Validation Error |
+| 429 | Too Many Requests |
+| 500 | Internal Server Error |
 
 ## Rate Limiting
 
-- 60 requests per minute per IP for unauthenticated endpoints
-- 120 requests per minute per user for authenticated endpoints
+API requests are rate limited to prevent abuse:
+- Authenticated users: 60 requests per minute
+- Unauthenticated: 20 requests per minute
+
+Rate limit headers:
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 59
+X-RateLimit-Reset: 1610720400
+```
 
 ## Pagination
 
-List endpoints support pagination:
-```
-?page=1&per_page=50
-```
+List endpoints support pagination with the following parameters:
+- `page`: Page number (default: 1)
+- `per_page`: Items per page (default: 15, max: 100)
 
 Response includes pagination metadata:
 ```json
 {
   "data": [...],
-  "links": {
-    "first": "...",
-    "last": "...",
-    "prev": null,
-    "next": "..."
-  },
-  "meta": {
-    "current_page": 1,
-    "last_page": 5,
-    "per_page": 50,
-    "total": 250
-  }
+  "current_page": 1,
+  "total": 100,
+  "per_page": 15,
+  "last_page": 7,
+  "from": 1,
+  "to": 15
 }
 ```
+
+## Filtering & Searching
+
+Most list endpoints support filtering and searching:
+- `search`: Full-text search across relevant fields
+- `status`: Filter by status
+- `date_from`: Filter by start date
+- `date_to`: Filter by end date
+
+Example:
+```http
+GET /suppliers?search=ABC&status=active
+```
+
+## Best Practices
+
+1. **Use HTTPS**: Always use HTTPS in production
+2. **Store Tokens Securely**: Use secure storage for auth tokens
+3. **Handle Errors**: Implement proper error handling
+4. **Respect Rate Limits**: Implement exponential backoff
+5. **Cache When Possible**: Cache responses to reduce API calls
+6. **Sync Efficiently**: Batch sync operations when possible
+
+## SDKs & Libraries
+
+- JavaScript/TypeScript: Axios client (included in frontend)
+- PHP: Guzzle HTTP client
+- Python: Requests library
+
+## Support
+
+For API support:
+- Documentation: https://docs.fieldledger.com
+- Email: api@fieldledger.com
+- GitHub Issues: https://github.com/yourusername/FieldLedger/issues
+
+---
+
+Last Updated: 2024-01-01

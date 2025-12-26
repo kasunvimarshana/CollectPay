@@ -4,18 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
-use App\Services\PaymentCalculationService;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
-    private PaymentCalculationService $paymentService;
-
-    public function __construct(PaymentCalculationService $paymentService)
-    {
-        $this->paymentService = $paymentService;
-    }
-
     public function index(Request $request)
     {
         $query = Supplier::query();
@@ -33,78 +25,78 @@ class SupplierController extends Controller
             });
         }
 
-        $suppliers = $query->orderBy('name')->paginate(50);
+        $perPage = $request->input('per_page', 15);
 
-        return response()->json($suppliers);
+        return response()->json($query->paginate($perPage));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'code' => 'required|string|unique:suppliers,code',
             'name' => 'required|string|max:255',
-            'contact_person' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
-            'status' => 'nullable|in:active,inactive,suspended',
+            'phone' => 'nullable|string',
+            'email' => 'nullable|email',
+            'contact_person' => 'nullable|string',
+            'status' => 'sometimes|in:active,inactive,suspended',
+            'notes' => 'nullable|string',
             'metadata' => 'nullable|array',
         ]);
 
-        $supplier = Supplier::create($request->all());
+        $supplier = Supplier::create(array_merge($validated, [
+            'created_by' => $request->user()->id,
+        ]));
 
         return response()->json($supplier, 201);
     }
 
-    public function show(Supplier $supplier)
+    public function show($id)
     {
-        $supplier->load(['creator', 'collections', 'payments']);
-        
-        // Get outstanding balance
-        $outstanding = $this->paymentService->calculateOutstanding($supplier->id);
+        $supplier = Supplier::with(['transactions', 'payments'])->findOrFail($id);
 
         return response()->json([
             'supplier' => $supplier,
-            'outstanding' => $outstanding,
+            'balance' => $supplier->balance,
         ]);
     }
 
-    public function update(Request $request, Supplier $supplier)
+    public function update(Request $request, $id)
     {
-        $request->validate([
-            'code' => 'sometimes|string|unique:suppliers,code,' . $supplier->id,
+        $supplier = Supplier::findOrFail($id);
+
+        $validated = $request->validate([
+            'code' => 'sometimes|string|unique:suppliers,code,'.$id,
             'name' => 'sometimes|string|max:255',
-            'contact_person' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
-            'status' => 'nullable|in:active,inactive,suspended',
+            'phone' => 'nullable|string',
+            'email' => 'nullable|email',
+            'contact_person' => 'nullable|string',
+            'status' => 'sometimes|in:active,inactive,suspended',
+            'notes' => 'nullable|string',
             'metadata' => 'nullable|array',
         ]);
 
-        $supplier->update($request->all());
+        $supplier->update($validated);
 
         return response()->json($supplier);
     }
 
-    public function destroy(Supplier $supplier)
+    public function destroy($id)
     {
+        $supplier = Supplier::findOrFail($id);
         $supplier->delete();
 
         return response()->json(['message' => 'Supplier deleted successfully']);
     }
 
-    /**
-     * Get supplier balance details
-     */
-    public function balance(Supplier $supplier, Request $request)
+    public function balance($id)
     {
-        $details = $this->paymentService->getCalculationDetails(
-            $supplier->id,
-            $request->from_date,
-            $request->to_date
-        );
+        $supplier = Supplier::findOrFail($id);
+        $calculationService = new \App\Services\PaymentCalculationService;
 
-        return response()->json($details);
+        $balance = $calculationService->getSupplierBalance($id);
+
+        return response()->json($balance);
     }
 }

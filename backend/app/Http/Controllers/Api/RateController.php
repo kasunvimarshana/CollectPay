@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Rate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class RateController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Rate::with(['product', 'supplier']);
+        $query = Rate::with('product');
 
         if ($request->has('product_id')) {
             $query->where('product_id', $request->product_id);
@@ -20,94 +21,115 @@ class RateController extends Controller
             $query->where('supplier_id', $request->supplier_id);
         }
 
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
+        if ($request->has('current_only') && $request->current_only) {
+            $query->where('valid_from', '<=', now())
+                ->where(function ($q) {
+                    $q->whereNull('valid_to')
+                        ->orWhere('valid_to', '>=', now());
+                })
+                ->orderBy('valid_from', 'desc');
         }
 
-        if ($request->has('effective_date')) {
-            $date = $request->effective_date;
-            $query->where('effective_from', '<=', $date)
-                ->where(function ($q) use ($date) {
-                    $q->whereNull('effective_to')
-                        ->orWhere('effective_to', '>=', $date);
-                });
-        }
-
-        $rates = $query->orderBy('effective_from', 'desc')->paginate(50);
+        $rates = $query->get();
 
         return response()->json($rates);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'product_id' => 'required|exists:products,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
-            'rate' => 'required|numeric|min:0.01',
-            'effective_from' => 'required|date',
-            'effective_to' => 'nullable|date|after:effective_from',
-            'is_active' => 'nullable|boolean',
-            'applied_scope' => 'nullable|in:general,supplier_specific',
+            'rate' => 'required|numeric|min:0',
+            'unit' => 'required|string',
+            'valid_from' => 'required|date',
+            'valid_to' => 'nullable|date|after:valid_from',
+            'is_default' => 'nullable|boolean',
             'notes' => 'nullable|string',
         ]);
 
-        $rate = Rate::create($request->all());
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-        return response()->json($rate->load(['product', 'supplier']), 201);
+        $rate = Rate::create(array_merge($validator->validated(), [
+            'created_by' => auth()->id(),
+        ]));
+
+        return response()->json($rate, 201);
     }
 
-    public function show(Rate $rate)
+    public function show($id)
     {
-        $rate->load(['product', 'supplier']);
+        $rate = Rate::with('product')->findOrFail($id);
 
         return response()->json($rate);
     }
 
-    public function update(Request $request, Rate $rate)
+    public function update(Request $request, $id)
     {
-        $request->validate([
-            'rate' => 'sometimes|numeric|min:0.01',
-            'effective_from' => 'sometimes|date',
-            'effective_to' => 'nullable|date|after:effective_from',
-            'is_active' => 'nullable|boolean',
+        $rate = Rate::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'sometimes|exists:products,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'rate' => 'sometimes|numeric|min:0',
+            'unit' => 'sometimes|string',
+            'valid_from' => 'sometimes|date',
+            'valid_to' => 'nullable|date|after:valid_from',
+            'is_default' => 'nullable|boolean',
             'notes' => 'nullable|string',
         ]);
 
-        $rate->update($request->all());
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-        return response()->json($rate->load(['product', 'supplier']));
+        $rate->update($validator->validated());
+
+        return response()->json($rate);
     }
 
-    public function destroy(Rate $rate)
+    public function destroy($id)
     {
+        $rate = Rate::findOrFail($id);
         $rate->delete();
 
         return response()->json(['message' => 'Rate deleted successfully']);
     }
 
-    /**
-     * Get applicable rate for a specific date and product
-     */
-    public function getApplicable(Request $request)
+    public function getEffectiveRate($productId, Request $request)
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'date' => 'required|date',
-            'supplier_id' => 'nullable|exists:suppliers,id',
-        ]);
+        $date = $request->input('date', now());
+        $supplierId = $request->input('supplier_id');
+        $unit = $request->input('unit');
 
-        $rate = Rate::getApplicableRate(
-            $request->product_id,
-            $request->date,
-            $request->supplier_id
-        );
+        $query = Rate::where('product_id', $productId)
+            ->where('valid_from', '<=', $date)
+            ->where(function ($query) use ($date) {
+                $query->whereNull('valid_to')
+                    ->orWhere('valid_to', '>=', $date);
+            });
 
-        if (!$rate) {
-            return response()->json([
-                'message' => 'No applicable rate found',
-            ], 404);
+        if ($supplierId) {
+            $query->where(function ($q) use ($supplierId) {
+                $q->where('supplier_id', $supplierId)
+                    ->orWhereNull('supplier_id');
+            });
         }
 
-        return response()->json($rate->load(['product', 'supplier']));
+        if ($unit) {
+            $query->where('unit', $unit);
+        }
+
+        $rate = $query->orderBy('supplier_id', 'desc') // Supplier-specific rates first
+            ->orderBy('valid_from', 'desc')
+            ->first();
+
+        if (! $rate) {
+            return response()->json(['message' => 'No rate found for the specified criteria'], 404);
+        }
+
+        return response()->json($rate);
     }
 }

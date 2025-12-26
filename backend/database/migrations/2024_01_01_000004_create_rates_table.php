@@ -10,22 +10,18 @@ return new class extends Migration
     {
         Schema::create('rates', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->foreignId('supplier_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
             $table->decimal('rate', 10, 2);
-            $table->date('effective_from');
-            $table->date('effective_to')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->string('applied_scope')->default('general'); // general, supplier_specific
+            $table->string('unit');
+            $table->timestamp('valid_from');
+            $table->timestamp('valid_to')->nullable();
+            $table->boolean('is_default')->default(false);
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();
-            $table->softDeletes();
-            $table->integer('version')->default(1);
-            
-            $table->index(['product_id', 'effective_from', 'is_active']);
-            $table->index(['supplier_id', 'product_id', 'effective_from']);
+
+            $table->index(['product_id', 'supplier_id', 'valid_from']);
         });
     }
 

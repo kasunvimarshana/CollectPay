@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
 {
@@ -14,38 +14,23 @@ class Payment extends Model
     protected $fillable = [
         'uuid',
         'supplier_id',
-        'payment_type',
         'amount',
-        'payment_date',
-        'payment_time',
+        'payment_type',
         'payment_method',
         'reference_number',
-        'outstanding_before',
-        'outstanding_after',
+        'payment_date',
         'notes',
-        'calculation_details',
-        'processed_by',
+        'metadata',
         'created_by',
-        'updated_by',
-        'version',
+        'device_id',
         'synced_at',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
-        'outstanding_before' => 'decimal:2',
-        'outstanding_after' => 'decimal:2',
-        'payment_date' => 'date',
-        'payment_time' => 'datetime',
-        'calculation_details' => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'metadata' => 'array',
+        'payment_date' => 'datetime',
         'synced_at' => 'datetime',
-    ];
-
-    protected $hidden = [
-        'deleted_at',
+        'amount' => 'decimal:2',
     ];
 
     public function supplier(): BelongsTo
@@ -53,39 +38,24 @@ class Payment extends Model
         return $this->belongsTo(Supplier::class);
     }
 
-    public function processor(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'processed_by');
-    }
-
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater(): BelongsTo
+    public function device(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(Device::class);
     }
 
     protected static function boot()
     {
         parent::boot();
 
-        static::creating(function ($model) {
-            if (auth()->check()) {
-                $model->created_by = auth()->id();
-                if (!$model->processed_by) {
-                    $model->processed_by = auth()->id();
-                }
+        static::creating(function ($payment) {
+            if (empty($payment->uuid)) {
+                $payment->uuid = \Illuminate\Support\Str::uuid();
             }
-        });
-
-        static::updating(function ($model) {
-            if (auth()->check()) {
-                $model->updated_by = auth()->id();
-            }
-            $model->version++;
         });
     }
 }

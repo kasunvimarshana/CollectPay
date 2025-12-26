@@ -10,27 +10,24 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user
-     */
     public function register(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'sometimes|in:admin,manager,collector',
+            'role' => 'sometimes|in:admin,manager,collector,viewer',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role ?? 'collector',
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'] ?? 'collector',
             'is_active' => true,
         ]);
 
-        $token = $user->createToken('mobile-app')->plainTextToken;
+        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
             'user' => $user,
@@ -38,48 +35,53 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Login user
-     */
     public function login(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
-            'device_id' => 'sometimes|string',
+            'device_uuid' => 'sometimes|string',
+            'device_name' => 'sometimes|string',
+            'device_type' => 'sometimes|string',
         ]);
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['Your account is inactive.'],
+                'email' => ['Your account has been deactivated.'],
             ]);
         }
 
-        // Create token with device ID
-        $tokenName = $request->device_id 
-            ? "mobile-app-{$request->device_id}"
-            : 'mobile-app';
+        // Register device if provided
+        $device = null;
+        if ($request->has('device_uuid')) {
+            $device = \App\Models\Device::updateOrCreate(
+                ['device_uuid' => $request->device_uuid],
+                [
+                    'device_name' => $request->device_name ?? 'Unknown Device',
+                    'device_type' => $request->device_type ?? 'unknown',
+                    'user_id' => $user->id,
+                    'is_active' => true,
+                ]
+            );
+        }
 
-        $token = $user->createToken($tokenName)->plainTextToken;
+        $token = $user->createToken('auth-token', ['*'])->plainTextToken;
 
         return response()->json([
             'user' => $user,
             'token' => $token,
-            'permissions' => $user->permissions ?? [],
+            'device' => $device,
         ]);
     }
 
-    /**
-     * Logout user
-     */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -89,29 +91,10 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Get authenticated user
-     */
     public function me(Request $request)
     {
         return response()->json([
             'user' => $request->user(),
-            'permissions' => $request->user()->permissions ?? [],
-        ]);
-    }
-
-    /**
-     * Refresh token
-     */
-    public function refresh(Request $request)
-    {
-        $user = $request->user();
-        $request->user()->currentAccessToken()->delete();
-
-        $token = $user->createToken('mobile-app')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
         ]);
     }
 }

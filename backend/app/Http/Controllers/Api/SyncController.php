@@ -3,119 +3,103 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SyncBatchRequest;
 use App\Services\SyncService;
-use App\Services\AuditService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class SyncController extends Controller
 {
     private SyncService $syncService;
-    private AuditService $auditService;
 
-    public function __construct(SyncService $syncService, AuditService $auditService)
+    public function __construct(SyncService $syncService)
     {
         $this->syncService = $syncService;
-        $this->auditService = $auditService;
     }
 
-    /**
-     * Process sync batch from client
-     */
-    public function sync(SyncBatchRequest $request)
+    public function syncTransactions(Request $request)
     {
-        try {
-            $results = $this->syncService->processSyncBatch(
-                $request->sync_data,
-                $request->user(),
-                $request->device_id
-            );
-
-            return response()->json([
-                'status' => 'success',
-                'results' => $results,
-                'server_timestamp' => now()->toIso8601String(),
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Sync failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Sync failed: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Get changes since last sync
-     */
-    public function pullChanges(Request $request)
-    {
-        $request->validate([
-            'since' => 'required|date',
+        $validated = $request->validate([
+            'device_id' => 'required|integer|exists:devices,id',
+            'transactions' => 'required|array',
+            'transactions.*.uuid' => 'required|string',
+            'transactions.*.supplier_id' => 'required|integer',
+            'transactions.*.product_id' => 'required|integer',
+            'transactions.*.quantity' => 'required|numeric',
+            'transactions.*.unit' => 'required|string',
+            'transactions.*.rate' => 'required|numeric',
+            'transactions.*.amount' => 'required|numeric',
+            'transactions.*.transaction_date' => 'required|date',
         ]);
 
-        try {
-            $changes = $this->syncService->getChangesSince(
-                $request->since,
-                $request->user()
-            );
+        $results = $this->syncService->syncTransactions(
+            $validated['transactions'],
+            $validated['device_id']
+        );
 
-            return response()->json([
-                'status' => 'success',
-                'changes' => $changes,
-                'server_timestamp' => now()->toIso8601String(),
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Pull changes failed', [
-                'error' => $e->getMessage(),
-            ]);
+        $this->syncService->updateDeviceSync($validated['device_id']);
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to pull changes: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json($results);
     }
 
-    /**
-     * Get full sync data (for initial sync or recovery)
-     */
-    public function fullSync(Request $request)
+    public function syncPayments(Request $request)
     {
-        try {
-            $data = $this->syncService->getFullSyncData($request->user());
+        $validated = $request->validate([
+            'device_id' => 'required|integer|exists:devices,id',
+            'payments' => 'required|array',
+            'payments.*.uuid' => 'required|string',
+            'payments.*.supplier_id' => 'required|integer',
+            'payments.*.amount' => 'required|numeric',
+            'payments.*.payment_type' => 'required|in:advance,partial,full,adjustment',
+            'payments.*.payment_method' => 'required|string',
+            'payments.*.payment_date' => 'required|date',
+        ]);
 
-            return response()->json([
-                'status' => 'success',
-                'data' => $data,
-                'server_timestamp' => now()->toIso8601String(),
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Full sync failed', [
-                'error' => $e->getMessage(),
-            ]);
+        $results = $this->syncService->syncPayments(
+            $validated['payments'],
+            $validated['device_id']
+        );
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Full sync failed: ' . $e->getMessage(),
-            ], 500);
-        }
+        $this->syncService->updateDeviceSync($validated['device_id']);
+
+        return response()->json($results);
     }
 
-    /**
-     * Check sync status
-     */
-    public function status(Request $request)
+    public function getUpdates(Request $request)
     {
+        $validated = $request->validate([
+            'device_id' => 'required|integer|exists:devices,id',
+            'last_sync' => 'sometimes|date',
+        ]);
+
+        $lastSync = $validated['last_sync'] ?? null;
+        $deviceId = $validated['device_id'];
+
+        $transactions = \App\Models\Transaction::when($lastSync, function ($query) use ($lastSync) {
+            return $query->where('updated_at', '>', $lastSync);
+        })->where('device_id', '!=', $deviceId)->get();
+
+        $payments = \App\Models\Payment::when($lastSync, function ($query) use ($lastSync) {
+            return $query->where('updated_at', '>', $lastSync);
+        })->where('device_id', '!=', $deviceId)->get();
+
+        $suppliers = \App\Models\Supplier::when($lastSync, function ($query) use ($lastSync) {
+            return $query->where('updated_at', '>', $lastSync);
+        })->get();
+
+        $products = \App\Models\Product::when($lastSync, function ($query) use ($lastSync) {
+            return $query->where('updated_at', '>', $lastSync);
+        })->get();
+
+        $rates = \App\Models\Rate::when($lastSync, function ($query) use ($lastSync) {
+            return $query->where('updated_at', '>', $lastSync);
+        })->get();
+
         return response()->json([
-            'status' => 'online',
-            'server_time' => now()->toIso8601String(),
-            'user_id' => $request->user()->id,
+            'transactions' => $transactions,
+            'payments' => $payments,
+            'suppliers' => $suppliers,
+            'products' => $products,
+            'rates' => $rates,
+            'sync_timestamp' => now()->toDateTimeString(),
         ]);
     }
 }
