@@ -2,6 +2,27 @@
 
 Complete REST API reference for TrackVault backend.
 
+## 🚀 Interactive Documentation
+
+**✨ NEW: Swagger/OpenAPI Documentation Available!**
+
+Access the interactive Swagger UI for hands-on API exploration:
+
+```
+http://localhost:8000/api/documentation
+```
+
+Features:
+- 🔍 Browse all endpoints with detailed schemas
+- 🧪 Test endpoints directly from your browser
+- 🔐 Built-in authentication support
+- 📥 Export OpenAPI specification
+- 📖 Always up-to-date with the codebase
+
+See **[SWAGGER.md](SWAGGER.md)** for complete Swagger documentation guide.
+
+---
+
 ## Base URL
 
 ```

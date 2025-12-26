@@ -10,6 +10,69 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/payments",
+     *     tags={"Payments"},
+     *     summary="List all payments",
+     *     description="Get paginated list of payments with filtering and sorting",
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="supplier_id",
+     *         in="query",
+     *         description="Filter by supplier ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="payment_type",
+     *         in="query",
+     *         description="Filter by payment type",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"advance","partial","full"})
+     *     ),
+     *     @OA\Parameter(
+     *         name="from_date",
+     *         in="query",
+     *         description="Filter from date (YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="to_date",
+     *         in="query",
+     *         description="Filter to date (YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort by field",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"payment_date","amount","payment_type","created_at","updated_at"}, default="payment_date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Results per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation"
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function index(Request $request)
     {
         $query = Payment::with(['supplier', 'user']);
@@ -47,6 +110,35 @@ class PaymentController extends Controller
         return response()->json($payments);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/payments",
+     *     tags={"Payments"},
+     *     summary="Create a new payment",
+     *     description="Create a new payment record",
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"supplier_id","payment_date","amount","payment_type"},
+     *             @OA\Property(property="supplier_id", type="integer", example=1),
+     *             @OA\Property(property="payment_date", type="string", format="date", example="2025-12-25"),
+     *             @OA\Property(property="amount", type="number", minimum=0.01, example=5000.00),
+     *             @OA\Property(property="payment_type", type="string", enum={"advance","partial","full"}, example="partial"),
+     *             @OA\Property(property="payment_method", type="string", maxLength=100, example="Bank Transfer"),
+     *             @OA\Property(property="reference_number", type="string", maxLength=255, example="PAY-001"),
+     *             @OA\Property(property="notes", type="string"),
+     *             @OA\Property(property="metadata", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Payment created successfully"
+     *     ),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([

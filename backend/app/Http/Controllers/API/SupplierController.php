@@ -9,6 +9,84 @@ use Illuminate\Support\Facades\DB;
 
 class SupplierController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/suppliers",
+     *     tags={"Suppliers"},
+     *     summary="List all suppliers",
+     *     description="Get paginated list of suppliers with optional search, filter, and sorting",
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Search by name, code, or email",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="is_active",
+     *         in="query",
+     *         description="Filter by active status",
+     *         required=false,
+     *         @OA\Schema(type="boolean")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort by field",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"name","code","created_at","updated_at"}, default="name")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="asc")
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Results per page (max: 100)",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="include_balance",
+     *         in="query",
+     *         description="Include balance information",
+     *         required=false,
+     *         @OA\Schema(type="boolean", default=false)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array", @OA\Items(
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="code", type="string"),
+     *                 @OA\Property(property="address", type="string"),
+     *                 @OA\Property(property="phone", type="string"),
+     *                 @OA\Property(property="email", type="string"),
+     *                 @OA\Property(property="is_active", type="boolean"),
+     *                 @OA\Property(property="version", type="integer")
+     *             )),
+     *             @OA\Property(property="current_page", type="integer"),
+     *             @OA\Property(property="per_page", type="integer"),
+     *             @OA\Property(property="total", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function index(Request $request)
     {
         $query = Supplier::query();
@@ -53,6 +131,41 @@ class SupplierController extends Controller
         return response()->json($suppliers);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/suppliers",
+     *     tags={"Suppliers"},
+     *     summary="Create a new supplier",
+     *     description="Create a new supplier record",
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name","code"},
+     *             @OA\Property(property="name", type="string", maxLength=255, example="Green Valley Farms"),
+     *             @OA\Property(property="code", type="string", maxLength=255, example="SUP-001"),
+     *             @OA\Property(property="address", type="string", example="123 Valley Road, Kandy"),
+     *             @OA\Property(property="phone", type="string", maxLength=50, example="+94771234567"),
+     *             @OA\Property(property="email", type="string", format="email", example="greenvalley@example.com"),
+     *             @OA\Property(property="metadata", type="object"),
+     *             @OA\Property(property="is_active", type="boolean", default=true)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Supplier created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer"),
+     *             @OA\Property(property="name", type="string"),
+     *             @OA\Property(property="code", type="string"),
+     *             @OA\Property(property="is_active", type="boolean"),
+     *             @OA\Property(property="version", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([

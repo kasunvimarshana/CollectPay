@@ -141,9 +141,6 @@ const PaymentsScreen = () => {
       loadPayments(true);
     }
   };
-      setIsRefreshing(false);
-    }
-  };
 
   const loadSuppliers = async () => {
     try {

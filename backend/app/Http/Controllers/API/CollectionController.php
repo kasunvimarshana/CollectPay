@@ -10,6 +10,81 @@ use Illuminate\Support\Facades\DB;
 
 class CollectionController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/collections",
+     *     tags={"Collections"},
+     *     summary="List all collections",
+     *     description="Get paginated list of collections with filtering and sorting",
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="supplier_id",
+     *         in="query",
+     *         description="Filter by supplier ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="product_id",
+     *         in="query",
+     *         description="Filter by product ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="from_date",
+     *         in="query",
+     *         description="Filter from date (YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="to_date",
+     *         in="query",
+     *         description="Filter to date (YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort by field",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"collection_date","quantity","total_amount","created_at","updated_at"}, default="collection_date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Results per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array", @OA\Items(
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="supplier_id", type="integer"),
+     *                 @OA\Property(property="product_id", type="integer"),
+     *                 @OA\Property(property="collection_date", type="string", format="date"),
+     *                 @OA\Property(property="quantity", type="number"),
+     *                 @OA\Property(property="unit", type="string"),
+     *                 @OA\Property(property="rate_applied", type="number"),
+     *                 @OA\Property(property="total_amount", type="number")
+     *             ))
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function index(Request $request)
     {
         $query = Collection::with(['supplier', 'product', 'user', 'productRate']);
@@ -47,6 +122,44 @@ class CollectionController extends Controller
         return response()->json($collections);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/collections",
+     *     tags={"Collections"},
+     *     summary="Create a new collection",
+     *     description="Create a new collection record. Rate and total amount are calculated automatically.",
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"supplier_id","product_id","collection_date","quantity","unit"},
+     *             @OA\Property(property="supplier_id", type="integer", example=1),
+     *             @OA\Property(property="product_id", type="integer", example=1),
+     *             @OA\Property(property="collection_date", type="string", format="date", example="2025-12-25"),
+     *             @OA\Property(property="quantity", type="number", minimum=0.001, example=50.5),
+     *             @OA\Property(property="unit", type="string", maxLength=50, example="kg"),
+     *             @OA\Property(property="notes", type="string", example="Afternoon collection"),
+     *             @OA\Property(property="metadata", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Collection created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer"),
+     *             @OA\Property(property="supplier_id", type="integer"),
+     *             @OA\Property(property="product_id", type="integer"),
+     *             @OA\Property(property="collection_date", type="string", format="date"),
+     *             @OA\Property(property="quantity", type="number"),
+     *             @OA\Property(property="unit", type="string"),
+     *             @OA\Property(property="rate_applied", type="number", description="Automatically applied rate"),
+     *             @OA\Property(property="total_amount", type="number", description="Calculated as quantity * rate_applied")
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
