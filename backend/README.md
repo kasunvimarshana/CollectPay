@@ -1,59 +1,190 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# TrackVault Backend API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 11 backend API for the TrackVault Data Collection and Payment Management System.
 
-## About Laravel
+## Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This backend provides a RESTful API for managing:
+- Users with role-based access control (Admin, Collector, Finance)
+- Suppliers with detailed profiles
+- Products with versioned rates and multi-unit support
+- Collections with automated rate application
+- Payments with automated calculations
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Authentication**: Laravel Sanctum token-based authentication
+- **Authorization**: Role-based (RBAC) and attribute-based (ABAC) access control
+- **Data Integrity**: Version-based concurrency control to prevent conflicts
+- **Multi-unit Support**: Handle quantities in different units (kg, g, liters, etc.)
+- **Rate Versioning**: Historical rate preservation with automatic application
+- **Automated Calculations**: Automatic payment calculations based on collections and rates
+- **Audit Trail**: Soft deletes and version tracking for all entities
 
-## Learning Laravel
+## Prerequisites
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- PHP 8.2 or higher
+- Composer
+- SQLite (default) or MySQL/PostgreSQL
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Installation
 
-## Laravel Sponsors
+1. Install dependencies:
+```bash
+composer install
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+2. Copy environment file:
+```bash
+cp .env.example .env
+```
 
-### Premium Partners
+3. Generate application key:
+```bash
+php artisan key:generate
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+4. Run database migrations:
+```bash
+php artisan migrate
+```
 
-## Contributing
+5. Seed the database with sample users:
+```bash
+php artisan db:seed
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+This creates three default users:
+- Admin: `admin@trackvault.com` / `password`
+- Collector: `collector@trackvault.com` / `password`
+- Finance: `finance@trackvault.com` / `password`
 
-## Code of Conduct
+## Running the Application
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Start the development server:
+```bash
+php artisan serve
+```
 
-## Security Vulnerabilities
+The API will be available at `http://localhost:8000/api`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## API Documentation
+
+### Authentication
+
+**Register**
+```
+POST /api/auth/register
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password",
+  "password_confirmation": "password",
+  "role": "collector"
+}
+```
+
+**Login**
+```
+POST /api/auth/login
+{
+  "email": "admin@trackvault.com",
+  "password": "password"
+}
+```
+
+**Logout**
+```
+POST /api/auth/logout
+Headers: Authorization: Bearer {token}
+```
+
+**Get Current User**
+```
+GET /api/auth/me
+Headers: Authorization: Bearer {token}
+```
+
+### Resources
+
+All resource endpoints require authentication via `Authorization: Bearer {token}` header.
+
+**Suppliers**
+- `GET /api/suppliers` - List suppliers
+- `POST /api/suppliers` - Create supplier
+- `GET /api/suppliers/{id}` - Get supplier
+- `PUT /api/suppliers/{id}` - Update supplier
+- `DELETE /api/suppliers/{id}` - Delete supplier
+
+**Products**
+- `GET /api/products` - List products
+- `POST /api/products` - Create product
+- `GET /api/products/{id}` - Get product
+- `PUT /api/products/{id}` - Update product
+- `DELETE /api/products/{id}` - Delete product
+
+**Product Rates**
+- `GET /api/product-rates` - List rates
+- `POST /api/product-rates` - Create rate
+- `GET /api/product-rates/{id}` - Get rate
+- `PUT /api/product-rates/{id}` - Update rate
+- `DELETE /api/product-rates/{id}` - Delete rate
+
+**Collections**
+- `GET /api/collections` - List collections
+- `POST /api/collections` - Create collection
+- `GET /api/collections/{id}` - Get collection
+- `PUT /api/collections/{id}` - Update collection
+- `DELETE /api/collections/{id}` - Delete collection
+
+**Payments**
+- `GET /api/payments` - List payments
+- `POST /api/payments` - Create payment
+- `GET /api/payments/{id}` - Get payment
+- `PUT /api/payments/{id}` - Update payment
+- `DELETE /api/payments/{id}` - Delete payment
+- `GET /api/suppliers/{id}/balance` - Get supplier balance
+
+## Database Schema
+
+### Key Tables
+
+- **users**: System users with roles and permissions
+- **suppliers**: Supplier profiles with contact information
+- **products**: Products with multi-unit support
+- **product_rates**: Versioned rates for products by unit and date
+- **collections**: Daily collection records with quantities and calculated amounts
+- **payments**: Payment records (advance, partial, full)
+
+### Version Control
+
+All entities include a `version` field for optimistic locking to prevent concurrent update conflicts.
+
+## Testing
+
+Run the test suite:
+```bash
+php artisan test
+```
+
+## Architecture
+
+The backend follows Clean Architecture principles:
+- **Models**: Domain entities with business logic
+- **Controllers**: API endpoints with validation
+- **Migrations**: Database schema definitions
+- **Policies**: Authorization rules (future implementation)
+
+## Security
+
+- API authentication via Laravel Sanctum tokens
+- Password hashing with bcrypt
+- HTTPS required for production
+- Role-based access control
+- Version-based concurrency control
+- Input validation on all endpoints
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License
+

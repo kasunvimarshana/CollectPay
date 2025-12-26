@@ -1,177 +1,118 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Services\PaymentService;
-use Illuminate\Http\JsonResponse;
+use App\Models\Payment;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
-    protected PaymentService $service;
-
-    public function __construct()
+    public function index(Request $request)
     {
-        $this->service = new PaymentService();
+        $query = Payment::with(['supplier', 'user']);
+
+        if ($request->has('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->has('payment_type')) {
+            $query->where('payment_type', $request->payment_type);
+        }
+
+        if ($request->has('from_date')) {
+            $query->where('payment_date', '>=', $request->from_date);
+        }
+
+        if ($request->has('to_date')) {
+            $query->where('payment_date', '<=', $request->to_date);
+        }
+
+        $perPage = $request->get('per_page', 15);
+        $payments = $query->orderBy('payment_date', 'desc')->paginate($perPage);
+
+        return response()->json($payments);
     }
 
-    public function index(Request $request): JsonResponse
+    public function store(Request $request)
     {
-        $filters = [];
-        if ($request->has('collection_id')) {
-            $filters['collection_id'] = $request->get('collection_id');
-        }
-        if ($request->has('status')) {
-            $filters['status'] = $request->get('status');
-        }
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'payment_date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01',
+            'payment_type' => 'required|in:advance,partial,full',
+            'payment_method' => 'nullable|string|max:100',
+            'reference_number' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'metadata' => 'nullable|array',
+        ]);
 
-        $payments = $this->service->getAll(
-            $request->get('page', 1),
-            $request->get('limit', 20),
-            $filters
-        );
+        $payment = DB::transaction(function () use ($validated, $request) {
+            $validated['user_id'] = $request->user()->id;
+            return Payment::create($validated);
+        });
+
+        return response()->json($payment->load(['supplier', 'user']), 201);
+    }
+
+    public function show(string $id)
+    {
+        $payment = Payment::with(['supplier', 'user'])->findOrFail($id);
+        return response()->json($payment);
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $payment = Payment::findOrFail($id);
+
+        $validated = $request->validate([
+            'supplier_id' => 'sometimes|required|exists:suppliers,id',
+            'payment_date' => 'sometimes|required|date',
+            'amount' => 'sometimes|required|numeric|min:0.01',
+            'payment_type' => 'sometimes|required|in:advance,partial,full',
+            'payment_method' => 'nullable|string|max:100',
+            'reference_number' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'metadata' => 'nullable|array',
+            'version' => 'required|integer',
+        ]);
+
+        DB::transaction(function () use ($payment, $validated) {
+            if ($payment->version != $validated['version']) {
+                throw new \Exception('Version mismatch. Please refresh and try again.');
+            }
+
+            $validated['version'] = $payment->version + 1;
+            $payment->update($validated);
+        });
+
+        return response()->json($payment->load(['supplier', 'user']));
+    }
+
+    public function destroy(string $id)
+    {
+        $payment = Payment::findOrFail($id);
+        $payment->delete();
+
+        return response()->json(['message' => 'Payment deleted successfully']);
+    }
+
+    public function getSupplierBalance(string $supplierId)
+    {
+        $supplier = Supplier::findOrFail($supplierId);
+
+        $totalCollections = $supplier->getTotalCollectionsAmount();
+        $totalPayments = $supplier->getTotalPaymentsAmount();
+        $balance = $supplier->getBalanceAmount();
 
         return response()->json([
-            'success' => true,
-            'data' => $payments->items(),
-            'pagination' => [
-                'total' => $payments->total(),
-                'per_page' => $payments->perPage(),
-                'current_page' => $payments->currentPage(),
-                'last_page' => $payments->lastPage(),
-            ],
+            'supplier_id' => $supplier->id,
+            'supplier_name' => $supplier->name,
+            'total_collections' => $totalCollections,
+            'total_payments' => $totalPayments,
+            'balance' => $balance,
         ]);
-    }
-
-    public function store(Request $request): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'collection_id' => 'required|exists:collections,id',
-                'rate_id' => 'nullable|exists:rates,id',
-                'payer_id' => 'required|exists:users,id',
-                'amount' => 'required|numeric|min:0.01',
-                'currency' => 'required|string|size:3',
-                'status' => 'sometimes|in:pending,completed,failed',
-                'payment_method' => 'required|in:cash,card,transfer,check',
-                'payment_date' => 'required|date',
-                'notes' => 'nullable|string',
-                'metadata' => 'nullable|json',
-            ]);
-
-            $payment = $this->service->create(
-                $validated,
-                $request->user()->id,
-                $request->header('X-Device-ID')
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment created successfully',
-                'data' => $payment,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-    }
-
-    public function batch(Request $request): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'payments' => 'required|array|min:1',
-                'payments.*.collection_id' => 'required|exists:collections,id',
-                'payments.*.payer_id' => 'required|exists:users,id',
-                'payments.*.amount' => 'required|numeric|min:0.01',
-                'payments.*.currency' => 'required|string|size:3',
-                'payments.*.payment_method' => 'required|in:cash,card,transfer,check',
-                'payments.*.payment_date' => 'required|date',
-            ]);
-
-            $results = $this->service->batchCreate(
-                $validated['payments'],
-                $request->user()->id,
-                $request->header('X-Device-ID')
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Batch processing completed',
-                'results' => $results,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-    }
-
-    public function show(string $uuid): JsonResponse
-    {
-        try {
-            $payment = $this->service->getById($uuid);
-
-            return response()->json([
-                'success' => true,
-                'data' => $payment,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 404);
-        }
-    }
-
-    public function update(Request $request, string $uuid): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'amount' => 'sometimes|numeric|min:0.01',
-                'status' => 'sometimes|in:pending,completed,failed',
-                'payment_method' => 'sometimes|in:cash,card,transfer,check',
-                'notes' => 'nullable|string',
-                'metadata' => 'nullable|json',
-            ]);
-
-            $payment = $this->service->update(
-                $uuid,
-                $validated,
-                $request->user()->id
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment updated successfully',
-                'data' => $payment,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-    }
-
-    public function destroy(Request $request, string $uuid): JsonResponse
-    {
-        try {
-            $this->service->delete($uuid, $request->user()->id);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment deleted successfully',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
     }
 }

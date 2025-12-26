@@ -6,13 +6,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -23,8 +22,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'permissions',
         'is_active',
-        'metadata',
     ];
 
     /**
@@ -47,101 +47,28 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'permissions' => 'array',
             'is_active' => 'boolean',
-            'metadata' => 'json',
         ];
     }
 
-    /**
-     * Get the roles assigned to this user.
-     */
-    public function roles(): BelongsToMany
+    public function collections()
     {
-        return $this->belongsToMany(Role::class, 'role_user');
+        return $this->hasMany(Collection::class);
     }
 
-    /**
-     * Get the tokens for this user.
-     */
-    public function tokens(): HasMany
+    public function payments()
     {
-        return $this->hasMany(\Laravel\Sanctum\PersonalAccessToken::class);
+        return $this->hasMany(Payment::class);
     }
 
-    /**
-     * Get the collections created by this user.
-     */
-    public function createdCollections(): HasMany
-    {
-        return $this->hasMany(Collection::class, 'created_by');
-    }
-
-    /**
-     * Get the payments created by this user.
-     */
-    public function createdPayments(): HasMany
-    {
-        return $this->hasMany(Payment::class, 'created_by');
-    }
-
-    /**
-     * Get the audit logs for this user.
-     */
-    public function auditLogs(): HasMany
-    {
-        return $this->hasMany(AuditLog::class);
-    }
-
-    /**
-     * Check if user has a specific role.
-     */
-    public function hasRole(string $role): bool
-    {
-        return $this->roles()->where('name', $role)->exists();
-    }
-
-    /**
-     * Check if user has any of the given roles.
-     */
-    public function hasAnyRole(array $roles): bool
-    {
-        return $this->roles()->whereIn('name', $roles)->exists();
-    }
-
-    /**
-     * Check if user has all of the given roles.
-     */
-    public function hasAllRoles(array $roles): bool
-    {
-        return $this->roles()->whereIn('name', $roles)->count() === count($roles);
-    }
-
-    /**
-     * Check if user has a specific permission.
-     */
     public function hasPermission(string $permission): bool
     {
-        return $this->roles()
-            ->with('permissions')
-            ->get()
-            ->flatMap->permissions
-            ->unique('name')
-            ->where('name', $permission)
-            ->count() > 0;
-    }
+        if ($this->role === 'admin') {
+            return true;
+        }
 
-    /**
-     * Check if user has any of the given permissions.
-     */
-    public function hasAnyPermission(array $permissions): bool
-    {
-        $userPermissions = $this->roles()
-            ->with('permissions')
-            ->get()
-            ->flatMap->permissions
-            ->unique('name')
-            ->pluck('name');
-
-        return count(array_intersect($permissions, $userPermissions->toArray())) > 0;
+        $permissions = $this->permissions ?? [];
+        return in_array($permission, $permissions);
     }
 }

@@ -3,75 +3,79 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Collection extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
-        'uuid',
-        'name',
-        'description',
-        'created_by',
-        'updated_by',
-        'status',
+        'supplier_id',
+        'product_id',
+        'user_id',
+        'product_rate_id',
+        'collection_date',
+        'quantity',
+        'unit',
+        'rate_applied',
+        'total_amount',
+        'notes',
         'metadata',
         'version',
-        'synced_at',
-        'device_id',
     ];
 
     protected $casts = [
-        'metadata' => 'json',
-        'synced_at' => 'datetime',
+        'collection_date' => 'date',
+        'quantity' => 'decimal:3',
+        'rate_applied' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+        'metadata' => 'array',
     ];
 
-    protected $hidden = [];
-
-    /**
-     * Get the user who created this collection.
-     */
-    public function creator(): BelongsTo
+    public function supplier(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(Supplier::class);
     }
 
-    /**
-     * Get the user who last updated this collection.
-     */
-    public function updater(): BelongsTo
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(Product::class);
     }
 
-    /**
-     * Get all payments associated with this collection.
-     */
-    public function payments(): HasMany
+    public function user(): BelongsTo
     {
-        return $this->hasMany(Payment::class);
+        return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get all rates associated with this collection.
-     */
-    public function rates(): HasMany
+    public function productRate(): BelongsTo
     {
-        return $this->hasMany(Rate::class);
+        return $this->belongsTo(ProductRate::class);
     }
 
-    /**
-     * Get modified collections since a given timestamp.
-     */
-    public function scopeModifiedSince($query, ?\DateTime $timestamp)
+    protected static function boot()
     {
-        if ($timestamp) {
-            return $query->where('updated_at', '>=', $timestamp);
-        }
-        return $query;
+        parent::boot();
+
+        static::creating(function ($collection) {
+            if (!$collection->rate_applied && $collection->product_id && $collection->unit) {
+                $rate = Product::find($collection->product_id)
+                    ->getCurrentRate($collection->unit, $collection->collection_date);
+                if ($rate) {
+                    $collection->rate_applied = $rate->rate;
+                    $collection->product_rate_id = $rate->id;
+                }
+            }
+            
+            if ($collection->quantity && $collection->rate_applied) {
+                $collection->total_amount = $collection->quantity * $collection->rate_applied;
+            }
+        });
+
+        static::updating(function ($collection) {
+            if ($collection->quantity && $collection->rate_applied) {
+                $collection->total_amount = $collection->quantity * $collection->rate_applied;
+            }
+        });
     }
 }

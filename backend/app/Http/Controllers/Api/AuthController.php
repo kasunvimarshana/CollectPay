@@ -1,90 +1,86 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Services\AuthenticationService;
-use App\Http\Requests\Auth\LoginRequest;
-use App\Http\Requests\Auth\RegisterRequest;
-use Illuminate\Http\JsonResponse;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    protected AuthenticationService $authService;
-
-    public function __construct()
+    public function register(Request $request)
     {
-        $this->authService = new AuthenticationService();
-    }
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
-    /**
-     * Register a new user.
-     */
-    public function register(RegisterRequest $request): JsonResponse
-    {
-        try {
-            $user = $this->authService->register($request->validated());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'User registered successfully',
-                'user' => $user,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
+        // Only admins can create other admins, default role is collector
+        $role = 'collector';
+        if ($request->user() && $request->user()->role === 'admin' && $request->has('role')) {
+            $role = $request->input('role');
         }
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $role,
+            'is_active' => true,
+        ]);
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+        ], 201);
     }
 
-    /**
-     * Login user and get token.
-     */
-    public function login(LoginRequest $request): JsonResponse
+    public function login(Request $request)
     {
-        try {
-            $result = $this->authService->login(
-                $request->email,
-                $request->password
-            );
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Login successful',
-                'user' => $result['user'],
-                'token' => $result['token'],
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
             ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 401);
         }
-    }
 
-    /**
-     * Get current user.
-     */
-    public function user(Request $request): JsonResponse
-    {
+        if (!$user->is_active) {
+            throw ValidationException::withMessages([
+                'email' => ['This account is inactive.'],
+            ]);
+        }
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
         return response()->json([
-            'success' => true,
-            'user' => $this->authService->getUser($request->user()),
+            'user' => $user,
+            'token' => $token,
         ]);
     }
 
-    /**
-     * Logout user.
-     */
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request)
     {
-        $this->authService->logout($request->user());
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'success' => true,
-            'message' => 'Logout successful',
+            'message' => 'Logged out successfully',
         ]);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
     }
 }

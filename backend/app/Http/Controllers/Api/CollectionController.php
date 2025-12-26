@@ -1,145 +1,130 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Services\CollectionService;
-use Illuminate\Http\JsonResponse;
+use App\Models\Collection;
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CollectionController extends Controller
 {
-    protected CollectionService $service;
-
-    public function __construct()
+    public function index(Request $request)
     {
-        $this->service = new CollectionService();
+        $query = Collection::with(['supplier', 'product', 'user', 'productRate']);
+
+        if ($request->has('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->has('product_id')) {
+            $query->where('product_id', $request->product_id);
+        }
+
+        if ($request->has('from_date')) {
+            $query->where('collection_date', '>=', $request->from_date);
+        }
+
+        if ($request->has('to_date')) {
+            $query->where('collection_date', '<=', $request->to_date);
+        }
+
+        $perPage = $request->get('per_page', 15);
+        $collections = $query->orderBy('collection_date', 'desc')->paginate($perPage);
+
+        return response()->json($collections);
     }
 
-    public function index(Request $request): JsonResponse
+    public function store(Request $request)
     {
-        $collections = $this->service->getAll(
-            $request->get('page', 1),
-            $request->get('limit', 20)
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => $collections->items(),
-            'pagination' => [
-                'total' => $collections->total(),
-                'per_page' => $collections->perPage(),
-                'current_page' => $collections->currentPage(),
-                'last_page' => $collections->lastPage(),
-            ],
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'product_id' => 'required|exists:products,id',
+            'collection_date' => 'required|date',
+            'quantity' => 'required|numeric|min:0.001',
+            'unit' => 'required|string|max:50',
+            'notes' => 'nullable|string',
+            'metadata' => 'nullable|array',
         ]);
+
+        $collection = DB::transaction(function () use ($validated, $request) {
+            $product = Product::findOrFail($validated['product_id']);
+            $rate = $product->getCurrentRate($validated['unit'], $validated['collection_date']);
+
+            if (!$rate) {
+                throw new \Exception('No rate found for this product and unit on the specified date');
+            }
+
+            $validated['user_id'] = $request->user()->id;
+            $validated['product_rate_id'] = $rate->id;
+            $validated['rate_applied'] = $rate->rate;
+            $validated['total_amount'] = $validated['quantity'] * $rate->rate;
+
+            return Collection::create($validated);
+        });
+
+        return response()->json($collection->load(['supplier', 'product', 'user', 'productRate']), 201);
     }
 
-    public function store(Request $request): JsonResponse
+    public function show(string $id)
     {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string',
-                'metadata' => 'nullable|json',
-            ]);
-
-            $collection = $this->service->create(
-                $validated,
-                $request->user()->id,
-                $request->header('X-Device-ID')
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Collection created successfully',
-                'data' => $collection,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        $collection = Collection::with(['supplier', 'product', 'user', 'productRate'])->findOrFail($id);
+        return response()->json($collection);
     }
 
-    public function show(string $uuid): JsonResponse
+    public function update(Request $request, string $id)
     {
-        try {
-            $collection = $this->service->getById($uuid);
+        $collection = Collection::findOrFail($id);
 
-            return response()->json([
-                'success' => true,
-                'data' => $collection,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 404);
-        }
+        $validated = $request->validate([
+            'supplier_id' => 'sometimes|required|exists:suppliers,id',
+            'product_id' => 'sometimes|required|exists:products,id',
+            'collection_date' => 'sometimes|required|date',
+            'quantity' => 'sometimes|required|numeric|min:0.001',
+            'unit' => 'sometimes|required|string|max:50',
+            'notes' => 'nullable|string',
+            'metadata' => 'nullable|array',
+            'version' => 'required|integer',
+        ]);
+
+        DB::transaction(function () use ($collection, $validated, $request) {
+            if ($collection->version != $validated['version']) {
+                throw new \Exception('Version mismatch. Please refresh and try again.');
+            }
+
+            if (isset($validated['product_id']) || isset($validated['unit']) || isset($validated['collection_date'])) {
+                $productId = $validated['product_id'] ?? $collection->product_id;
+                $unit = $validated['unit'] ?? $collection->unit;
+                $date = $validated['collection_date'] ?? $collection->collection_date;
+
+                $product = Product::findOrFail($productId);
+                $rate = $product->getCurrentRate($unit, $date);
+
+                if (!$rate) {
+                    throw new \Exception('No rate found for this product and unit on the specified date');
+                }
+
+                $validated['product_rate_id'] = $rate->id;
+                $validated['rate_applied'] = $rate->rate;
+            }
+
+            if (isset($validated['quantity'])) {
+                $validated['total_amount'] = $validated['quantity'] * ($validated['rate_applied'] ?? $collection->rate_applied);
+            }
+
+            $validated['version'] = $collection->version + 1;
+            $collection->update($validated);
+        });
+
+        return response()->json($collection->load(['supplier', 'product', 'user', 'productRate']));
     }
 
-    public function update(Request $request, string $uuid): JsonResponse
+    public function destroy(string $id)
     {
-        try {
-            $validated = $request->validate([
-                'name' => 'sometimes|string|max:255',
-                'description' => 'nullable|string',
-                'status' => 'sometimes|in:active,inactive,archived',
-                'metadata' => 'nullable|json',
-            ]);
+        $collection = Collection::findOrFail($id);
+        $collection->delete();
 
-            $collection = $this->service->update(
-                $uuid,
-                $validated,
-                $request->user()->id
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Collection updated successfully',
-                'data' => $collection,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-    }
-
-    public function destroy(Request $request, string $uuid): JsonResponse
-    {
-        try {
-            $this->service->delete($uuid, $request->user()->id);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Collection deleted successfully',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-    }
-
-    public function withPaymentSummary(string $uuid): JsonResponse
-    {
-        try {
-            $data = $this->service->getWithPaymentSummary($uuid);
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 404);
-        }
+        return response()->json(['message' => 'Collection deleted successfully']);
     }
 }
