@@ -14,19 +14,13 @@ class ProductRateFactory extends Factory
     {
         return [
             'product_id' => Product::factory(),
-            'rate' => $this->faker->randomFloat(2, 1, 100),
             'unit' => 'kg',
-            'effective_from' => $this->faker->dateTimeBetween('-30 days', 'now'),
-            'effective_to' => null,
+            'rate' => fake()->randomFloat(2, 50, 500),
+            'effective_date' => now()->subDays(rand(1, 30)),
+            'end_date' => null,
             'is_active' => true,
+            'metadata' => null,
+            'version' => 1,
         ];
-    }
-
-    public function inactive()
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_active' => false,
-            'effective_to' => now(),
-        ]);
     }
 }

@@ -22,18 +22,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Include Request ID in Logs
-    |--------------------------------------------------------------------------
-    |
-    | This option controls whether request IDs should be automatically included
-    | in log context. Request IDs help trace requests across the application.
-    |
-    */
-
-    'include_request_id' => env('LOG_INCLUDE_REQUEST_ID', true),
-
-    /*
-    |--------------------------------------------------------------------------
     | Deprecations Log Channel
     |--------------------------------------------------------------------------
     |

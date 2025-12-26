@@ -12,19 +12,14 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->words(3, true),
-            'code' => strtoupper($this->faker->unique()->lexify('PROD???')),
-            'description' => $this->faker->sentence(),
-            'unit' => $this->faker->randomElement(['kg', 'g', 'liters', 'pieces']),
+            'name' => fake()->words(2, true),
+            'code' => 'PROD-' . fake()->unique()->numberBetween(1000, 9999),
+            'description' => fake()->sentence(),
+            'default_unit' => 'kg',
+            'supported_units' => ['kg', 'g'],
+            'metadata' => null,
             'is_active' => true,
-            'version' => 0,
+            'version' => 1,
         ];
-    }
-
-    public function inactive()
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_active' => false,
-        ]);
     }
 }

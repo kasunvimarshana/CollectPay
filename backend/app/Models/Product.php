@@ -14,49 +14,42 @@ class Product extends Model
         'name',
         'code',
         'description',
-        'unit',
+        'default_unit',
+        'supported_units',
+        'metadata',
         'is_active',
-        'version'
+        'version',
     ];
 
     protected $casts = [
+        'supported_units' => 'array',
+        'metadata' => 'array',
         'is_active' => 'boolean',
-        'version' => 'integer'
     ];
 
-    /**
-     * Get rates for this product
-     */
     public function rates(): HasMany
     {
         return $this->hasMany(ProductRate::class);
     }
 
-    /**
-     * Get collections for this product
-     */
     public function collections(): HasMany
     {
         return $this->hasMany(Collection::class);
     }
 
-    /**
-     * Get the current active rate for this product
-     */
-    public function getCurrentRate(string $unit = null)
+    public function getCurrentRate(string $unit, string $date = null): ?ProductRate
     {
-        $query = $this->rates()
+        $date = $date ?? now()->format('Y-m-d');
+        
+        return $this->rates()
+            ->where('unit', $unit)
+            ->where('effective_date', '<=', $date)
+            ->where(function ($query) use ($date) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', $date);
+            })
             ->where('is_active', true)
-            ->where('effective_from', '<=', now())
-            ->where(function($q) {
-                $q->whereNull('effective_to')
-                  ->orWhere('effective_to', '>=', now());
-            });
-
-        if ($unit) {
-            $query->where('unit', $unit);
-        }
-
-        return $query->orderBy('effective_from', 'desc')->first();
+            ->orderBy('effective_date', 'desc')
+            ->first();
     }
 }

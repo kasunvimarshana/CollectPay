@@ -4,7 +4,6 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -12,7 +11,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -24,8 +23,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'permissions',
         'is_active',
-        'version',
     ];
 
     /**
@@ -48,40 +47,28 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'permissions' => 'array',
             'is_active' => 'boolean',
-            'version' => 'integer',
         ];
     }
 
-    /**
-     * Check if user has a specific role
-     */
-    public function hasRole(string $role): bool
+    public function collections()
     {
-        return $this->role === $role;
+        return $this->hasMany(Collection::class);
     }
 
-    /**
-     * Check if user is an admin
-     */
-    public function isAdmin(): bool
+    public function payments()
     {
-        return $this->role === 'admin';
+        return $this->hasMany(Payment::class);
     }
 
-    /**
-     * Check if user is a manager
-     */
-    public function isManager(): bool
+    public function hasPermission(string $permission): bool
     {
-        return $this->role === 'manager';
-    }
+        if ($this->role === 'admin') {
+            return true;
+        }
 
-    /**
-     * Check if user is a collector
-     */
-    public function isCollector(): bool
-    {
-        return $this->role === 'collector';
+        $permissions = $this->permissions ?? [];
+        return in_array($permission, $permissions);
     }
 }

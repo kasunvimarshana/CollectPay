@@ -1,58 +1,56 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user
-     */
     public function register(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'sometimes|in:admin,manager,collector'
         ]);
+
+        // Only admins can create other admins, default role is collector
+        $role = 'collector';
+        if ($request->user() && $request->user()->role === 'admin' && $request->has('role')) {
+            $role = $request->input('role');
+        }
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'collector',
-            'is_active' => true
+            'role' => $role,
+            'is_active' => true,
         ]);
 
-        $tokenName = 'auth-token-' . $request->header('User-Agent', 'unknown-device');
-        $token = $user->createToken($tokenName)->plainTextToken;
+        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'message' => 'User registered successfully',
             'user' => $user,
-            'token' => $token
+            'token' => $token,
         ], 201);
     }
 
-    /**
-     * Login user
-     */
     public function login(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
+        $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -60,39 +58,29 @@ class AuthController extends Controller
 
         if (!$user->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['Your account has been deactivated.'],
+                'email' => ['This account is inactive.'],
             ]);
         }
 
-        $tokenName = 'auth-token-' . $request->header('User-Agent', 'unknown-device');
-        $token = $user->createToken($tokenName)->plainTextToken;
+        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login successful',
             'user' => $user,
-            'token' => $token
+            'token' => $token,
         ]);
     }
 
-    /**
-     * Logout user
-     */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Logged out successfully'
+            'message' => 'Logged out successfully',
         ]);
     }
 
-    /**
-     * Get authenticated user
-     */
-    public function user(Request $request)
+    public function me(Request $request)
     {
-        return response()->json([
-            'user' => $request->user()
-        ]);
+        return response()->json($request->user());
     }
 }

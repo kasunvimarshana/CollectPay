@@ -21,7 +21,8 @@ class Collection extends Model
         'rate_applied',
         'total_amount',
         'notes',
-        'version'
+        'metadata',
+        'version',
     ];
 
     protected $casts = [
@@ -29,48 +30,52 @@ class Collection extends Model
         'quantity' => 'decimal:3',
         'rate_applied' => 'decimal:2',
         'total_amount' => 'decimal:2',
-        'version' => 'integer'
+        'metadata' => 'array',
     ];
 
-    /**
-     * Get the supplier for this collection
-     */
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    /**
-     * Get the product for this collection
-     */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * Get the user who recorded this collection
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the product rate applied to this collection
-     */
     public function productRate(): BelongsTo
     {
         return $this->belongsTo(ProductRate::class);
     }
 
-    /**
-     * Calculate and update the total amount
-     */
-    public function calculateTotal(): void
+    protected static function boot()
     {
-        if ($this->quantity && $this->rate_applied) {
-            $this->total_amount = $this->quantity * $this->rate_applied;
-        }
+        parent::boot();
+
+        static::creating(function ($collection) {
+            if (!$collection->rate_applied && $collection->product_id && $collection->unit) {
+                $rate = Product::find($collection->product_id)
+                    ->getCurrentRate($collection->unit, $collection->collection_date);
+                if ($rate) {
+                    $collection->rate_applied = $rate->rate;
+                    $collection->product_rate_id = $rate->id;
+                }
+            }
+            
+            if ($collection->quantity && $collection->rate_applied) {
+                $collection->total_amount = $collection->quantity * $collection->rate_applied;
+            }
+        });
+
+        static::updating(function ($collection) {
+            if ($collection->quantity && $collection->rate_applied) {
+                $collection->total_amount = $collection->quantity * $collection->rate_applied;
+            }
+        });
     }
 }

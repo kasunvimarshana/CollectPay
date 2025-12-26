@@ -1,33 +1,181 @@
-# Data Collection and Payment Management Application
+# TrackVault - Data Collection and Payment Management System
 
-### Detailed System Specification – Data Collection and Payment Management Application
+> A production-ready, end-to-end data collection and payment management application with React Native (Expo) frontend and Laravel backend.
 
-**Overview:**
-Design and implement a fully functional, production-ready, end-to-end data collection and payment management application using a React Native (Expo) frontend and a Laravel backend. The system must prioritize **data integrity, multi-device support, multi-user access, prevention of data duplication or corruption, and multi-unit management**, providing reliable, accurate, and auditable operations across all modules.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Backend Requirements:**
+## 🎯 Overview
 
-- Act as the **single source of truth**, responsible for authoritative validation, persistence, and conflict resolution.
-- Maintain a **centralized, secure database** for all entities including users, suppliers, products, collections, and payments.
-- Ensure **transactional integrity** and enforce consistent rules for CRUD operations across multiple users and devices.
-- Support **versioning, timestamps, and server-side validation** to preserve data integrity and prevent data corruption or duplication.
-- Implement **role-based (RBAC) and attribute-based access control (ABAC)** to manage authentication and authorization consistently.
+TrackVault is designed for businesses requiring precise tracking of collections, payments, and product rates, with a focus on **data integrity**, **multi-user support**, and **financial accuracy**. Perfect for agricultural collection workflows (tea leaves, produce), supply chain management, and distributed collection/payment operations.
 
-**Frontend Requirements:**
+### Key Features
 
-- Provide a responsive, user-friendly interface that supports **multi-device usage** and simultaneous access by multiple users.
-- Enable full CRUD functionality for users, suppliers, products, collections, and payments.
-- Allow **multi-unit quantity tracking**, time-based and versioned product rates, advance and partial payments, and automated payment calculations based on historical collections and prior transactions.
-- Ensure **accurate, auditable financial oversight**, maintaining historical records immutable while applying the latest valid rates for new entries.
+- ✅ **Multi-User & Multi-Device** - Concurrent operations without conflicts
+- ✅ **Data Integrity** - Version-based concurrency control prevents data corruption
+- ✅ **Multi-Unit Support** - Track quantities in kg, g, liters, custom units
+- ✅ **Versioned Rates** - Historical rate preservation with automatic application
+- ✅ **Automated Calculations** - Real-time payment calculations and balance tracking
+- ✅ **Secure** - End-to-end encryption, token-based auth, RBAC/ABAC
+- ✅ **Clean Architecture** - SOLID, DRY, KISS principles
 
-**Data Integrity and Multi-User Support:**
+## 🚀 Quick Start
 
-- Handle **multi-user, multi-device concurrency** with deterministic conflict detection and resolution.
-- Guarantee **no data loss, no duplication, and no corruption** across all operations.
-- Provide a robust mechanism for **real-time collaboration**, ensuring multiple users can update data simultaneously without overwriting or losing information.
-- Ensure that **multi-unit transactions** (e.g., kilograms, grams, liters) are consistently recorded, calculated, and reported accurately.
+See **[IMPLEMENTATION.md](IMPLEMENTATION.md)** for complete setup instructions.
 
-**Security Requirements:**
+### Backend (Laravel 11)
+
+```bash
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan db:seed
+php artisan serve
+```
+
+### Frontend (React Native + Expo)
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+## 📱 Demo Accounts (Development Only)
+
+| Role      | Email                        | Password   |
+|-----------|------------------------------|------------|
+| Admin     | admin@trackvault.com         | password   |
+| Collector | collector@trackvault.com     | password   |
+| Finance   | finance@trackvault.com       | password   |
+
+## 📖 Documentation
+
+Complete documentation for TrackVault:
+
+### Quick Start
+- **[README.md](README.md)** - This file: Project overview and quick start
+- **[IMPLEMENTATION.md](IMPLEMENTATION.md)** - Complete setup and implementation guide
+- **[SUMMARY.md](SUMMARY.md)** - ✨ Complete implementation summary and status
+
+### Technical Documentation
+- **[API.md](API.md)** - Complete REST API reference with examples
+- **[SECURITY.md](SECURITY.md)** - Security architecture and best practices
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
+
+### Requirements Documentation
+- **[SRS.md](SRS.md)** / **[SRS-01.md](SRS-01.md)** - Software Requirements Specification (IEEE format)
+- **[PRD.md](PRD.md)** / **[PRD-01.md](PRD-01.md)** - Product Requirements Document
+- **[ES.md](ES.md)** / **[ESS.md](ESS.md)** - Executive Summary
+
+### Component Documentation
+- **[backend/README.md](backend/README.md)** - Backend API documentation
+- **[frontend/README.md](frontend/README.md)** - Frontend app documentation
+
+## 🏗️ Architecture
+
+```
+TrackVault/
+├── backend/           # Laravel 11 API
+│   ├── app/Models/    # Eloquent models with business logic
+│   ├── app/Http/Controllers/API/  # RESTful controllers
+│   └── database/migrations/       # Database schema
+├── frontend/          # React Native + Expo
+│   ├── src/api/       # API client & services
+│   ├── src/contexts/  # Global state management
+│   ├── src/navigation/# App navigation
+│   └── src/screens/   # UI screens
+└── docs/             # Project documentation
+```
+
+## 🔧 Core Functionality
+
+### Suppliers
+- Create and manage supplier profiles
+- Track contact information
+- Real-time balance calculation
+
+### Products
+- Multi-unit product support
+- Versioned rate management
+- Historical rate tracking
+
+### Collections
+- Daily collection recording
+- Automatic rate application
+- Multi-unit quantity tracking
+- Calculated amount per collection
+
+### Payments
+- Advance/partial/full payments
+- Automated balance calculation
+- Payment history tracking
+- Supplier reconciliation
+
+## 🛡️ Security
+
+- **Authentication**: Laravel Sanctum token-based
+- **Authorization**: Role-based (RBAC) & attribute-based (ABAC)
+- **Encryption**: Data at rest and in transit (HTTPS)
+- **Storage**: Expo SecureStore for sensitive data
+- **Validation**: Server-side input validation
+- **Concurrency**: Version control prevents race conditions
+- **Audit**: Soft deletes and timestamp tracking
+
+## 🧪 Testing
+
+Backend:
+```bash
+cd backend && php artisan test
+```
+
+Frontend:
+```bash
+cd frontend && npm test
+```
+
+## 📦 Technology Stack
+
+| Component | Technology |
+|-----------|------------|
+| Backend Framework | Laravel 11 |
+| Frontend Framework | React Native + Expo |
+| Language | PHP 8.2+ / TypeScript |
+| Database | SQLite, MySQL, PostgreSQL |
+| Authentication | Laravel Sanctum |
+| Navigation | React Navigation |
+| State Management | React Context API |
+| HTTP Client | Axios |
+
+## 🎨 Design Principles
+
+- **Clean Architecture** - Clear separation of concerns
+- **SOLID** - Single responsibility, Open/closed, Liskov substitution, Interface segregation, Dependency inversion
+- **DRY** - Don't Repeat Yourself
+- **KISS** - Keep It Simple
+- **Modular** - Easy to extend and maintain
+- **Testable** - Designed for comprehensive testing
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make changes with tests
+4. Submit a pull request
+
+## 📄 License
+
+MIT License - See LICENSE file for details
+
+## 👥 Author
+
+Kasun Vimarshana
+
+---
+
+**For detailed technical documentation, see [IMPLEMENTATION.md](IMPLEMENTATION.md)**
 
 - Encrypt sensitive data **in transit and at rest**.
 - Apply **secure data storage and transmission practices** throughout both backend and frontend.

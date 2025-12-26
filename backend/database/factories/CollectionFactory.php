@@ -15,21 +15,22 @@ class CollectionFactory extends Factory
 
     public function definition(): array
     {
-        $quantity = $this->faker->randomFloat(3, 1, 1000);
-        $rate = $this->faker->randomFloat(2, 1, 100);
+        $quantity = fake()->randomFloat(2, 10, 100);
+        $rate = fake()->randomFloat(2, 50, 200);
 
         return [
             'supplier_id' => Supplier::factory(),
             'product_id' => Product::factory(),
             'user_id' => User::factory(),
             'product_rate_id' => ProductRate::factory(),
-            'collection_date' => $this->faker->dateTimeBetween('-30 days', 'now'),
+            'collection_date' => now()->subDays(rand(1, 30)),
             'quantity' => $quantity,
             'unit' => 'kg',
             'rate_applied' => $rate,
             'total_amount' => $quantity * $rate,
-            'notes' => $this->faker->optional()->sentence(),
-            'version' => 0,
+            'notes' => fake()->optional()->sentence(),
+            'metadata' => null,
+            'version' => 1,
         ];
     }
 }

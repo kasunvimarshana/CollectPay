@@ -1,59 +1,63 @@
-# Paywise Backend API
+# TrackVault Backend API
 
-Laravel backend for the Paywise data collection and payment management application.
+Laravel 11 backend API for the TrackVault Data Collection and Payment Management System.
+
+## Overview
+
+This backend provides a RESTful API for managing:
+- Users with role-based access control (Admin, Collector, Finance)
+- Suppliers with detailed profiles
+- Products with versioned rates and multi-unit support
+- Collections with automated rate application
+- Payments with automated calculations
 
 ## Features
 
-- **RESTful API** with Laravel 11
-- **Authentication** using Laravel Sanctum
-- **Role-Based Access Control (RBAC)** - Admin, Manager, Collector roles
-- **Multi-unit quantity tracking** for collections
-- **Versioned product rates** with historical preservation
-- **Optimistic locking** for concurrent updates
-- **Automated payment calculations** based on collections and rates
-- **Soft deletes** for data recovery
-- **Transactional operations** for data integrity
+- **Authentication**: Laravel Sanctum token-based authentication
+- **Authorization**: Role-based (RBAC) and attribute-based (ABAC) access control
+- **Data Integrity**: Version-based concurrency control to prevent conflicts
+- **Multi-unit Support**: Handle quantities in different units (kg, g, liters, etc.)
+- **Rate Versioning**: Historical rate preservation with automatic application
+- **Automated Calculations**: Automatic payment calculations based on collections and rates
+- **Audit Trail**: Soft deletes and version tracking for all entities
 
-## Requirements
+## Prerequisites
 
 - PHP 8.2 or higher
 - Composer
-- SQLite/MySQL/PostgreSQL
-- Laravel 11
+- SQLite (default) or MySQL/PostgreSQL
 
 ## Installation
 
-1. Clone the repository and navigate to the backend directory:
-```bash
-cd backend
-```
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 composer install
 ```
 
-3. Copy the environment file:
+2. Copy environment file:
 ```bash
 cp .env.example .env
 ```
 
-4. Generate application key:
+3. Generate application key:
 ```bash
 php artisan key:generate
 ```
 
-5. Configure your database in `.env` (SQLite is configured by default)
-
-6. Run migrations:
+4. Run database migrations:
 ```bash
 php artisan migrate
 ```
 
-7. Seed the database with initial users:
+5. Seed the database with sample users:
 ```bash
 php artisan db:seed
 ```
+
+This creates three default users:
+- Admin: `admin@trackvault.com` / `password`
+- Collector: `collector@trackvault.com` / `password`
+- Finance: `finance@trackvault.com` / `password`
 
 ## Running the Application
 
@@ -64,94 +68,123 @@ php artisan serve
 
 The API will be available at `http://localhost:8000/api`
 
-## Testing the API
+## API Documentation
 
-You can test the API using:
-- **Postman** - Import the endpoints from `API_DOCUMENTATION.md`
-- **cURL**
-- **HTTPie**
+### Authentication
 
-### Example Login Request
-
-```bash
-curl -X POST http://localhost:8000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@paywise.com","password":"password"}'
+**Register**
+```
+POST /api/auth/register
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password",
+  "password_confirmation": "password",
+  "role": "collector"
+}
 ```
 
-## Default Users
+**Login**
+```
+POST /api/auth/login
+{
+  "email": "admin@trackvault.com",
+  "password": "password"
+}
+```
 
-| Role      | Email                    | Password |
-|-----------|--------------------------|----------|
-| Admin     | admin@paywise.com        | password |
-| Manager   | manager@paywise.com      | password |
-| Collector | collector@paywise.com    | password |
+**Logout**
+```
+POST /api/auth/logout
+Headers: Authorization: Bearer {token}
+```
+
+**Get Current User**
+```
+GET /api/auth/me
+Headers: Authorization: Bearer {token}
+```
+
+### Resources
+
+All resource endpoints require authentication via `Authorization: Bearer {token}` header.
+
+**Suppliers**
+- `GET /api/suppliers` - List suppliers
+- `POST /api/suppliers` - Create supplier
+- `GET /api/suppliers/{id}` - Get supplier
+- `PUT /api/suppliers/{id}` - Update supplier
+- `DELETE /api/suppliers/{id}` - Delete supplier
+
+**Products**
+- `GET /api/products` - List products
+- `POST /api/products` - Create product
+- `GET /api/products/{id}` - Get product
+- `PUT /api/products/{id}` - Update product
+- `DELETE /api/products/{id}` - Delete product
+
+**Product Rates**
+- `GET /api/product-rates` - List rates
+- `POST /api/product-rates` - Create rate
+- `GET /api/product-rates/{id}` - Get rate
+- `PUT /api/product-rates/{id}` - Update rate
+- `DELETE /api/product-rates/{id}` - Delete rate
+
+**Collections**
+- `GET /api/collections` - List collections
+- `POST /api/collections` - Create collection
+- `GET /api/collections/{id}` - Get collection
+- `PUT /api/collections/{id}` - Update collection
+- `DELETE /api/collections/{id}` - Delete collection
+
+**Payments**
+- `GET /api/payments` - List payments
+- `POST /api/payments` - Create payment
+- `GET /api/payments/{id}` - Get payment
+- `PUT /api/payments/{id}` - Update payment
+- `DELETE /api/payments/{id}` - Delete payment
+- `GET /api/suppliers/{id}/balance` - Get supplier balance
 
 ## Database Schema
 
-### Core Tables
+### Key Tables
 
-- **users** - System users with roles
-- **suppliers** - Supplier profiles and details
-- **products** - Product definitions with units
-- **product_rates** - Versioned rates with effective dates
-- **collections** - Daily collection records
-- **payments** - Payment transactions (advance, partial, full)
+- **users**: System users with roles and permissions
+- **suppliers**: Supplier profiles with contact information
+- **products**: Products with multi-unit support
+- **product_rates**: Versioned rates for products by unit and date
+- **collections**: Daily collection records with quantities and calculated amounts
+- **payments**: Payment records (advance, partial, full)
 
-### Key Features
+### Version Control
 
-- **Optimistic Locking**: `version` field in suppliers, products, collections, and payments
-- **Soft Deletes**: All main entities support recovery
-- **Foreign Key Constraints**: Maintains referential integrity
-- **Indexes**: Optimized for common queries
+All entities include a `version` field for optimistic locking to prevent concurrent update conflicts.
 
-## API Documentation
+## Testing
 
-See `API_DOCUMENTATION.md` for complete API reference.
-
-## Security Features
-
-- **Token-based authentication** via Laravel Sanctum
-- **Password hashing** using bcrypt
-- **CSRF protection** for web routes
-- **SQL injection prevention** via Eloquent ORM
-- **Validation** on all inputs
-- **Optimistic locking** prevents lost updates
-
-## Architecture
-
-The backend follows Laravel best practices and Clean Architecture principles:
-
-```
-app/
-├── Http/
-│   └── Controllers/
-│       └── Api/          # API controllers
-├── Models/               # Eloquent models
-└── Providers/           # Service providers
-
-database/
-├── migrations/          # Database schema
-└── seeders/            # Initial data
-```
-
-## Running Tests
-
+Run the test suite:
 ```bash
 php artisan test
 ```
 
-## Production Deployment
+## Architecture
 
-1. Set up environment variables for production
-2. Use a production-grade database (MySQL/PostgreSQL)
-3. Enable HTTPS
-4. Set `APP_ENV=production` and `APP_DEBUG=false`
-5. Configure queue workers for background jobs
-6. Set up proper logging and monitoring
-7. Use database backups
+The backend follows Clean Architecture principles:
+- **Models**: Domain entities with business logic
+- **Controllers**: API endpoints with validation
+- **Migrations**: Database schema definitions
+- **Policies**: Authorization rules (future implementation)
+
+## Security
+
+- API authentication via Laravel Sanctum tokens
+- Password hashing with bcrypt
+- HTTPS required for production
+- Role-based access control
+- Version-based concurrency control
+- Input validation on all endpoints
 
 ## License
 
-Proprietary - All rights reserved
+MIT License
 

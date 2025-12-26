@@ -16,33 +16,14 @@ class PaymentFactory extends Factory
         return [
             'supplier_id' => Supplier::factory(),
             'user_id' => User::factory(),
-            'amount' => $this->faker->randomFloat(2, 10, 10000),
-            'payment_date' => $this->faker->dateTimeBetween('-30 days', 'now'),
-            'payment_type' => $this->faker->randomElement(['advance', 'partial', 'full']),
-            'reference_number' => $this->faker->optional()->numerify('PAY-####'),
-            'notes' => $this->faker->optional()->sentence(),
-            'version' => 0,
+            'payment_date' => now()->subDays(rand(1, 30)),
+            'amount' => fake()->randomFloat(2, 100, 10000),
+            'payment_type' => fake()->randomElement(['advance', 'partial', 'full']),
+            'payment_method' => fake()->randomElement(['Cash', 'Bank Transfer', 'Check']),
+            'reference_number' => 'PAY-' . fake()->unique()->numberBetween(1000, 9999),
+            'notes' => fake()->optional()->sentence(),
+            'metadata' => null,
+            'version' => 1,
         ];
-    }
-
-    public function advance()
-    {
-        return $this->state(fn (array $attributes) => [
-            'payment_type' => 'advance',
-        ]);
-    }
-
-    public function partial()
-    {
-        return $this->state(fn (array $attributes) => [
-            'payment_type' => 'partial',
-        ]);
-    }
-
-    public function full()
-    {
-        return $this->state(fn (array $attributes) => [
-            'payment_type' => 'full',
-        ]);
     }
 }

@@ -1,126 +1,99 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class SupplierController extends Controller
 {
-    /**
-     * Display a listing of suppliers
-     */
     public function index(Request $request)
     {
         $query = Supplier::query();
 
-        // Filter by active status
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
-        }
-
-        // Search by name or code
         if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        $suppliers = $query->paginate($request->input('per_page', 15));
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->is_active);
+        }
+
+        $perPage = $request->get('per_page', 15);
+        $suppliers = $query->orderBy('name')->paginate($perPage);
 
         return response()->json($suppliers);
     }
 
-    /**
-     * Store a newly created supplier
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:255|unique:suppliers,code',
-            'phone' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
-            'location' => 'nullable|string|max:255',
-            'is_active' => 'boolean'
+            'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'metadata' => 'nullable|array',
+            'is_active' => 'boolean',
         ]);
 
-        $supplier = Supplier::create($validated);
+        $supplier = DB::transaction(function () use ($validated) {
+            return Supplier::create($validated);
+        });
 
-        return response()->json([
-            'message' => 'Supplier created successfully',
-            'supplier' => $supplier
-        ], 201);
+        return response()->json($supplier, 201);
     }
 
-    /**
-     * Display the specified supplier
-     */
-    public function show($id)
+    public function show(string $id)
     {
         $supplier = Supplier::with(['collections', 'payments'])->findOrFail($id);
 
-        // Calculate total owed
-        $totalOwed = $supplier->calculateTotalOwed();
+        $supplier->total_collections = $supplier->getTotalCollectionsAmount();
+        $supplier->total_payments = $supplier->getTotalPaymentsAmount();
+        $supplier->balance = $supplier->getBalanceAmount();
 
-        return response()->json([
-            'supplier' => $supplier,
-            'total_owed' => $totalOwed
-        ]);
+        return response()->json($supplier);
     }
 
-    /**
-     * Update the specified supplier
-     */
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id)
     {
         $supplier = Supplier::findOrFail($id);
-
-        // Optimistic locking check
-        if ($request->has('version') && $supplier->version != $request->input('version')) {
-            throw ValidationException::withMessages([
-                'version' => ['This record has been modified by another user. Please refresh and try again.']
-            ]);
-        }
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'code' => 'sometimes|required|string|max:255|unique:suppliers,code,' . $id,
-            'phone' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
-            'location' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'metadata' => 'nullable|array',
             'is_active' => 'boolean',
-            'version' => 'integer'
+            'version' => 'required|integer',
         ]);
 
         DB::transaction(function () use ($supplier, $validated) {
+            if ($supplier->version != $validated['version']) {
+                throw new \Exception('Version mismatch. Please refresh and try again.');
+            }
+
+            $validated['version'] = $supplier->version + 1;
             $supplier->update($validated);
-            $supplier->increment('version');
         });
 
-        return response()->json([
-            'message' => 'Supplier updated successfully',
-            'supplier' => $supplier->fresh()
-        ]);
+        return response()->json($supplier);
     }
 
-    /**
-     * Remove the specified supplier (soft delete)
-     */
-    public function destroy($id)
+    public function destroy(string $id)
     {
         $supplier = Supplier::findOrFail($id);
         $supplier->delete();
 
-        return response()->json([
-            'message' => 'Supplier deleted successfully'
-        ]);
+        return response()->json(['message' => 'Supplier deleted successfully']);
     }
 }

@@ -1,206 +1,321 @@
-# Paywise Frontend - React Native (Expo)
+# TrackVault Frontend
 
-Mobile application for the Paywise data collection and payment management system.
+React Native (Expo) mobile application for the TrackVault Data Collection and Payment Management System.
+
+## Overview
+
+This is the mobile frontend for TrackVault, providing an intuitive interface for:
+- User authentication and authorization
+- Full CRUD operations for suppliers
+- Full CRUD operations for products with multi-unit support
+- Collection recording with automatic rate application
+- Payment management with advance/partial/full payment support
 
 ## Features
 
-- **Cross-platform** - Works on iOS, Android, and Web
-- **Authentication** - Secure login with token-based auth
-- **Real-time data** - Live updates from backend API
-- **Offline-ready** - Local storage with AsyncStorage
-- **Clean Architecture** - Modular and maintainable codebase
-- **User-friendly UI** - Intuitive interface for data entry and management
-
-## Tech Stack
-
-- **React Native** with Expo
-- **React Navigation** for routing
-- **Axios** for HTTP requests
-- **AsyncStorage** for local data persistence
-- **Context API** for state management
+- **Cross-Platform**: Runs on iOS and Android
+- **Authentication**: Secure token-based authentication with encrypted storage
+- **Role-Based Access**: Different UI/features based on user role (Admin, Collector, Finance)
+- **Complete CRUD**: Create, Read, Update, Delete functionality for all entities
+- **Form Validation**: Real-time validation with user-friendly error messages
+- **Clean Architecture**: Modular structure with clear separation of concerns
+- **Reusable Components**: Button, Input, Picker, FormModal, FloatingActionButton
 
 ## Prerequisites
 
 - Node.js 18+ and npm
-- Expo CLI (installed automatically with npx)
+- Expo CLI (`npm install -g expo-cli`)
 - iOS Simulator (macOS) or Android Emulator
-- Or use Expo Go app on your physical device
+- Backend API running (see backend/README.md)
 
 ## Installation
 
-1. Navigate to the frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Update API base URL in `src/api/client.js`:
-```javascript
-const API_BASE_URL = 'http://YOUR_BACKEND_URL/api';
+2. Configure API endpoint:
+Create a `.env` file or edit `src/api/client.ts` and update the `API_URL` to point to your backend:
+```typescript
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
 ```
 
-For local development:
-- **iOS Simulator**: `http://localhost:8000/api`
-- **Android Emulator**: `http://10.0.2.2:8000/api`
-- **Physical Device**: Use your computer's local IP address
+## Running the Application
 
-## Running the App
-
-### Start the development server:
+Start the development server:
 ```bash
 npm start
 ```
 
-### Run on specific platforms:
+This will open the Expo DevTools in your browser. From there you can:
+- Press `i` to open iOS simulator
+- Press `a` to open Android emulator
+- Scan QR code with Expo Go app on your physical device
 
-**iOS (requires macOS):**
+### Platform-Specific Commands
+
+Run on iOS:
 ```bash
 npm run ios
 ```
 
-**Android:**
+Run on Android:
 ```bash
 npm run android
 ```
 
-**Web:**
+Run on Web (experimental):
 ```bash
 npm run web
 ```
-
-### Using Expo Go (Easiest Method)
-
-1. Install Expo Go app on your iOS or Android device
-2. Run `npm start`
-3. Scan the QR code with your device
-4. Make sure your device and computer are on the same network
 
 ## Project Structure
 
 ```
 frontend/
 ├── src/
-│   ├── api/              # API client and endpoints
-│   │   ├── client.js     # Axios configuration
-│   │   └── index.js      # API methods
-│   ├── components/       # Reusable UI components
-│   ├── context/          # React Context providers
-│   │   └── AuthContext.js
-│   ├── navigation/       # Navigation configuration
-│   │   └── AppNavigator.js
-│   ├── screens/          # Screen components
-│   │   ├── LoginScreen.js
-│   │   ├── HomeScreen.js
-│   │   ├── SuppliersScreen.js
-│   │   ├── ProductsScreen.js
-│   │   ├── CollectionsScreen.js
-│   │   └── PaymentsScreen.js
-│   ├── utils/            # Utility functions
-│   └── constants/        # App constants
-├── App.js                # Root component
-└── package.json          # Dependencies
+│   ├── api/           # API client and service methods
+│   │   ├── client.ts      # Axios configuration with interceptors
+│   │   ├── auth.ts        # Authentication API
+│   │   ├── supplier.ts    # Supplier API
+│   │   ├── product.ts     # Product & Rate API
+│   │   ├── collection.ts  # Collection API
+│   │   └── payment.ts     # Payment API
+│   ├── components/    # Reusable UI components
+│   │   ├── Button.tsx             # Reusable button component
+│   │   ├── Input.tsx              # Text input with validation
+│   │   ├── Picker.tsx             # Dropdown picker
+│   │   ├── DatePicker.tsx         # Date input component
+│   │   ├── FormModal.tsx          # Modal for forms
+│   │   ├── FloatingActionButton.tsx # FAB for create actions
+│   │   └── index.ts               # Component exports
+│   ├── contexts/      # React Context providers
+│   │   └── AuthContext.tsx
+│   ├── navigation/    # Navigation configuration
+│   │   └── AppNavigator.tsx
+│   ├── screens/       # Screen components
+│   │   ├── LoginScreen.tsx        # User authentication
+│   │   ├── HomeScreen.tsx         # Dashboard
+│   │   ├── SuppliersScreen.tsx    # Supplier CRUD
+│   │   ├── ProductsScreen.tsx     # Product CRUD
+│   │   ├── CollectionsScreen.tsx  # Collection CRUD
+│   │   └── PaymentsScreen.tsx     # Payment CRUD
+│   └── utils/         # Utility functions
+│       └── formatters.ts  # Date/amount formatters
+├── App.tsx            # Root component
+└── package.json
 ```
 
-## Default Login Credentials
+## Demo Accounts
 
-Use these credentials to test the application:
+The backend provides three demo accounts for testing:
 
-| Role      | Email                    | Password |
-|-----------|--------------------------|----------|
-| Admin     | admin@paywise.com        | password |
-| Manager   | manager@paywise.com      | password |
-| Collector | collector@paywise.com    | password |
+- **Admin**: `admin@trackvault.com` / `password`
+  - Full access to all features
+  - User management
+  - System configuration
 
-## Key Features
+- **Collector**: `collector@trackvault.com` / `password`
+  - Create and manage collections
+  - View suppliers and products
+  - Basic reporting
 
-### Authentication
-- Secure token-based authentication
-- Automatic token refresh
-- Persistent login state
+- **Finance**: `finance@trackvault.com` / `password`
+  - Manage payments
+  - View financial reports
+  - Balance reconciliation
 
-### Suppliers Management
-- View all suppliers
-- Filter by status
-- Search by name or code
-- Real-time updates
+## Implemented Features
 
-### Products Management
-- View products with current rates
-- Rate versioning support
-- Multi-unit tracking
+### Authentication ✅
+- Secure login with JWT tokens
+- Token stored in Expo SecureStore
+- Automatic token refresh handling
+- Role-based UI adaptation
+- Logout functionality
 
-### Collections
-- Record daily collections
-- Automatic rate application
-- Multi-unit quantity support
-- Real-time total calculations
+### Suppliers Management ✅
+- List all suppliers with pull-to-refresh
+- View supplier details
+- Create new suppliers
+- Edit existing suppliers
+- Delete suppliers with confirmation
+- Real-time form validation
+- Active/inactive status display
 
-### Payments
-- Track advance, partial, and full payments
-- Payment history
-- Supplier payment status
+### Products Management ✅
+- List all products with pull-to-refresh
+- View product details with rates
+- Create new products with unit selection
+- Edit existing products
+- Delete products with confirmation
+- Multi-unit support (kg, g, l, ml, unit)
+- Form validation for all fields
 
-## Development Tips
+### Collections Recording ✅
+- List all collections with calculated amounts
+- Create new collections with:
+  - Supplier selection dropdown
+  - Product selection dropdown
+  - Quantity input with validation
+  - Unit selection
+  - Date input
+  - Optional notes
+- Edit existing collections
+- Delete collections with confirmation
+- Automatic rate application from backend
+- Display of collected by user
 
-### Debugging
-- Use `console.log()` for quick debugging
-- Use React Native Debugger for advanced debugging
-- Check Metro bundler logs for errors
+### Payments Management ✅
+- List all payments with type badges
+- Create new payments with:
+  - Supplier selection
+  - Amount input with validation
+  - Payment type (advance/partial/full)
+  - Payment method selection
+  - Reference number
+  - Date input
+  - Optional notes
+- Edit existing payments
+- Delete payments with confirmation
+- Payment type color coding
+- Display of processed by user
 
-### Hot Reload
-- The app automatically reloads when you save changes
-- Shake your device or press Cmd+D (iOS) / Cmd+M (Android) for dev menu
+## Component Library
 
-### API Configuration
-- For testing with a remote server, update `API_BASE_URL` in `src/api/client.js`
-- Ensure CORS is properly configured on the backend
+### Button
+Reusable button with variants:
+- `primary` (default): Blue background
+- `secondary`: White with blue border
+- `danger`: Red background
+- Loading state support
+
+### Input
+Text input with:
+- Label and required indicator
+- Error message display
+- Placeholder support
+- Multiline support
+- Keyboard type options
+
+### Picker
+Dropdown selector with:
+- Modal-based selection
+- Label and required indicator
+- Error message display
+- Search-friendly list
+
+### FormModal
+Full-screen modal for forms with:
+- Header with title and close button
+- Scrollable content
+- Keyboard-aware behavior
+- Slide-up animation
+
+### FloatingActionButton (FAB)
+Circular action button for create operations:
+- Fixed position (bottom-right)
+- Shadow for elevation
+- Customizable icon
+
+## Form Validation
+
+All forms include validation for:
+- Required fields
+- Email format validation
+- Numeric validation for amounts/quantities
+- Date format validation
+- Real-time error display
+
+## Architecture
+
+The application follows Clean Architecture principles:
+
+- **Presentation Layer**: React components and screens
+- **Business Logic Layer**: Context providers and hooks
+- **Data Layer**: API services and data models
+- **Infrastructure**: Navigation, storage, and utilities
+
+## State Management
+
+- **Auth State**: Global authentication context using React Context
+- **Local State**: Component-level state with useState
+- **API State**: Loading and error states managed per screen
+- **Form State**: Controlled inputs with validation
+
+## Security
+
+- Tokens stored in Expo SecureStore (encrypted)
+- HTTPS required for production API calls
+- Automatic token expiration handling
+- No sensitive data in AsyncStorage
+- Server-side validation for all operations
+
+## Error Handling
+
+- User-friendly error messages
+- API error propagation
+- Confirmation dialogs for destructive actions
+- Loading states for async operations
+- Network error handling
 
 ## Building for Production
 
-### Android APK
-```bash
-expo build:android
-```
+Create a production build:
 
-### iOS IPA
+For iOS:
 ```bash
 expo build:ios
 ```
 
-### Using EAS Build (Recommended)
+For Android:
 ```bash
-npm install -g eas-cli
-eas build --platform android
-eas build --platform ios
+expo build:android
 ```
 
-## Troubleshooting
+Or use EAS Build (recommended):
+```bash
+npm install -g eas-cli
+eas build --platform ios
+eas build --platform android
+```
 
-### Cannot connect to backend
-- Check if backend server is running
-- Verify API_BASE_URL is correct
-- Ensure device/emulator can reach the backend
-- Check firewall settings
+## Future Enhancements
 
-### Module not found errors
-- Run `npm install` again
-- Clear cache: `expo start -c`
-- Delete `node_modules` and reinstall
+- [ ] Advanced date picker component
+- [ ] Supplier balance display
+- [ ] Search and filter functionality
+- [ ] Sorting options
+- [ ] Date range filters
+- [ ] Product rate management UI
+- [ ] Offline support with sync
+- [ ] Push notifications
+- [ ] Export/reporting features
 
-### iOS Simulator not loading
-- Make sure Xcode is installed
-- Run `sudo xcode-select --switch /Applications/Xcode.app`
+## Testing
 
-## Additional Resources
+Run tests:
+```bash
+npm test
+```
 
-- [Expo Documentation](https://docs.expo.dev/)
-- [React Native Documentation](https://reactnative.dev/)
-- [React Navigation](https://reactnavigation.org/)
+## Known Limitations
+
+- Web platform support is experimental
+- Offline mode not yet implemented
+- Date input uses text field (consider using date picker library)
+
+## Contributing
+
+When contributing, please:
+1. Follow the existing code structure
+2. Use TypeScript for type safety
+3. Test on both iOS and Android
+4. Update documentation as needed
+5. Add validation for all forms
+6. Handle errors gracefully
 
 ## License
 
-Proprietary - All rights reserved
+MIT License

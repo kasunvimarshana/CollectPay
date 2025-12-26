@@ -15,29 +15,25 @@ class Payment extends Model
         'user_id',
         'payment_date',
         'amount',
-        'type',
+        'payment_type',
+        'payment_method',
         'reference_number',
         'notes',
-        'version'
+        'metadata',
+        'version',
     ];
 
     protected $casts = [
         'payment_date' => 'date',
         'amount' => 'decimal:2',
-        'version' => 'integer'
+        'metadata' => 'array',
     ];
 
-    /**
-     * Get the supplier for this payment
-     */
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    /**
-     * Get the user who recorded this payment
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

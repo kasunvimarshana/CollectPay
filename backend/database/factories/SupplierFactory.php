@@ -12,21 +12,14 @@ class SupplierFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->company(),
-            'code' => strtoupper($this->faker->unique()->lexify('SUP???')),
-            'phone' => $this->faker->phoneNumber(),
-            'email' => $this->faker->companyEmail(),
-            'address' => $this->faker->address(),
-            'location' => $this->faker->city(),
+            'name' => fake()->company(),
+            'code' => 'SUP-' . fake()->unique()->numberBetween(1000, 9999),
+            'address' => fake()->address(),
+            'phone' => fake()->phoneNumber(),
+            'email' => fake()->unique()->safeEmail(),
+            'metadata' => null,
             'is_active' => true,
-            'version' => 0,
+            'version' => 1,
         ];
-    }
-
-    public function inactive()
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_active' => false,
-        ]);
     }
 }

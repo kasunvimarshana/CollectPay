@@ -13,48 +13,41 @@ class Supplier extends Model
     protected $fillable = [
         'name',
         'code',
+        'address',
         'phone',
         'email',
-        'address',
-        'location',
+        'metadata',
         'is_active',
-        'version'
+        'version',
     ];
 
     protected $casts = [
+        'metadata' => 'array',
         'is_active' => 'boolean',
-        'version' => 'integer'
     ];
 
-    /**
-     * Get collections for this supplier
-     */
     public function collections(): HasMany
     {
         return $this->hasMany(Collection::class);
     }
 
-    /**
-     * Get payments for this supplier
-     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
-    /**
-     * Calculate total amount owed to supplier
-     */
-    public function calculateTotalOwed(): float
+    public function getTotalCollectionsAmount(): float
     {
-        $totalCollections = $this->collections()
-            ->whereNull('deleted_at')
-            ->sum('total_amount');
-        
-        $totalPayments = $this->payments()
-            ->whereNull('deleted_at')
-            ->sum('amount');
-        
-        return $totalCollections - $totalPayments;
+        return $this->collections()->sum('total_amount');
+    }
+
+    public function getTotalPaymentsAmount(): float
+    {
+        return $this->payments()->sum('amount');
+    }
+
+    public function getBalanceAmount(): float
+    {
+        return $this->getTotalCollectionsAmount() - $this->getTotalPaymentsAmount();
     }
 }
