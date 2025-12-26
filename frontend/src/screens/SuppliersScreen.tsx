@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { supplierService, Supplier, CreateSupplierRequest, UpdateSupplierRequest } from '../api/supplier';
 import { FloatingActionButton, FormModal, Input, Button } from '../components';
@@ -19,6 +20,10 @@ const SuppliersScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterActive, setFilterActive] = useState<boolean | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<'name' | 'code' | 'balance'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   // Form state
   const [formData, setFormData] = useState({
@@ -35,10 +40,60 @@ const SuppliersScreen = () => {
     loadSuppliers();
   }, []);
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadSuppliers();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, filterActive]);
+  
+  // Reload when sort changes
+  useEffect(() => {
+    if (!isLoading) {
+      loadSuppliers();
+    }
+  }, [sortBy, sortOrder]);
+
   const loadSuppliers = async () => {
     try {
-      const response = await supplierService.getAll({ per_page: 50 });
-      setSuppliers(response.data || []);
+      const params: any = { per_page: 50, include_balance: true };
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+      if (filterActive !== undefined) {
+        params.is_active = filterActive;
+      }
+      const response = await supplierService.getAll(params);
+      let data = response.data || [];
+      
+      // Client-side sorting
+      data = data.sort((a: Supplier, b: Supplier) => {
+        let compareA, compareB;
+        
+        switch (sortBy) {
+          case 'name':
+            compareA = a.name.toLowerCase();
+            compareB = b.name.toLowerCase();
+            break;
+          case 'code':
+            compareA = a.code.toLowerCase();
+            compareB = b.code.toLowerCase();
+            break;
+          case 'balance':
+            compareA = typeof a.balance === 'number' ? a.balance : 0;
+            compareB = typeof b.balance === 'number' ? b.balance : 0;
+            break;
+        }
+        
+        if (sortOrder === 'asc') {
+          return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
+        } else {
+          return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
+        }
+      });
+      
+      setSuppliers(data);
     } catch (error) {
       Alert.alert('Error', 'Failed to load suppliers');
     } finally {
@@ -178,6 +233,30 @@ const SuppliersScreen = () => {
       {item.phone && <Text style={styles.detail}>📞 {item.phone}</Text>}
       {item.email && <Text style={styles.detail}>📧 {item.email}</Text>}
       {item.address && <Text style={styles.detail}>📍 {item.address}</Text>}
+      
+      {/* Balance Information */}
+      {typeof item.balance !== 'undefined' && (
+        <View style={styles.balanceContainer}>
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceLabel}>Total Collections:</Text>
+            <Text style={styles.balanceValue}>Rs. {(item.total_collections || 0).toFixed(2)}</Text>
+          </View>
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceLabel}>Total Payments:</Text>
+            <Text style={styles.balanceValue}>Rs. {(item.total_payments || 0).toFixed(2)}</Text>
+          </View>
+          <View style={[styles.balanceRow, styles.balanceTotal]}>
+            <Text style={styles.balanceTotalLabel}>Balance:</Text>
+            <Text style={[
+              styles.balanceTotalValue,
+              item.balance > 0 ? styles.positiveBalance : item.balance < 0 ? styles.negativeBalance : {}
+            ]}>
+              Rs. {item.balance.toFixed(2)}
+            </Text>
+          </View>
+        </View>
+      )}
+      
       <TouchableOpacity
         style={styles.deleteButton}
         onPress={() => handleDelete(item)}
@@ -201,6 +280,96 @@ const SuppliersScreen = () => {
         <Text style={styles.title}>Suppliers</Text>
         <Text style={styles.count}>{suppliers.length} total</Text>
       </View>
+      
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name, code, or email..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          clearButtonMode="while-editing"
+        />
+      </View>
+      
+      {/* Filter Buttons */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterButton, filterActive === undefined && styles.filterButtonActive]}
+          onPress={() => setFilterActive(undefined)}
+        >
+          <Text style={[styles.filterButtonText, filterActive === undefined && styles.filterButtonTextActive]}>
+            All
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, filterActive === true && styles.filterButtonActive]}
+          onPress={() => setFilterActive(true)}
+        >
+          <Text style={[styles.filterButtonText, filterActive === true && styles.filterButtonTextActive]}>
+            Active
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, filterActive === false && styles.filterButtonActive]}
+          onPress={() => setFilterActive(false)}
+        >
+          <Text style={[styles.filterButtonText, filterActive === false && styles.filterButtonTextActive]}>
+            Inactive
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Sort Options */}
+      <View style={styles.sortContainer}>
+        <Text style={styles.sortLabel}>Sort by:</Text>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'name' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'name') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('name');
+              setSortOrder('asc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'name' && styles.sortButtonTextActive]}>
+            Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'code' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'code') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('code');
+              setSortOrder('asc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'code' && styles.sortButtonTextActive]}>
+            Code {sortBy === 'code' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortButton, sortBy === 'balance' && styles.sortButtonActive]}
+          onPress={() => {
+            if (sortBy === 'balance') {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy('balance');
+              setSortOrder('asc');
+            }
+          }}
+        >
+          <Text style={[styles.sortButtonText, sortBy === 'balance' && styles.sortButtonTextActive]}>
+            Balance {sortBy === 'balance' && (sortOrder === 'asc' ? '↑' : '↓')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
       <FlatList
         data={suppliers}
         keyExtractor={(item) => item.id.toString()}
@@ -306,6 +475,79 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 5,
   },
+  searchContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  searchInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  filterContainer: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    padding: 10,
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  filterButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+  },
+  sortContainer: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    padding: 10,
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  sortLabel: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
+  },
+  sortButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  sortButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  sortButtonText: {
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sortButtonTextActive: {
+    color: '#fff',
+  },
   list: {
     padding: 15,
   },
@@ -376,6 +618,47 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     fontSize: 13,
     fontWeight: '600',
+  },
+  balanceContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  balanceLabel: {
+    fontSize: 13,
+    color: '#666',
+  },
+  balanceValue: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500',
+  },
+  balanceTotal: {
+    marginTop: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  balanceTotalLabel: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  balanceTotalValue: {
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  positiveBalance: {
+    color: '#34C759',
+  },
+  negativeBalance: {
+    color: '#FF3B30',
   },
   buttonRow: {
     flexDirection: 'row',

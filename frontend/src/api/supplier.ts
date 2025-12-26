@@ -10,6 +10,9 @@ export interface Supplier {
   metadata?: any;
   is_active: boolean;
   version: number;
+  total_collections?: number;
+  total_payments?: number;
+  balance?: number;
   created_at: string;
   updated_at: string;
 }
@@ -29,13 +32,18 @@ export interface UpdateSupplierRequest extends CreateSupplierRequest {
 }
 
 export const supplierService = {
-  async getAll(params?: { search?: string; is_active?: boolean; per_page?: number; page?: number }) {
+  async getAll(params?: { search?: string; is_active?: boolean; per_page?: number; page?: number; include_balance?: boolean }) {
     const response = await apiClient.get('/suppliers', { params });
     return response.data;
   },
 
   async getById(id: number) {
     const response = await apiClient.get(`/suppliers/${id}`);
+    return response.data;
+  },
+
+  async getBalance(id: number) {
+    const response = await apiClient.get(`/suppliers/${id}/balance`);
     return response.data;
   },
 

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { productService, Product, CreateProductRequest, UpdateProductRequest } from '../api/product';
 import { FloatingActionButton, FormModal, Input, Button, Picker } from '../components';
@@ -19,6 +20,10 @@ const ProductsScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterActive, setFilterActive] = useState<boolean | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<'name' | 'code'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   // Form state
   const [formData, setFormData] = useState({
@@ -34,10 +39,56 @@ const ProductsScreen = () => {
     loadProducts();
   }, []);
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadProducts();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, filterActive]);
+
+  // Reload when sort changes
+  useEffect(() => {
+    if (!isLoading) {
+      loadProducts();
+    }
+  }, [sortBy, sortOrder]);
+
   const loadProducts = async () => {
     try {
-      const response = await productService.getAll({ per_page: 50 });
-      setProducts(response.data || []);
+      const params: any = { per_page: 50 };
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+      if (filterActive !== undefined) {
+        params.is_active = filterActive;
+      }
+      const response = await productService.getAll(params);
+      let data = response.data || [];
+      
+      // Client-side sorting
+      data = data.sort((a: Product, b: Product) => {
+        let compareA, compareB;
+        
+        switch (sortBy) {
+          case 'name':
+            compareA = a.name.toLowerCase();
+            compareB = b.name.toLowerCase();
+            break;
+          case 'code':
+            compareA = a.code.toLowerCase();
+            compareB = b.code.toLowerCase();
+            break;
+        }
+        
+        if (sortOrder === 'asc') {
+          return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
+        } else {
+          return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
+        }
+      });
+      
+      setProducts(data);
     } catch (error) {
       Alert.alert('Error', 'Failed to load products');
     } finally {
@@ -216,6 +267,84 @@ const ProductsScreen = () => {
         <Text style={styles.title}>Products</Text>
         <Text style={styles.count}>{products.length} total</Text>
       </View>
+      
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name or code..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          clearButtonMode="while-editing"
+        />
+      </View>
+      
+      {/* Filter and Sort */}
+      <View style={styles.controlsContainer}>
+        {/* Filter Buttons */}
+        <View style={styles.filterRow}>
+          <TouchableOpacity
+            style={[styles.filterButton, filterActive === undefined && styles.filterButtonActive]}
+            onPress={() => setFilterActive(undefined)}
+          >
+            <Text style={[styles.filterButtonText, filterActive === undefined && styles.filterButtonTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, filterActive === true && styles.filterButtonActive]}
+            onPress={() => setFilterActive(true)}
+          >
+            <Text style={[styles.filterButtonText, filterActive === true && styles.filterButtonTextActive]}>
+              Active
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, filterActive === false && styles.filterButtonActive]}
+            onPress={() => setFilterActive(false)}
+          >
+            <Text style={[styles.filterButtonText, filterActive === false && styles.filterButtonTextActive]}>
+              Inactive
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Sort Options */}
+        <View style={styles.sortRow}>
+          <Text style={styles.sortLabel}>Sort:</Text>
+          <TouchableOpacity
+            style={[styles.sortButton, sortBy === 'name' && styles.sortButtonActive]}
+            onPress={() => {
+              if (sortBy === 'name') {
+                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+              } else {
+                setSortBy('name');
+                setSortOrder('asc');
+              }
+            }}
+          >
+            <Text style={[styles.sortButtonText, sortBy === 'name' && styles.sortButtonTextActive]}>
+              Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sortButton, sortBy === 'code' && styles.sortButtonActive]}
+            onPress={() => {
+              if (sortBy === 'code') {
+                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+              } else {
+                setSortBy('code');
+                setSortOrder('asc');
+              }
+            }}
+          >
+            <Text style={[styles.sortButtonText, sortBy === 'code' && styles.sortButtonTextActive]}>
+              Code {sortBy === 'code' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      
       <FlatList
         data={products}
         keyExtractor={(item) => item.id.toString()}
@@ -314,6 +443,78 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 5,
+  },
+  searchContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  searchInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  controlsContainer: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  filterButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+  },
+  sortRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sortLabel: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
+  },
+  sortButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  sortButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  sortButtonText: {
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sortButtonTextActive: {
+    color: '#fff',
   },
   list: {
     padding: 15,

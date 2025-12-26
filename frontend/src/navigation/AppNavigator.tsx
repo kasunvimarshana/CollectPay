@@ -10,6 +10,7 @@ import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import SuppliersScreen from '../screens/SuppliersScreen';
 import ProductsScreen from '../screens/ProductsScreen';
+import ProductRatesScreen from '../screens/ProductRatesScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
 import PaymentsScreen from '../screens/PaymentsScreen';
 
@@ -22,6 +23,7 @@ const MainTabs = () => {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Suppliers" component={SuppliersScreen} />
       <Tab.Screen name="Products" component={ProductsScreen} />
+      <Tab.Screen name="Rates" component={ProductRatesScreen} />
       <Tab.Screen name="Collections" component={CollectionsScreen} />
       <Tab.Screen name="Payments" component={PaymentsScreen} />
     </Tab.Navigator>

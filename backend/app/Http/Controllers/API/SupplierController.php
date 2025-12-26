@@ -29,6 +29,16 @@ class SupplierController extends Controller
         $perPage = $request->get('per_page', 15);
         $suppliers = $query->orderBy('name')->paginate($perPage);
 
+        // Include balance information if requested
+        if ($request->get('include_balance', false)) {
+            $suppliers->getCollection()->transform(function ($supplier) {
+                $supplier->total_collections = $supplier->getTotalCollectionsAmount();
+                $supplier->total_payments = $supplier->getTotalPaymentsAmount();
+                $supplier->balance = $supplier->getBalanceAmount();
+                return $supplier;
+            });
+        }
+
         return response()->json($suppliers);
     }
 
