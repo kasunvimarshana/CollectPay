@@ -1,144 +1,314 @@
-# TransacTrack Backend API
+# PayMaster Backend API
 
-Laravel-based REST API for the TransacTrack data collection and payment management system.
+Production-ready RESTful API for data collection and payment management.
 
-## Features
+## Architecture
 
-- **Authentication**: JWT-based authentication using Laravel Sanctum
-- **Supplier Management**: Create, read, update, delete supplier profiles with location tracking
-- **Product Management**: Manage products with flexible unit types and dynamic pricing
-- **Collection Tracking**: Record product collections with automatic payment calculations
-- **Payment Management**: Track advance, partial, and full payments
-- **Offline Sync**: Robust synchronization with conflict detection and resolution
-- **Multi-user Support**: Role-based access control (RBAC) for different user types
-- **Data Security**: Encrypted data handling and secure transactions
+This backend follows **Clean Architecture** principles with clear separation of concerns:
 
-## Requirements
-
-- PHP >= 8.1
-- MySQL >= 5.7 or MariaDB >= 10.3
-- Composer
-
-## Installation
-
-1. Copy environment file:
-```bash
-cp .env.example .env
+```
+src/
+├── Domain/              # Core business logic (framework-independent)
+│   ├── Entities/       # Business entities
+│   ├── Repositories/   # Repository interfaces
+│   ├── Services/       # Domain services
+│   └── ValueObjects/   # Value objects
+├── Application/         # Application business rules
+│   ├── UseCases/       # Use case implementations
+│   ├── DTOs/           # Data Transfer Objects
+│   ├── Services/       # Application services
+│   └── Mappers/        # Entity-DTO mappers
+├── Infrastructure/      # External concerns
+│   ├── Persistence/    # Database implementations
+│   ├── Http/           # HTTP adapters
+│   ├── Auth/           # Authentication implementations
+│   ├── Encryption/     # Encryption services
+│   └── Logging/        # Logging implementations
+└── Presentation/        # API presentation layer
+    └── Http/
+        └── Controllers/ # HTTP controllers
 ```
 
-2. Install dependencies:
-```bash
-composer install
-```
+## Core Features
 
-3. Generate application key:
-```bash
-php artisan key:generate
-```
+### 1. User Management
+- CRUD operations for users
+- RBAC (Role-Based Access Control)
+- ABAC (Attribute-Based Access Control)
+- Roles: admin, manager, collector
+- Permissions: manage_users, manage_rates, make_payments
 
-4. Configure database in `.env`:
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=transactrack
-DB_USERNAME=root
-DB_PASSWORD=
-```
+### 2. Supplier Management
+- Comprehensive supplier profiles
+- Regional organization
+- Status tracking (active/inactive)
+- Unique supplier codes
 
-5. Run migrations:
-```bash
-php artisan migrate
-```
+### 3. Product Management
+- Multi-unit support (kg, g, lbs, items, etc.)
+- Product categorization
+- Status tracking
 
-6. (Optional) Seed database:
-```bash
-php artisan db:seed
-```
+### 4. Rate Management (Versioned & Immutable)
+- Time-based rate versions
+- Historical immutability - rates are NEVER modified
+- Automatic rate selection based on collection date
+- Rate history tracking
 
-7. Start development server:
-```bash
-php artisan serve
-```
+### 5. Collection Management
+- Daily collection recording
+- Automatic rate application
+- Immutable rate snapshots
+- Multi-user concurrent operations
+- Offline sync support with unique sync IDs
 
-The API will be available at `http://localhost:8000`
+### 6. Payment Management
+- Advance payments
+- Partial payments
+- Final payments
+- Payment history tracking
+- Automatic balance calculations
+
+### 7. Automated Financial Calculations
+- Real-time balance calculations
+- Historical payment tracking
+- Audit trail for all transactions
+- Supplier-specific financial summaries
+
+### 8. Synchronization Support
+- Offline-first architecture support
+- Conflict detection and resolution
+- Version-based optimistic locking
+- Sync logging and tracking
 
 ## API Endpoints
 
 ### Authentication
-- `POST /api/register` - Register new user
-- `POST /api/login` - Login user
-- `POST /api/logout` - Logout user
-- `GET /api/user` - Get authenticated user
+```
+POST   /api/auth/register        - Register new user
+POST   /api/auth/login           - Login user
+POST   /api/auth/logout          - Logout user
+GET    /api/auth/me              - Get authenticated user
+```
+
+### Users
+```
+GET    /api/users                - List all users
+GET    /api/users/{id}           - Get user by ID
+POST   /api/users                - Create user (admin only)
+PUT    /api/users/{id}           - Update user
+DELETE /api/users/{id}           - Delete user (admin only)
+```
 
 ### Suppliers
-- `GET /api/suppliers` - List all suppliers
-- `POST /api/suppliers` - Create new supplier
-- `GET /api/suppliers/{id}` - Get supplier details
-- `PUT /api/suppliers/{id}` - Update supplier
-- `DELETE /api/suppliers/{id}` - Delete supplier
+```
+GET    /api/suppliers            - List all suppliers
+GET    /api/suppliers/{id}       - Get supplier by ID
+POST   /api/suppliers            - Create supplier
+PUT    /api/suppliers/{id}       - Update supplier
+DELETE /api/suppliers/{id}       - Delete supplier
+GET    /api/suppliers/{id}/balance - Get supplier balance
+```
 
 ### Products
-- `GET /api/products` - List all products
-- `POST /api/products` - Create new product
-- `GET /api/products/{id}` - Get product details
-- `PUT /api/products/{id}` - Update product
-- `DELETE /api/products/{id}` - Delete product
+```
+GET    /api/products             - List all products
+GET    /api/products/{id}        - Get product by ID
+POST   /api/products             - Create product
+PUT    /api/products/{id}        - Update product
+DELETE /api/products/{id}        - Delete product
+```
+
+### Product Rates
+```
+GET    /api/products/{id}/rates       - Get all rates for product
+GET    /api/rates/{id}                - Get rate by ID
+POST   /api/products/{id}/rates       - Create new rate (auto-versions)
+GET    /api/products/{id}/rates/current - Get current active rate
+GET    /api/products/{id}/rates/history - Get rate history
+```
 
 ### Collections
-- `GET /api/collections` - List all collections
-- `POST /api/collections` - Create new collection
-- `GET /api/collections/{id}` - Get collection details
-- `PUT /api/collections/{id}` - Update collection
-- `DELETE /api/collections/{id}` - Delete collection
+```
+GET    /api/collections          - List all collections
+GET    /api/collections/{id}     - Get collection by ID
+POST   /api/collections          - Create collection
+PUT    /api/collections/{id}     - Update collection
+DELETE /api/collections/{id}     - Delete collection
+POST   /api/collections/sync     - Batch sync collections (offline support)
+```
 
 ### Payments
-- `GET /api/payments` - List all payments
-- `POST /api/payments` - Create new payment
-- `GET /api/payments/{id}` - Get payment details
-- `PUT /api/payments/{id}` - Update payment
-- `DELETE /api/payments/{id}` - Delete payment
+```
+GET    /api/payments             - List all payments
+GET    /api/payments/{id}        - Get payment by ID
+POST   /api/payments             - Create payment
+PUT    /api/payments/{id}        - Update payment
+DELETE /api/payments/{id}        - Delete payment
+POST   /api/payments/sync        - Batch sync payments (offline support)
+```
 
-### Sync
-- `POST /api/sync` - Synchronize offline data
-- `POST /api/sync/conflicts/{id}/resolve` - Resolve sync conflict
+### Reports & Calculations
+```
+GET    /api/reports/supplier-balance/{id}  - Get supplier balance
+GET    /api/reports/supplier-summary/{id}  - Get detailed supplier summary
+GET    /api/reports/period-summary         - Get period summary for all suppliers
+```
 
 ## Security
 
-- All API endpoints (except register/login) require authentication
-- Uses Laravel Sanctum for token-based authentication
-- CORS configured for cross-origin requests
-- Input validation on all endpoints
-- SQL injection protection via Eloquent ORM
-- XSS protection via Laravel's built-in escape functions
+### Authentication
+- Token-based authentication (Laravel Sanctum)
+- Secure password hashing (bcrypt)
+- Session management
 
-## Architecture
+### Authorization
+- Role-based access control (RBAC)
+- Attribute-based access control (ABAC)
+- Permission-based endpoint protection
 
-The backend follows clean architecture principles:
+### Data Security
+- HTTPS enforcement
+- Input validation and sanitization
+- SQL injection prevention (PDO/prepared statements)
+- XSS protection
+- CSRF protection
+- Rate limiting
 
-- **Models**: Eloquent models representing database entities
-- **Controllers**: API controllers handling HTTP requests
-- **Migrations**: Database schema definitions
-- **Policies**: Authorization logic (RBAC/ABAC)
-- **Services**: Business logic layer (to be expanded)
-- **Repositories**: Data access layer (to be expanded)
+### Encryption
+- Password hashing (bcrypt)
+- Secure token generation
+- Optional data encryption at rest
 
-## Database Schema
+## Concurrency & Conflict Resolution
 
-- `users` - System users with roles
-- `suppliers` - Supplier profiles
-- `products` - Product catalog
-- `product_rates` - Historical product pricing
-- `collections` - Product collection records
-- `payments` - Payment transactions
-- `sync_conflicts` - Conflict tracking for offline sync
+### Optimistic Locking
+- Version field on all mutable entities
+- Automatic version increment on updates
+- Conflict detection via version mismatch
+
+### Timestamp-Based Conflict Detection
+- `updated_at` timestamps
+- Last-write-wins with version validation
+- Conflict resolution strategies
+
+### Sync ID Management
+- Unique sync IDs for offline-created records
+- Idempotent sync operations
+- Duplicate detection and prevention
+
+## Database
+
+### Schema Design
+- Normalized database structure
+- Foreign key constraints
+- Appropriate indexes for performance
+- Full-text search support (optional)
+
+### Migrations
+- Version-controlled schema changes
+- Forward-only migrations
+- Seeders for initial data
+
+### Transactions
+- ACID compliance
+- Transaction support for multi-step operations
+- Rollback on failure
+
+## Performance Optimization
+
+### Database
+- Indexed queries
+- Query optimization
+- Connection pooling
+- Lazy loading
+
+### Caching (Optional)
+- Query result caching
+- API response caching
+- Rate caching for frequent lookups
 
 ## Testing
 
-Run tests with:
-```bash
-php artisan test
+### Unit Tests
+- Domain entity tests
+- Service layer tests
+- Repository tests
+
+### Integration Tests
+- API endpoint tests
+- Database integration tests
+- Authentication tests
+
+### Feature Tests
+- End-to-end workflows
+- Sync operation tests
+- Conflict resolution tests
+
+## Deployment
+
+### Requirements
+- PHP 8.1+
+- MySQL 8.0+ or MariaDB 10.5+
+- Composer
+- Web server (Apache/Nginx)
+
+### Environment Variables
 ```
+APP_NAME=PayMaster
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.com
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=paymaster
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+SANCTUM_STATEFUL_DOMAINS=your-frontend-domain.com
+```
+
+### Setup Steps
+1. Clone repository
+2. Run `composer install`
+3. Copy `.env.example` to `.env` and configure
+4. Run migrations: `php artisan migrate`
+5. Seed initial data: `php artisan db:seed`
+6. Configure web server
+7. Set proper file permissions
+8. Enable HTTPS
+
+## Monitoring & Logging
+
+### Logging
+- Application logs
+- Error logs
+- Sync operation logs
+- Audit trail logs
+
+### Monitoring
+- API performance metrics
+- Database query performance
+- Error tracking
+- User activity tracking
+
+## Maintenance
+
+### Backup
+- Regular database backups
+- Backup verification
+- Disaster recovery plan
+
+### Updates
+- Security patches
+- Dependency updates
+- Database maintenance
+
+## Support
+
+For issues and questions, please refer to the project repository.
 
 ## License
 

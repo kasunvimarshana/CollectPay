@@ -1,393 +1,486 @@
-# TransacTrack Architecture Documentation
+# PayMaster Architecture Overview
 
 ## System Architecture
 
-TransacTrack follows a modern, scalable architecture designed for reliability, security, and offline-first operation.
-
-## High-Level Architecture
-
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Mobile App (React Native)                │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              Presentation Layer (UI)                  │  │
-│  │  - Screens (Login, Home, Suppliers, Products, etc.)  │  │
-│  │  - Components (Reusable UI elements)                  │  │
-│  └──────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │           State Management (Redux)                    │  │
-│  │  - Auth State  - App State  - Entity States          │  │
-│  │  - Redux Persist for offline storage                 │  │
-│  └──────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              Business Logic Layer                     │  │
-│  │  - Sync Service (Conflict resolution)                │  │
-│  │  - Network Monitor (Connectivity detection)          │  │
-│  │  - Validation Logic                                  │  │
-│  └──────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              Data Access Layer                        │  │
-│  │  - API Service (HTTP client)                         │  │
-│  │  - Local Storage (AsyncStorage, SecureStore)         │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         PayMaster System                            │
+│                    Data Collection & Payment Management              │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                        MOBILE APPLICATION                            │
+│                    (React Native + Expo)                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │              PRESENTATION LAYER (UI)                        │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │   │
+│  │  │Dashboard │ │Suppliers │ │Collections│ │ Payments │     │   │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘     │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │   │
+│  │  │ Products │ │  Rates   │ │  Reports │ │ Settings │     │   │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘     │   │
+│  └────────────────────────────────────────────────────────────┘   │
+│                            ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │           APPLICATION LAYER (Business Logic)                │   │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐         │   │
+│  │  │Auth Service │ │Sync Service │ │Data Service │         │   │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘         │   │
+│  │  ┌─────────────┐ ┌─────────────┐                          │   │
+│  │  │State Mgmt   │ │Network Mgmt │                          │   │
+│  │  │(Context API)│ │             │                          │   │
+│  │  └─────────────┘ └─────────────┘                          │   │
+│  └────────────────────────────────────────────────────────────┘   │
+│                            ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │        INFRASTRUCTURE LAYER (External Systems)              │   │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐         │   │
+│  │  │ API Client  │ │Local Storage│ │SecureStore  │         │   │
+│  │  │(HTTP/REST)  │ │  (SQLite)   │ │  (Tokens)   │         │   │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘         │   │
+│  └────────────────────────────────────────────────────────────┘   │
+│                            ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │               DOMAIN LAYER (Entities)                       │   │
+│  │  User │ Supplier │ Product │ Rate │ Collection │ Payment   │   │
+│  └────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
                               │
-                              │ HTTPS / REST API
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│                    Backend (Laravel)                         │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              API Layer (Controllers)                  │  │
-│  │  - Authentication (JWT with Sanctum)                 │  │
-│  │  - Resource Controllers (CRUD)                       │  │
-│  │  - Sync Controller (Offline sync)                    │  │
-│  └──────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │            Business Logic Layer (Services)            │  │
-│  │  - Payment Calculations                              │  │
-│  │  - Conflict Resolution                               │  │
-│  │  - Authorization (RBAC/ABAC)                         │  │
-│  └──────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │          Data Access Layer (Models/Repos)             │  │
-│  │  - Eloquent Models                                   │  │
-│  │  - Repositories (Future enhancement)                 │  │
-│  └──────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              Database (MySQL)                         │  │
-│  │  - Users  - Suppliers  - Products                    │  │
-│  │  - Collections  - Payments  - Conflicts              │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+                              │ HTTPS/TLS
+                              │ (Token Auth)
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         BACKEND API SERVER                           │
+│                      (Laravel + PHP)                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │        PRESENTATION LAYER (HTTP Controllers)                │   │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │   │
+│  │  │ Auth │ │Users │ │Supp. │ │Prod. │ │Coll. │ │Paym. │  │   │
+│  │  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘  │   │
+│  │  ┌──────────────────┐ ┌──────────────────┐              │   │
+│  │  │Middleware (Auth) │ │  Validation      │              │   │
+│  │  └──────────────────┘ └──────────────────┘              │   │
+│  └────────────────────────────────────────────────────────────┘   │
+│                            ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │         APPLICATION LAYER (Use Cases & Services)            │   │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐      │   │
+│  │  │Auth UseCase  │ │CRUD UseCases │ │Sync UseCase  │      │   │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘      │   │
+│  │  ┌──────────────┐ ┌──────────────┐                        │   │
+│  │  │ DTOs         │ │   Mappers    │                        │   │
+│  │  └──────────────┘ └──────────────┘                        │   │
+│  └────────────────────────────────────────────────────────────┘   │
+│                            ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │          DOMAIN LAYER (Core Business Logic)                 │   │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐      │   │
+│  │  │   Entities   │ │ Repositories │ │   Services   │      │   │
+│  │  │(Pure Objects)│ │ (Interfaces) │ │(Business Logic)     │   │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘      │   │
+│  │  • User          • Payment Calculation Service            │   │
+│  │  • Supplier      • Rate Management Service                │   │
+│  │  • Product       • Conflict Resolution Logic              │   │
+│  │  • ProductRate   • Balance Calculation                    │   │
+│  │  • Collection                                              │   │
+│  │  • Payment                                                 │   │
+│  └────────────────────────────────────────────────────────────┘   │
+│                            ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │      INFRASTRUCTURE LAYER (External Concerns)               │   │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐      │   │
+│  │  │Repositories  │ │Authentication│ │    Logging   │      │   │
+│  │  │(MySQL Impl)  │ │  (Sanctum)   │ │              │      │   │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘      │   │
+│  │  ┌──────────────┐ ┌──────────────┐                        │   │
+│  │  │  Encryption  │ │    Events    │                        │   │
+│  │  └──────────────┘ └──────────────┘                        │   │
+│  └────────────────────────────────────────────────────────────┘   │
+│                            ▼                                        │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │                     DATABASE LAYER                          │   │
+│  │                    (MySQL 8.0+)                             │   │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │   │
+│  │  │Users │ │Supp. │ │Prod. │ │Rates │ │Coll. │ │Paym. │  │   │
+│  │  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘  │   │
+│  │  ┌──────────────┐                                         │   │
+│  │  │  Sync Logs   │                                         │   │
+│  │  └──────────────┘                                         │   │
+│  └────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Design Principles
+## Data Flow Diagrams
 
-### SOLID Principles
-
-1. **Single Responsibility Principle (SRP)**
-   - Each class/module has one reason to change
-   - Controllers handle HTTP, Services handle business logic
-   - Models represent data structure only
-
-2. **Open/Closed Principle (OCP)**
-   - Entities open for extension, closed for modification
-   - Use interfaces and abstract classes for extensibility
-
-3. **Liskov Substitution Principle (LSP)**
-   - Derived classes substitutable for base classes
-   - Interface contracts maintained
-
-4. **Interface Segregation Principle (ISP)**
-   - Clients not forced to depend on unused interfaces
-   - Specific interfaces over general-purpose ones
-
-5. **Dependency Inversion Principle (DIP)**
-   - Depend on abstractions, not concretions
-   - Service layer abstracts business logic
-
-### DRY (Don't Repeat Yourself)
-
-- Reusable components in frontend
-- Shared validation logic
-- Common API patterns
-- Utility functions extracted
-
-### Separation of Concerns
-
-- Clear layer boundaries
-- Models don't contain business logic
-- Controllers don't access database directly
-- UI components don't contain business logic
-
-## Data Flow
-
-### Online Mode
+### Online Collection Flow
 
 ```
-User Action → UI Component → Redux Action → API Service
-    ↓
-API Request → Backend Controller → Business Logic → Database
-    ↓
-Database Response → Controller → JSON Response → API Service
-    ↓
-Redux Store Update → UI Component Re-render
+┌─────────┐
+│  User   │
+└────┬────┘
+     │ 1. Create Collection
+     ▼
+┌──────────────┐
+│ Mobile App   │
+└──────┬───────┘
+       │ 2. Validate Input
+       │ 3. Get Current Rate
+       ▼
+┌──────────────┐
+│ API Client   │
+└──────┬───────┘
+       │ 4. POST /collections (HTTPS)
+       ▼
+┌──────────────┐
+│ Backend API  │
+└──────┬───────┘
+       │ 5. Authenticate & Authorize
+       │ 6. Validate Data
+       │ 7. Apply Rate
+       │ 8. Calculate Amount
+       ▼
+┌──────────────┐
+│  Database    │
+└──────┬───────┘
+       │ 9. Save Collection
+       │ 10. Return Result
+       ▼
+┌──────────────┐
+│ Mobile App   │
+└──────┬───────┘
+       │ 11. Update Local DB
+       │ 12. Update UI
+       ▼
+┌─────────┐
+│  User   │
+└─────────┘
 ```
 
-### Offline Mode
+### Offline Collection Flow
 
 ```
-User Action → UI Component → Redux Action → Local Store
-    ↓
-Immediate UI Update (Optimistic)
-    ↓
-Mark as Pending Sync
-    ↓
-[Network Becomes Available]
-    ↓
-Auto Sync Process → Send to Backend → Conflict Check
-    ↓
-Success: Update Local Status | Conflict: Present to User
+┌─────────┐
+│  User   │
+└────┬────┘
+     │ 1. Create Collection (No Network)
+     ▼
+┌──────────────┐
+│ Mobile App   │
+└──────┬───────┘
+       │ 2. Validate Input
+       │ 3. Get Cached Rate
+       │ 4. Calculate Amount
+       ▼
+┌──────────────┐
+│ Local SQLite │
+└──────┬───────┘
+       │ 5. Save Collection
+       │ 6. Mark as Pending Sync
+       │ 7. Return Success
+       ▼
+┌──────────────┐
+│ Mobile App   │
+└──────┬───────┘
+       │ 8. Update UI
+       │ 9. Show Pending Badge
+       ▼
+┌─────────┐
+│  User   │
+└─────────┘
+
+... Later when online ...
+
+┌──────────────┐
+│Network Detected│
+└──────┬───────┘
+       │ Trigger Auto-Sync
+       ▼
+┌──────────────┐
+│ Sync Service │
+└──────┬───────┘
+       │ 1. Get Pending Items
+       │ 2. Batch Collections
+       ▼
+┌──────────────┐
+│ API Client   │
+└──────┬───────┘
+       │ 3. POST /collections/sync
+       ▼
+┌──────────────┐
+│ Backend API  │
+└──────┬───────┘
+       │ 4. Validate Each Item
+       │ 5. Detect Conflicts
+       │ 6. Save to Database
+       ▼
+┌──────────────┐
+│  Database    │
+└──────┬───────┘
+       │ 7. Return Results
+       ▼
+┌──────────────┐
+│ Mobile App   │
+└──────┬───────┘
+       │ 8. Update Local Status
+       │ 9. Remove Pending Badge
+       ▼
+┌─────────┐
+│  User   │
+└─────────┘
 ```
 
-## Offline-First Strategy
-
-### Data Persistence
-
-1. **Redux Persist**: State persisted to AsyncStorage
-2. **Secure Storage**: Auth tokens in SecureStore
-3. **Version Tracking**: All entities have version numbers
-4. **Timestamp Tracking**: Server timestamps for sync
-
-### Sync Process
+### Rate Version Management
 
 ```
-1. Network Detection
-   └─> Online status change detected
+Time: Month 1
+┌────────────────┐
+│ Rate: $50/kg   │
+│ Effective: Jan │
+│ Status: Active │
+└────────────────┘
+        │
+        │ Collections use $50
+        ▼
+┌────────────────┐
+│ Collections    │
+│ • 100kg @ $50  │
+│ • 150kg @ $50  │
+└────────────────┘
 
-2. Data Collection
-   ├─> Gather pending collections
-   └─> Gather pending payments
+Time: Month 2 (New Rate Created)
+┌────────────────┐     ┌────────────────┐
+│ Rate: $50/kg   │     │ Rate: $55/kg   │
+│ Effective: Jan │     │ Effective: Feb │
+│ Status:Inactive│     │ Status: Active │
+│ To: Jan 31     │     │ To: NULL       │
+└────────────────┘     └────────────────┘
+        │                      │
+        │ Old collections      │ New collections use $55
+        │ still show $50       ▼
+        ▼              ┌────────────────┐
+┌────────────────┐    │ Collections    │
+│ Collections    │    │ • 120kg @ $55  │
+│ • 100kg @ $50  │    │ • 180kg @ $55  │
+│ • 150kg @ $50  │    └────────────────┘
+└────────────────┘
 
-3. Sync Request
-   ├─> Send device_id
-   ├─> Send last_sync_timestamp
-   ├─> Send pending data
-   └─> Receive server updates
+IMMUTABILITY: Historical collections永远保持原始rate
+```
 
-4. Conflict Detection
-   ├─> Compare versions
-   ├─> Detect concurrent modifications
-   └─> Create conflict records
+### Payment Calculation
 
-5. Resolution
-   ├─> Automatic: Server wins (default)
-   ├─> Manual: User chooses
-   └─> Merge: Combine changes
+```
+Supplier: Supplier A
+Period: February 2025
 
-6. Update Local Store
-   ├─> Mark synced items
-   ├─> Add server data
-   └─> Update sync timestamp
+┌─────────────────────────────────────┐
+│         COLLECTIONS                 │
+├─────────────────────────────────────┤
+│ Date       │ Quantity │ Rate │ Amt │
+├────────────┼──────────┼──────┼─────┤
+│ Feb 15     │ 25.5 kg  │ $55  │$1403│
+│ Feb 16     │ 30.2 kg  │ $55  │$1661│
+│ Feb 20     │ 28.8 kg  │ $55  │$1584│
+├────────────┴──────────┴──────┼─────┤
+│         TOTAL COLLECTED      │$4648│
+└──────────────────────────────┴─────┘
+                -
+┌─────────────────────────────────────┐
+│          PAYMENTS                   │
+├─────────────────────────────────────┤
+│ Date       │ Type     │    Amount   │
+├────────────┼──────────┼─────────────┤
+│ Feb 10     │ Advance  │    $1000    │
+│ Feb 25     │ Partial  │    $1500    │
+├────────────┴──────────┼─────────────┤
+│         TOTAL PAID     │    $2500    │
+└────────────────────────┴─────────────┘
+                =
+┌─────────────────────────────────────┐
+│         BALANCE DUE                 │
+│           $2,148.00                 │
+└─────────────────────────────────────┘
 ```
 
 ## Security Architecture
 
-### Authentication Flow
-
 ```
-1. User Login
-   ├─> Email/Password validation
-   ├─> Device ID capture
-   └─> JWT token generation
-
-2. Token Storage
-   ├─> Secure token storage (SecureStore)
-   └─> Token included in API headers
-
-3. Token Validation
-   ├─> Middleware checks token
-   ├─> User model loaded
-   └─> Request authorized
-
-4. Token Refresh
-   └─> Automatic on expiration
-```
-
-### Authorization (RBAC)
-
-```
-User Role → Permissions → Resource Access
-
-Admin
-├─> Full system access
-├─> User management
-└─> System configuration
-
-Manager
-├─> View all data
-├─> Manage suppliers/products
-└─> View reports
-
-Collector
-├─> Create collections
-├─> Create payments
-├─> View own data
-└─> Manage assigned suppliers
-
-Viewer
-└─> Read-only access
-```
-
-### Data Protection
-
-1. **In Transit**
-   - HTTPS/TLS encryption
-   - Secure WebSocket connections (future)
-
-2. **At Rest**
-   - Database encryption capability
-   - Secure credential storage
-   - Encrypted backups
-
-3. **In Use**
-   - Input sanitization
-   - SQL injection protection (Eloquent)
-   - XSS protection (Laravel)
-   - CSRF protection
-
-## Scalability Considerations
-
-### Backend Scalability
-
-1. **Horizontal Scaling**
-   - Stateless API design
-   - Load balancer ready
-   - Session stored in database/Redis
-
-2. **Database Optimization**
-   - Proper indexing
-   - Query optimization
-   - Connection pooling
-   - Read replicas (future)
-
-3. **Caching Strategy**
-   - API response caching
-   - Database query caching
-   - Redis integration (future)
-
-### Frontend Scalability
-
-1. **Performance**
-   - Lazy loading
-   - Pagination
-   - Virtual lists for large datasets
-   - Image optimization
-
-2. **Bundle Size**
-   - Code splitting
-   - Tree shaking
-   - Minimal dependencies
-
-## Error Handling
-
-### Backend Errors
-
-```
-Exception → Handler → Log → JSON Response
-
-Types:
-- Validation Errors (422)
-- Authentication Errors (401)
-- Authorization Errors (403)
-- Not Found Errors (404)
-- Server Errors (500)
+┌─────────────────────────────────────────────────────────┐
+│                   SECURITY LAYERS                        │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Layer 1: NETWORK SECURITY                              │
+│  ┌────────────────────────────────────────────────┐    │
+│  │ • HTTPS/TLS 1.3                                │    │
+│  │ • Certificate Pinning                          │    │
+│  │ • Firewall Rules                               │    │
+│  └────────────────────────────────────────────────┘    │
+│                        ▼                                 │
+│  Layer 2: AUTHENTICATION                                │
+│  ┌────────────────────────────────────────────────┐    │
+│  │ • Token-based (Sanctum)                        │    │
+│  │ • Bcrypt Password Hashing                      │    │
+│  │ • Secure Token Storage                         │    │
+│  │ • Session Management                           │    │
+│  └────────────────────────────────────────────────┘    │
+│                        ▼                                 │
+│  Layer 3: AUTHORIZATION                                 │
+│  ┌────────────────────────────────────────────────┐    │
+│  │ • RBAC (Role-Based Access Control)             │    │
+│  │ • ABAC (Attribute-Based Access Control)        │    │
+│  │ • Permission Checks                            │    │
+│  └────────────────────────────────────────────────┘    │
+│                        ▼                                 │
+│  Layer 4: INPUT VALIDATION                              │
+│  ┌────────────────────────────────────────────────┐    │
+│  │ • Server-side Validation                       │    │
+│  │ • Client-side Validation                       │    │
+│  │ • Sanitization                                 │    │
+│  │ • Type Checking                                │    │
+│  └────────────────────────────────────────────────┘    │
+│                        ▼                                 │
+│  Layer 5: DATA PROTECTION                               │
+│  ┌────────────────────────────────────────────────┐    │
+│  │ • SQL Injection Prevention                     │    │
+│  │ • XSS Prevention                               │    │
+│  │ • CSRF Protection                              │    │
+│  │ • Encrypted Storage                            │    │
+│  └────────────────────────────────────────────────┘    │
+│                        ▼                                 │
+│  Layer 6: AUDIT & MONITORING                            │
+│  ┌────────────────────────────────────────────────┐    │
+│  │ • Audit Logging                                │    │
+│  │ • Security Monitoring                          │    │
+│  │ • Anomaly Detection                            │    │
+│  │ • Incident Response                            │    │
+│  └────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Frontend Errors
-
-```
-Error → Catch → Display to User → Log
-
-Types:
-- Network Errors
-- Validation Errors
-- Sync Conflicts
-- Application Errors
-```
-
-## Testing Strategy
-
-### Backend Testing
-
-1. **Unit Tests**
-   - Model methods
-   - Service logic
-   - Utilities
-
-2. **Integration Tests**
-   - API endpoints
-   - Database interactions
-   - Authentication flow
-
-3. **Feature Tests**
-   - Complete user flows
-   - Sync process
-   - Conflict resolution
-
-### Frontend Testing
-
-1. **Unit Tests**
-   - Redux reducers
-   - Utility functions
-   - Components
-
-2. **Integration Tests**
-   - Redux actions
-   - API service
-   - Sync service
-
-3. **E2E Tests**
-   - User flows
-   - Offline scenarios
-   - Sync scenarios
-
-## Monitoring and Observability
-
-### Metrics to Track
-
-1. **Performance**
-   - API response times
-   - Database query times
-   - App load time
-
-2. **Business**
-   - Active users
-   - Collections per day
-   - Payments processed
-   - Sync success rate
-
-3. **Errors**
-   - Error rates
-   - Failed syncs
-   - API failures
-
-## Future Enhancements
-
-### Phase 2
-- Real-time notifications (WebSockets)
-- Advanced reporting dashboard
-- Data export functionality
-- Bulk operations
-
-### Phase 3
-- Machine learning for fraud detection
-- Predictive analytics
-- Advanced conflict resolution AI
-- Multi-tenant support
-
-### Phase 4
-- Integration with accounting systems
-- Mobile payment gateways
-- Blockchain for audit trail
-- IoT device integration
-
-## Dependencies
+## Technology Stack
 
 ### Backend
-- Laravel 11.x (LTS)
-- Laravel Sanctum (Auth)
-- PHP 8.1+ (LTS)
-- MySQL 5.7+ (LTS)
+- **Language**: PHP 8.1+
+- **Framework**: Laravel (LTS)
+- **Database**: MySQL 8.0+ / MariaDB 10.5+
+- **Authentication**: Laravel Sanctum
+- **Architecture**: Clean Architecture
+- **Patterns**: Repository, Service, DTO
 
 ### Frontend
-- React Native (LTS)
-- Expo SDK (Stable)
-- Redux Toolkit (Latest)
-- React Navigation (Latest)
+- **Framework**: React Native 0.74
+- **Platform**: Expo SDK 51
+- **Language**: TypeScript
+- **Local Storage**: SQLite + SecureStore
+- **State Management**: Context API
+- **Architecture**: Clean Architecture
 
-All dependencies chosen for:
-- Long-term support
-- Active maintenance
-- Large community
-- Security updates
+### Infrastructure
+- **Web Server**: Nginx / Apache
+- **Container**: Docker (optional)
+- **SSL/TLS**: Let's Encrypt
+- **Monitoring**: Custom logging
+- **Backup**: Automated MySQL dumps
+
+## Key Design Decisions
+
+### 1. Clean Architecture
+- Clear separation of concerns
+- Framework independence at domain level
+- Testable business logic
+- Maintainable codebase
+
+### 2. Offline-First Design
+- Local SQLite storage
+- Event-driven synchronization
+- Conflict resolution
+- Zero data loss guarantee
+
+### 3. Immutable Rate History
+- Rates never modified after creation
+- New rates create new versions
+- Historical integrity guaranteed
+- Accurate financial reporting
+
+### 4. Optimistic Locking
+- Version-based conflict detection
+- Last-write-wins with notification
+- Minimal blocking
+- Better concurrency
+
+### 5. Minimal Dependencies
+- Use native capabilities
+- Only essential libraries
+- LTS-supported dependencies
+- Reduced technical debt
+
+## Deployment Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│            PRODUCTION ENVIRONMENT            │
+├─────────────────────────────────────────────┤
+│                                              │
+│  ┌────────────┐      ┌────────────┐        │
+│  │   Mobile   │      │   Mobile   │        │
+│  │   App      │ ...  │   App      │        │
+│  │ (Users)    │      │ (Users)    │        │
+│  └─────┬──────┘      └─────┬──────┘        │
+│        │                   │                │
+│        └───────┬───────────┘                │
+│                │ HTTPS                       │
+│                ▼                             │
+│  ┌────────────────────────────┐            │
+│  │     Load Balancer          │            │
+│  │    (Optional)              │            │
+│  └─────────────┬──────────────┘            │
+│                │                             │
+│       ┌────────┴────────┐                  │
+│       │                 │                  │
+│       ▼                 ▼                  │
+│  ┌─────────┐      ┌─────────┐            │
+│  │Backend-1│      │Backend-2│            │
+│  │  (API)  │      │  (API)  │            │
+│  └────┬────┘      └────┬────┘            │
+│       │                │                  │
+│       └────────┬───────┘                  │
+│                ▼                           │
+│  ┌─────────────────────────┐             │
+│  │   MySQL Database        │             │
+│  │   (Master + Replicas)   │             │
+│  └─────────────────────────┘             │
+│                                            │
+│  ┌─────────────────────────┐             │
+│  │   Backup System         │             │
+│  │   (Automated)           │             │
+│  └─────────────────────────┘             │
+└─────────────────────────────────────────────┘
+```
+
+## Performance Characteristics
+
+### Response Times (Target)
+- API Endpoints: < 200ms (average)
+- Database Queries: < 50ms (average)
+- Page Load: < 1s
+- Sync Operation: < 5s (100 items)
+
+### Scalability
+- Support: 1000+ concurrent users
+- Collections: Millions of records
+- Sync: Thousands of pending items
+- Database: Optimized indexes
+
+### Availability
+- Target Uptime: 99.9%
+- Backup Frequency: Daily
+- Recovery Time: < 1 hour
+- Data Loss: Zero tolerance
+
+---
+
+**This architecture ensures a scalable, secure, and maintainable system for production use.**

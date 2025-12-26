@@ -1,295 +1,309 @@
-# Quick Start Guide
+# PayMaster Quick Start Guide
 
-Get TransacTrack up and running in minutes!
+This guide will help you get the PayMaster application running in 10 minutes.
 
 ## Prerequisites
 
-Install the following before you begin:
+- PHP 8.1+ installed
+- MySQL 8.0+ installed and running
+- Node.js 18+ and npm installed
+- Expo CLI (`npm install -g expo-cli`)
+- A smartphone with Expo Go app (iOS/Android) OR an emulator
 
-- **Backend**: PHP 8.1+, Composer, MySQL
-- **Mobile**: Node.js 18+, npm, Expo CLI
-
-## Quick Setup (Development)
-
-### 1. Clone the Repository
+## Step 1: Clone and Setup Database (3 minutes)
 
 ```bash
-git clone https://github.com/kasunvimarshana/TransacTrack.git
-cd TransacTrack
+# Clone the repository
+git clone https://github.com/kasunvimarshana/PayMaster.git
+cd PayMaster
+
+# Create database
+mysql -u root -p -e "CREATE DATABASE paymaster CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+
+# Run migrations in order
+cd backend/database/migrations
+mysql -u root -p paymaster < 001_create_users_table.sql
+mysql -u root -p paymaster < 002_create_suppliers_table.sql
+mysql -u root -p paymaster < 003_create_products_table.sql
+mysql -u root -p paymaster < 004_create_product_rates_table.sql
+mysql -u root -p paymaster < 005_create_collections_table.sql
+mysql -u root -p paymaster < 006_create_payments_table.sql
+mysql -u root -p paymaster < 007_create_sync_logs_table.sql
+
+# Optional: Load sample data
+cd ../seeds
+mysql -u root -p paymaster < sample_data.sql
 ```
 
-### 2. Backend Setup (5 minutes)
+## Step 2: Configure Backend (1 minute)
 
 ```bash
-# Navigate to backend
+# Go to backend directory
+cd ../../..
 cd backend
 
-# Install dependencies
-composer install
-
-# Setup environment
+# Copy environment file
 cp .env.example .env
 
 # Edit .env with your database credentials
-nano .env  # or use your preferred editor
-
-# Generate application key
-php artisan key:generate
-
-# Create database
-mysql -u root -p -e "CREATE DATABASE transactrack;"
-
-# Run migrations
-php artisan migrate
-
-# Start server
-php artisan serve
+# Update these lines:
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=paymaster
+# DB_USERNAME=root
+# DB_PASSWORD=your_password
 ```
 
-Backend will be available at `http://localhost:8000`
-
-### 3. Mobile App Setup (3 minutes)
+## Step 3: Start Backend Server (1 minute)
 
 ```bash
-# Navigate to mobile (in a new terminal)
-cd mobile
+# Start PHP built-in server
+php -S localhost:8000 -t public
 
-# Install dependencies
+# You should see:
+# PHP 8.x Development Server (http://localhost:8000) started
+```
+
+Leave this terminal running and open a new terminal.
+
+## Step 4: Test Backend API (1 minute)
+
+```bash
+# Test health endpoint
+curl http://localhost:8000/health
+
+# Should return:
+# {"success":true,"message":"PayMaster API is running","version":"1.0.0","timestamp":"..."}
+
+# Test registration
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John Doe","email":"john@example.com","password":"password123"}'
+
+# Should return success with token
+```
+
+## Step 5: Setup Frontend (2 minutes)
+
+```bash
+# Open new terminal
+cd frontend
+
+# Install dependencies (this takes ~2 minutes)
 npm install
+```
 
-# Start Expo
+## Step 6: Configure Frontend API Endpoint (30 seconds)
+
+```bash
+# Edit src/config/app.config.ts
+# Update API_BASE_URL if your backend is not on localhost:8000
+```
+
+If using your phone with Expo Go:
+- Find your computer's local IP address
+- Update `API_BASE_URL` to `http://YOUR_LOCAL_IP:8000`
+
+Example:
+```typescript
+export const API_BASE_URL = 'http://192.168.1.100:8000';
+```
+
+## Step 7: Start Frontend (1 minute)
+
+```bash
+# Start Expo development server
 npm start
+
+# You should see a QR code in the terminal
 ```
 
-### 4. Test the Application
+## Step 8: Run on Device/Emulator (1 minute)
 
-1. **Scan QR code** with Expo Go app (iOS/Android)
-2. **Register a new user** in the app
-3. **Login** with your credentials
-4. **Explore** the features!
+### Option A: Physical Device
+1. Install Expo Go app from App Store (iOS) or Play Store (Android)
+2. Open Expo Go app
+3. Scan the QR code from terminal
+4. Wait for app to load
 
-## Quick Test Data (Optional)
+### Option B: Emulator/Simulator
+- Press `a` in terminal for Android emulator
+- Press `i` in terminal for iOS simulator
 
-Create test data via API or directly in database:
+## Step 9: Login and Test (1 minute)
 
-### Create a Test User
+1. App should open to login screen
+2. Use one of these credentials:
+   - Email: `admin@paymaster.com`
+   - Password: `password123`
+   
+   OR
+   
+   - Email: `john@example.com` (if you registered in Step 4)
+   - Password: `password123`
 
-```bash
-curl -X POST http://localhost:8000/api/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Test User",
-    "email": "test@example.com",
-    "password": "password",
-    "password_confirmation": "password"
-  }'
-```
+3. After successful login, you should see the dashboard
 
-### Login
-
-```bash
-curl -X POST http://localhost:8000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "password"
-  }'
-```
-
-Copy the token from the response and use it for authenticated requests.
-
-## Configuration Tips
-
-### Backend (.env)
-
-Key settings to configure:
-
-```env
-# Application
-APP_NAME=TransacTrack
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://localhost:8000
-
-# Database
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=transactrack
-DB_USERNAME=root
-DB_PASSWORD=your_password
-
-# CORS (for mobile app)
-SANCTUM_STATEFUL_DOMAINS=localhost:3000,localhost:19006
-```
-
-### Mobile (app.json)
-
-Update API URL:
-
-```json
-{
-  "expo": {
-    "extra": {
-      "apiUrl": "http://YOUR_LOCAL_IP:8000/api"
-    }
-  }
-}
-```
-
-**Note**: Use your computer's local IP (e.g., 192.168.1.100) not localhost when testing on a physical device.
-
-## Common Issues
+## Troubleshooting
 
 ### Backend Issues
 
-**Issue**: `php artisan migrate` fails
-- **Solution**: Check database credentials in `.env`
-- **Solution**: Ensure MySQL is running: `sudo systemctl start mysql`
+**Database connection failed:**
+- Check MySQL is running: `mysql -u root -p`
+- Verify credentials in `.env` file
+- Ensure database exists: `SHOW DATABASES;`
 
-**Issue**: Permission denied errors
-- **Solution**: Fix storage permissions:
-  ```bash
-  chmod -R 775 storage bootstrap/cache
-  ```
+**Port 8000 already in use:**
+- Use different port: `php -S localhost:8080 -t public`
+- Update frontend API_BASE_URL accordingly
 
-### Mobile Issues
+**404 errors:**
+- Ensure you're in the `backend` directory
+- Verify `public/index.php` exists
 
-**Issue**: Cannot connect to API
-- **Solution**: Use your local IP address, not localhost
-- **Solution**: Ensure backend is running
-- **Solution**: Check firewall settings
+### Frontend Issues
 
-**Issue**: Expo app not loading
-- **Solution**: Clear cache: `expo start -c`
-- **Solution**: Delete node_modules and reinstall
+**Cannot connect to API:**
+- Check backend is running on `http://localhost:8000/health`
+- If using phone: Update API_BASE_URL to your computer's IP
+- Disable firewall temporarily to test
 
-## Next Steps
+**Expo won't start:**
+- Clear cache: `npx expo start -c`
+- Delete node_modules: `rm -rf node_modules && npm install`
 
-1. **Read the Documentation**
-   - [README.md](README.md) - System overview
-   - [API.md](API.md) - API endpoints
-   - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+**App shows white screen:**
+- Check Metro bundler is running
+- Look for errors in terminal
+- Reload app: Shake device and press "Reload"
 
-2. **Explore Features**
-   - Create suppliers
-   - Add products
-   - Record collections
-   - Process payments
-   - Test offline sync
+## What Works Now?
 
-3. **Customize**
-   - Modify user roles
-   - Add custom fields
-   - Extend API endpoints
-   - Customize UI
+✅ **Backend:**
+- User authentication (register, login, logout)
+- User management (get user info)
+- Supplier CRUD operations
+- Health check endpoint
 
-4. **Deploy to Production**
-   - See [DEPLOYMENT.md](DEPLOYMENT.md)
+✅ **Frontend:**
+- Login screen
+- User authentication flow
+- Dashboard with user info
+- Token management
+- Error handling
 
-## Development Workflow
+## What's Next?
+
+To continue development:
+
+1. **Test the API with curl:**
+```bash
+# Login to get token
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@paymaster.com","password":"password123"}' \
+  | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+
+# Create a supplier
+curl -X POST http://localhost:8000/suppliers \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Tea Supplier A","code":"SUP001","region":"North","phone":"+1234567890"}'
+
+# List suppliers
+curl -X GET http://localhost:8000/suppliers \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+2. **Explore the code:**
+- Backend: `backend/src/`
+- Frontend: `frontend/src/`
+- Documentation: `*.md` files in root
+
+3. **Read implementation status:**
+- See `IMPLEMENTATION_STATUS.md` for detailed status
+
+## Development Tips
 
 ### Backend Development
 
 ```bash
-# Watch for file changes (optional)
-php artisan serve --watch
+# Watch for PHP errors in terminal where server is running
+# Errors are displayed in real-time
 
-# Run tests
-php artisan test
-
-# Clear cache
-php artisan cache:clear
+# Test endpoints with curl or Postman
+# API documentation: backend/API_DOCUMENTATION.md
 ```
 
-### Mobile Development
+### Frontend Development
 
 ```bash
-# Development
-npm start
+# Enable hot reload (automatic)
+# Changes to code reload app automatically
 
-# Run on specific platform
-npm run ios      # iOS simulator
-npm run android  # Android emulator
+# Debug with React Native Debugger
+# Shake device -> "Debug"
 
-# Lint code
-npm run lint
-
-# Run tests
-npm test
+# View console logs in terminal
 ```
 
-## Default Credentials
+### Database Management
 
-After seeding (if you create a seeder):
-- Email: admin@transactrack.com
-- Password: password
+```bash
+# Access MySQL
+mysql -u root -p paymaster
 
-**Important**: Change these in production!
+# View tables
+SHOW TABLES;
+
+# Check users
+SELECT id, name, email, roles FROM users;
+
+# Check suppliers
+SELECT id, name, code, region FROM suppliers;
+```
 
 ## Getting Help
 
-- **Documentation**: See docs in repository
-- **Issues**: https://github.com/kasunvimarshana/TransacTrack/issues
-- **API**: See [API.md](API.md)
+- **Documentation:** Check all `*.md` files in repository
+- **Architecture:** Read `ARCHITECTURE.md`
+- **Implementation:** Check `IMPLEMENTATION_STATUS.md`
+- **API Reference:** See `backend/API_DOCUMENTATION.md`
+- **Security:** Read `SECURITY.md`
 
-## Quick Reference
+## Demo Credentials
 
-### Useful Commands
+The sample data includes these test users:
 
-```bash
-# Backend
-php artisan serve              # Start server
-php artisan migrate           # Run migrations
-php artisan migrate:fresh     # Fresh migration
-php artisan db:seed          # Seed database
-php artisan config:cache     # Cache config
-php artisan route:list       # List routes
+| Email | Password | Role | Permissions |
+|-------|----------|------|-------------|
+| admin@paymaster.com | password123 | admin | Full access |
+| manager@paymaster.com | password123 | manager | Manage operations |
+| collector@paymaster.com | password123 | collector | Data collection only |
 
-# Mobile
-npm start                    # Start Expo
-npm run ios                 # iOS simulator
-npm run android            # Android emulator
-expo start -c              # Clear cache
-```
+## Success Checklist
 
-### File Structure
+- [ ] Backend server running on http://localhost:8000
+- [ ] Health endpoint returns success
+- [ ] Can register new user via API
+- [ ] Can login via API
+- [ ] Frontend app loads on device/emulator
+- [ ] Can login through mobile app
+- [ ] Dashboard displays user information
 
-```
-TransacTrack/
-├── backend/            # Laravel API
-│   ├── app/           # Application code
-│   ├── config/        # Configuration
-│   ├── database/      # Migrations, seeders
-│   └── routes/        # API routes
-├── mobile/            # React Native app
-│   ├── src/          # Application code
-│   ├── App.tsx       # Entry point
-│   └── app.json      # Expo config
-└── docs/             # Documentation
-```
+If all items are checked, you're ready to develop! 🎉
 
-## Tips for Success
+## Next Steps
 
-1. **Start Simple**: Test basic features first
-2. **Check Logs**: Monitor backend logs for errors
-3. **Use Postman**: Test API endpoints independently
-4. **Read Errors**: Error messages are helpful!
-5. **Ask Questions**: Use GitHub issues
-
-## Ready for Production?
-
-When you're ready to deploy:
-
-1. Follow [DEPLOYMENT.md](DEPLOYMENT.md)
-2. Review [SECURITY.md](SECURITY.md)
-3. Update environment variables
-4. Set up SSL/HTTPS
-5. Configure backups
-6. Set up monitoring
+1. Read `IMPLEMENTATION_STATUS.md` to see what's implemented
+2. Check `ARCHITECTURE.md` to understand the system design
+3. Explore the codebase in `backend/src` and `frontend/src`
+4. Start implementing missing features
+5. Follow Clean Architecture principles
 
 ---
 
-**Happy coding! 🚀**
-
-For detailed information, see the main [README.md](README.md)
+**Estimated Time to Complete:** 10 minutes
+**Difficulty:** Easy
+**Prerequisites Met?** Yes | No
+**Status:** Ready to develop ✅
