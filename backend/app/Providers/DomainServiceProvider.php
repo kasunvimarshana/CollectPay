@@ -48,6 +48,10 @@ use App\Application\UseCases\BatchSyncUseCase;
 use App\Domain\Services\SupplierBalanceService;
 use App\Domain\Services\CollectionRateService;
 
+// Domain Events
+use App\Domain\Events\EventDispatcherInterface;
+use App\Infrastructure\Events\LaravelEventDispatcher;
+
 /**
  * Domain Service Provider
  * 
@@ -91,6 +95,9 @@ class DomainServiceProvider extends ServiceProvider
     {
         $this->app->singleton(SupplierBalanceService::class);
         $this->app->singleton(CollectionRateService::class);
+        
+        // Bind event dispatcher interface to Laravel implementation
+        $this->app->singleton(EventDispatcherInterface::class, LaravelEventDispatcher::class);
     }
 
     /**

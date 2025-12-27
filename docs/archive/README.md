@@ -40,6 +40,13 @@ These files have been moved to the archive to:
 - `SWAGGER_IMPLEMENTATION_COMPLETE.md` - Task completion marker
 - `SWAGGER_VERIFICATION_COMPLETE.md` - Task completion marker
 - `FUTURE_ENHANCEMENTS_COMPLETE.md` - Task completion marker
+- `TASK_COMPLETE.md` - Overall task completion report
+- `ORGANIZATION_COMPLETE.md` - Documentation organization completion
+
+### Project Summaries
+- `FINAL_SUMMARY.md` - Final implementation summary
+- `SUMMARY.md` - Complete project summary
+- `ORGANIZATION_SUMMARY.md` - Documentation organization summary
 
 ## Current Documentation
 

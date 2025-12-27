@@ -30,13 +30,28 @@ This directory contains comprehensive documentation for the TrackVault applicati
 - [Frontend Enhancements](frontend/FRONTEND_ENHANCEMENTS.md) - Enhanced features
 - [Visual Overview](frontend/FRONTEND_VISUAL_OVERVIEW.md) - UI/UX documentation
 
+### Architecture & Design
+- [Backend Refactoring Report](architecture/BACKEND_REFACTORING_COMPLETE.md) - Clean architecture refactoring
+- [Clean Architecture Guide](architecture/CLEAN_ARCHITECTURE_REFACTORING_REPORT.md) - Architecture principles
+- [Offline Sync Architecture](architecture/OFFLINE_SYNC_ARCHITECTURE.md) - Offline sync design
+- [Offline Sync Implementation](architecture/OFFLINE_SYNC_IMPLEMENTATION_SUMMARY.md) - Implementation details
+- [Offline Sync Quick Reference](architecture/OFFLINE_SYNC_QUICKREF.md) - Quick reference guide
+
 ### Component Guides
 - [Picker Component](components/PICKER_COMPONENT.md) - Enhanced picker component documentation
+
+### Testing Documentation
+- [Offline Sync Testing](testing/OFFLINE_SYNC_TESTING.md) - Offline functionality testing
+- [Print Functionality Testing](testing/PRINT_FUNCTIONALITY_TESTING.md) - Print feature testing
 
 ### Verification & Testing
 - [Complete Verification](verification/COMPLETE_VERIFICATION.md) - Comprehensive verification report
 - [Final Verification](verification/FINAL_VERIFICATION_COMPLETE.md) - Final verification status
+- [Implementation Verification](verification/IMPLEMENTATION_VERIFICATION_FINAL.md) - Implementation verification
+- [Implementation Verification Report](verification/IMPLEMENTATION_VERIFICATION_REPORT.md) - Detailed verification
+- [Offline Sync Verification](verification/OFFLINE_SYNC_COMPLETE_VERIFICATION.md) - Offline sync verification
 - [Frontend Verification](verification/FRONTEND_COMPLETENESS_VERIFICATION.md) - Frontend verification
+- [Complete Application Summary](verification/COMPLETE_APPLICATION_FINAL_SUMMARY.md) - Application status
 
 ### Deployment
 - [Deployment Guide](deployment/DEPLOYMENT.md) - Production deployment instructions
@@ -46,8 +61,11 @@ This directory contains comprehensive documentation for the TrackVault applicati
 - [Security Documentation](security/SECURITY.md) - Security architecture and best practices
 
 ### Project Status & Summaries
-- [Task Complete](../TASK_COMPLETE.md) - Task completion report
-- [Final Summary](../FINAL_SUMMARY.md) - Overall project summary
+- [Task Complete](archive/TASK_COMPLETE.md) - Task completion report
+- [Final Summary](archive/FINAL_SUMMARY.md) - Overall project summary
+- [Project Summary](archive/SUMMARY.md) - Project summary
+- [Organization Complete](archive/ORGANIZATION_COMPLETE.md) - Organization task completion
+- [Organization Summary](archive/ORGANIZATION_SUMMARY.md) - Organization summary
 - [Complete Application Summary](verification/COMPLETE_APPLICATION_FINAL_SUMMARY.md) - Application status
 
 ## Directory Structure
@@ -62,10 +80,18 @@ docs/
 ├── api/                         # API documentation
 │   ├── API.md                   # API reference
 │   └── SWAGGER.md               # Swagger guide
+├── architecture/                # Architecture & design documents
+│   ├── BACKEND_REFACTORING_COMPLETE.md
+│   ├── CLEAN_ARCHITECTURE_REFACTORING_REPORT.md
+│   ├── OFFLINE_SYNC_ARCHITECTURE.md
+│   ├── OFFLINE_SYNC_IMPLEMENTATION_SUMMARY.md
+│   └── OFFLINE_SYNC_QUICKREF.md
 ├── implementation/              # Implementation guides
 │   ├── IMPLEMENTATION.md        # Main implementation guide
 │   ├── IMPLEMENTATION_GUIDE.md  # Detailed guide
-│   └── IMPLEMENTATION_FINAL_SUMMARY.md
+│   ├── IMPLEMENTATION_FINAL_SUMMARY.md
+│   ├── IMPLEMENTATION_COMPLETE_FINAL.md
+│   └── PRINT_IMPLEMENTATION_SUMMARY.md
 ├── frontend/                    # Frontend documentation
 │   ├── FRONTEND_ARCHITECTURE_GUIDE.md
 │   ├── FRONTEND_IMPLEMENTATION_FINAL_SUMMARY.md
@@ -73,11 +99,30 @@ docs/
 │   └── FRONTEND_VISUAL_OVERVIEW.md
 ├── components/                  # Component documentation
 │   └── PICKER_COMPONENT.md
+├── testing/                     # Testing documentation
+│   ├── OFFLINE_SYNC_TESTING.md
+│   └── PRINT_FUNCTIONALITY_TESTING.md
 ├── verification/                # Verification reports
 │   ├── COMPLETE_VERIFICATION.md
 │   ├── FINAL_VERIFICATION_COMPLETE.md
-│   └── IMPLEMENTATION_VERIFICATION_FINAL.md
+│   ├── IMPLEMENTATION_VERIFICATION_FINAL.md
+│   ├── IMPLEMENTATION_VERIFICATION_REPORT.md
+│   ├── OFFLINE_SYNC_COMPLETE_VERIFICATION.md
+│   ├── FRONTEND_COMPLETENESS_VERIFICATION.md
+│   └── COMPLETE_APPLICATION_FINAL_SUMMARY.md
 ├── deployment/                  # Deployment documentation
+│   ├── DEPLOYMENT.md
+│   └── DEPLOYMENT_CHECKLIST.md
+├── security/                    # Security documentation
+│   └── SECURITY.md
+└── archive/                     # Historical documents & summaries
+    ├── TASK_COMPLETE.md
+    ├── FINAL_SUMMARY.md
+    ├── SUMMARY.md
+    ├── ORGANIZATION_COMPLETE.md
+    ├── ORGANIZATION_SUMMARY.md
+    └── (various historical files)
+```
 │   ├── DEPLOYMENT.md
 │   └── DEPLOYMENT_CHECKLIST.md
 └── security/                    # Security documentation

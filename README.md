@@ -95,9 +95,11 @@ All documentation is organized in `/docs` with the following structure:
 - **[Archive](docs/archive/)** - Older versions and superseded documents
 
 ### Status Reports
-- **[TASK_COMPLETE.md](TASK_COMPLETE.md)** - Task completion report
-- **[FINAL_SUMMARY.md](FINAL_SUMMARY.md)** - Final implementation summary
-- **[SUMMARY.md](SUMMARY.md)** - Complete project summary
+- **[DOCUMENTATION.md](DOCUMENTATION.md)** - Complete documentation guide
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick developer reference
+- **[Task Completion Report](docs/archive/TASK_COMPLETE.md)** - Task completion report
+- **[Final Summary](docs/archive/FINAL_SUMMARY.md)** - Final implementation summary
+- **[Project Summary](docs/archive/SUMMARY.md)** - Complete project summary
 
 ### Component-Specific Documentation
 - **[backend/README.md](backend/README.md)** - Backend API documentation
@@ -180,12 +182,26 @@ cd frontend && npm test
 
 ## 🎨 Design Principles
 
-- **Clean Architecture** - Clear separation of concerns
-- **SOLID** - Single responsibility, Open/closed, Liskov substitution, Interface segregation, Dependency inversion
-- **DRY** - Don't Repeat Yourself
-- **KISS** - Keep It Simple
-- **Modular** - Easy to extend and maintain
-- **Testable** - Designed for comprehensive testing
+TrackVault strictly adheres to industry best practices and architectural principles:
+
+- **Clean Architecture** - Clear separation of concerns across four distinct layers (Domain, Application, Infrastructure, Presentation)
+- **SOLID Principles**
+  - **Single Responsibility**: Each class has one reason to change
+  - **Open/Closed**: Open for extension, closed for modification
+  - **Liskov Substitution**: Interfaces can be substituted with any implementation
+  - **Interface Segregation**: Small, focused interfaces
+  - **Dependency Inversion**: Depend on abstractions, not concretions
+- **DRY (Don't Repeat Yourself)** - Business logic centralized, no duplication
+- **KISS (Keep It Simple, Stupid)** - Clear, focused classes with minimal complexity
+- **High Modularity** - Independent, loosely coupled components
+- **Testability** - Comprehensive unit, integration, and feature tests
+- **Maintainability** - Self-documenting code with clear structure
+- **Scalability** - Designed to grow with your business needs
+
+**Architecture Documentation**:
+- [Clean Architecture Implementation Guide](docs/architecture/CLEAN_ARCHITECTURE_IMPLEMENTATION.md)
+- [Backend Clean Architecture](backend/CLEAN_ARCHITECTURE.md)
+- [Frontend Clean Architecture](frontend/CLEAN_ARCHITECTURE.md)
 
 ## ✨ Enhanced Features (v2.3.0)
 
