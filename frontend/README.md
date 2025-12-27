@@ -1,297 +1,125 @@
-# TrackVault Frontend
+# TrackVault Mobile App
 
-React Native (Expo) mobile application for the TrackVault Data Collection and Payment Management System.
+Production-ready React Native (Expo) mobile application for the TrackVault Data Collection and Payment Management System.
 
-## Overview
+## Architecture
 
-This is the mobile frontend for TrackVault, providing an intuitive interface for:
-- User authentication and authorization
-- Full CRUD operations for suppliers
-- Full CRUD operations for products with multi-unit support
-- Collection recording with automatic rate application
-- Payment management with advance/partial/full payment support
-
-## Features
-
-- **Cross-Platform**: Runs on iOS and Android
-- **Authentication**: Secure token-based authentication with encrypted storage
-- **Role-Based Access**: Different UI/features based on user role (Admin, Collector, Finance)
-- **Complete CRUD**: Create, Read, Update, Delete functionality for all entities
-- **Form Validation**: Real-time validation with user-friendly error messages
-- **Clean Architecture**: Modular structure with clear separation of concerns
-- **Reusable Components**: Button, Input, Picker, FormModal, FloatingActionButton
-
-## Prerequisites
-
-- Node.js 18+ and npm
-- Expo CLI (`npm install -g expo-cli`)
-- iOS Simulator (macOS) or Android Emulator
-- Backend API running (see backend/README.md)
-
-## Installation
-
-1. Install dependencies:
-```bash
-npm install
-```
-
-2. Configure API endpoint:
-Create a `.env` file or edit `src/api/client.ts` and update the `API_URL` to point to your backend:
-```typescript
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
-```
-
-## Running the Application
-
-Start the development server:
-```bash
-npm start
-```
-
-This will open the Expo DevTools in your browser. From there you can:
-- Press `i` to open iOS simulator
-- Press `a` to open Android emulator
-- Scan QR code with Expo Go app on your physical device
-
-### Platform-Specific Commands
-
-Run on iOS:
-```bash
-npm run ios
-```
-
-Run on Android:
-```bash
-npm run android
-```
-
-Run on Web (experimental):
-```bash
-npm run web
-```
-
-## Project Structure
+This application follows **Clean Architecture** principles:
 
 ```
 frontend/
 ├── src/
-│   ├── api/           # API client and service methods
-│   │   ├── client.ts      # Axios configuration with interceptors
-│   │   ├── auth.ts        # Authentication API
-│   │   ├── supplier.ts    # Supplier API
-│   │   ├── product.ts     # Product & Rate API
-│   │   ├── collection.ts  # Collection API
-│   │   └── payment.ts     # Payment API
-│   ├── components/    # Reusable UI components
-│   │   ├── Button.tsx             # Reusable button component
-│   │   ├── Input.tsx              # Text input with validation
-│   │   ├── Picker.tsx             # Dropdown picker
-│   │   ├── DatePicker.tsx         # Date input component
-│   │   ├── FormModal.tsx          # Modal for forms
-│   │   ├── FloatingActionButton.tsx # FAB for create actions
-│   │   └── index.ts               # Component exports
-│   ├── contexts/      # React Context providers
-│   │   └── AuthContext.tsx
-│   ├── navigation/    # Navigation configuration
-│   │   └── AppNavigator.tsx
-│   ├── screens/       # Screen components
-│   │   ├── LoginScreen.tsx        # User authentication
-│   │   ├── HomeScreen.tsx         # Dashboard
-│   │   ├── SuppliersScreen.tsx    # Supplier CRUD
-│   │   ├── ProductsScreen.tsx     # Product CRUD
-│   │   ├── CollectionsScreen.tsx  # Collection CRUD
-│   │   └── PaymentsScreen.tsx     # Payment CRUD
-│   └── utils/         # Utility functions
-│       └── formatters.ts  # Date/amount formatters
-├── App.tsx            # Root component
-└── package.json
+│   ├── domain/             # Business logic
+│   │   ├── entities/       # Domain entities (TypeScript interfaces)
+│   │   ├── repositories/   # Repository interfaces
+│   │   └── services/       # Domain services
+│   ├── application/        # Use cases and state
+│   │   ├── useCases/       # Application use cases
+│   │   ├── state/          # State management
+│   │   └── validation/     # Input validation
+│   ├── infrastructure/     # External concerns
+│   │   ├── api/            # API client
+│   │   ├── storage/        # Local storage
+│   │   └── security/       # Security utilities
+│   └── presentation/       # UI layer
+│       ├── screens/        # Screen components
+│       ├── components/     # Reusable components
+│       └── navigation/     # Navigation setup
+├── assets/                 # Images and static resources
+└── __tests__/              # Tests
 ```
 
-## Demo Accounts
+## Features
 
-The backend provides three demo accounts for testing:
+- **User Management**: User authentication and profile management
+- **Supplier Management**: Create and manage supplier profiles
+- **Product Management**: Manage products with versioned rates
+- **Collection Tracking**: Record collections with multi-unit support
+- **Payment Management**: Track advance, partial, and full payments
+- **Automated Calculations**: Real-time payment calculations
+- **Offline Support**: Local persistence during connectivity loss
+- **Secure Storage**: Encrypted data storage on device
+- **Multi-User Support**: Concurrent operations across devices
 
-- **Admin**: `admin@trackvault.com` / `password`
-  - Full access to all features
-  - User management
-  - System configuration
+## Requirements
 
-- **Collector**: `collector@trackvault.com` / `password`
-  - Create and manage collections
-  - View suppliers and products
-  - Basic reporting
+- Node.js 18+ and npm/yarn
+- Expo CLI
+- iOS Simulator (for iOS development) or Android Studio (for Android)
 
-- **Finance**: `finance@trackvault.com` / `password`
-  - Manage payments
-  - View financial reports
-  - Balance reconciliation
+## Installation
 
-## Implemented Features
+1. **Navigate to frontend directory**:
+   ```bash
+   cd frontend
+   ```
 
-### Authentication ✅
-- Secure login with JWT tokens
-- Token stored in Expo SecureStore
-- Automatic token refresh handling
-- Role-based UI adaptation
-- Logout functionality
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-### Suppliers Management ✅
-- List all suppliers with pull-to-refresh
-- View supplier details
-- Create new suppliers
-- Edit existing suppliers
-- Delete suppliers with confirmation
-- Real-time form validation
-- Active/inactive status display
+3. **Configure environment**:
+   ```bash
+   # Create .env file with API endpoint
+   echo "API_BASE_URL=http://localhost:8000/api" > .env
+   ```
 
-### Products Management ✅
-- List all products with pull-to-refresh
-- View product details with rates
-- Create new products with unit selection
-- Edit existing products
-- Delete products with confirmation
-- Multi-unit support (kg, g, l, ml, unit)
-- Form validation for all fields
+4. **Start the development server**:
+   ```bash
+   npm start
+   ```
 
-### Collections Recording ✅
-- List all collections with calculated amounts
-- Create new collections with:
-  - Supplier selection dropdown
-  - Product selection dropdown
-  - Quantity input with validation
-  - Unit selection
-  - Date input
-  - Optional notes
-- Edit existing collections
-- Delete collections with confirmation
-- Automatic rate application from backend
-- Display of collected by user
+5. **Run on device/emulator**:
+   ```bash
+   # For iOS
+   npm run ios
+   
+   # For Android
+   npm run android
+   
+   # For web
+   npm run web
+   ```
 
-### Payments Management ✅
-- List all payments with type badges
-- Create new payments with:
-  - Supplier selection
-  - Amount input with validation
-  - Payment type (advance/partial/full)
-  - Payment method selection
-  - Reference number
-  - Date input
-  - Optional notes
-- Edit existing payments
-- Delete payments with confirmation
-- Payment type color coding
-- Display of processed by user
+## Project Structure
 
-## Component Library
+### Domain Layer
+Contains business entities, repository interfaces, and domain logic independent of frameworks.
 
-### Button
-Reusable button with variants:
-- `primary` (default): Blue background
-- `secondary`: White with blue border
-- `danger`: Red background
-- Loading state support
+### Application Layer
+Implements use cases, manages application state, and handles validation.
 
-### Input
-Text input with:
-- Label and required indicator
-- Error message display
-- Placeholder support
-- Multiline support
-- Keyboard type options
+### Infrastructure Layer
+Handles external concerns like API calls, local storage, and encryption.
 
-### Picker
-Dropdown selector with:
-- Modal-based selection
-- Label and required indicator
-- Error message display
-- Search-friendly list
+### Presentation Layer
+Contains UI components, screens, and navigation setup.
 
-### FormModal
-Full-screen modal for forms with:
-- Header with title and close button
-- Scrollable content
-- Keyboard-aware behavior
-- Slide-up animation
+## Key Screens
 
-### FloatingActionButton (FAB)
-Circular action button for create operations:
-- Fixed position (bottom-right)
-- Shadow for elevation
-- Customizable icon
-
-## Form Validation
-
-All forms include validation for:
-- Required fields
-- Email format validation
-- Numeric validation for amounts/quantities
-- Date format validation
-- Real-time error display
-
-## Architecture
-
-The application follows Clean Architecture principles:
-
-- **Presentation Layer**: React components and screens
-- **Business Logic Layer**: Context providers and hooks
-- **Data Layer**: API services and data models
-- **Infrastructure**: Navigation, storage, and utilities
+- **Login/Authentication**: User authentication
+- **Dashboard**: Overview of recent collections and payments
+- **Suppliers**: List and manage suppliers
+- **Products**: List and manage products
+- **Collections**: Record and view collections
+- **Payments**: Record and view payments
+- **Reports**: View financial reports and analytics
 
 ## State Management
 
-- **Auth State**: Global authentication context using React Context
-- **Local State**: Component-level state with useState
-- **API State**: Loading and error states managed per screen
-- **Form State**: Controlled inputs with validation
+The application uses a lightweight state management solution with React Context API for:
+- Authentication state
+- User session
+- Cached data
+- UI state
 
 ## Security
 
-- Tokens stored in Expo SecureStore (encrypted)
-- HTTPS required for production API calls
-- Automatic token expiration handling
-- No sensitive data in AsyncStorage
-- Server-side validation for all operations
-
-## Error Handling
-
-- User-friendly error messages
-- API error propagation
-- Confirmation dialogs for destructive actions
-- Loading states for async operations
-- Network error handling
-
-## Building for Production
-
-Create a production build:
-
-For iOS:
-```bash
-expo build:ios
-```
-
-For Android:
-```bash
-expo build:android
-```
-
-Or use EAS Build (recommended):
-```bash
-npm install -g eas-cli
-eas build --platform ios
-eas build --platform android
-```
-
-## Future Enhancements
-
-- [ ] Advanced date picker component
-- [ ] Supplier balance display
-- [ ] Search and filter functionality
-- [ ] Sorting options
-- [ ] Date range filters
-- [ ] Product rate management UI
-- [ ] Offline support with sync
-- [ ] Push notifications
-- [ ] Export/reporting features
+- **Secure Storage**: Sensitive data encrypted using expo-secure-store
+- **JWT Authentication**: Token-based authentication
+- **HTTPS**: All API calls over HTTPS (production)
+- **Input Validation**: Client-side validation before API calls
 
 ## Testing
 
@@ -300,22 +128,25 @@ Run tests:
 npm test
 ```
 
-## Known Limitations
+## Building for Production
 
-- Web platform support is experimental
-- Offline mode not yet implemented
-- Date input uses text field (consider using date picker library)
+### iOS
+```bash
+expo build:ios
+```
 
-## Contributing
+### Android
+```bash
+expo build:android
+```
 
-When contributing, please:
-1. Follow the existing code structure
-2. Use TypeScript for type safety
-3. Test on both iOS and Android
-4. Update documentation as needed
-5. Add validation for all forms
-6. Handle errors gracefully
+## Environment Variables
+
+Create a `.env` file with:
+```
+API_BASE_URL=https://your-api-domain.com/api
+```
 
 ## License
 
-MIT License
+MIT

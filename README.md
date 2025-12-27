@@ -1,335 +1,292 @@
 # TrackVault - Data Collection and Payment Management System
 
-> A production-ready, end-to-end data collection and payment management application with React Native (Expo) frontend and Laravel backend.
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-blue)](https://www.php.net/)
+[![Node Version](https://img.shields.io/badge/Node-18%2B-green)](https://nodejs.org/)
 
-## 🎯 Overview
+## Overview
 
-TrackVault is designed for businesses requiring precise tracking of collections, payments, and product rates, with a focus on **data integrity**, **multi-user support**, and **financial accuracy**. Perfect for agricultural collection workflows (tea leaves, produce), supply chain management, and distributed collection/payment operations.
+TrackVault is a production-ready, end-to-end data collection and payment management application designed for businesses requiring precise tracking of collections, payments, and product rates. Built with a PHP backend following Clean Architecture principles and a React Native (Expo) mobile frontend, the system ensures **data integrity, multi-device support, multi-user access, prevention of data duplication or corruption, and multi-unit management**.
 
-### Key Features
+## 🎯 Key Features
 
-#### Core Features
-- ✅ **Multi-User & Multi-Device** - Concurrent operations without conflicts
-- ✅ **Data Integrity** - Version-based concurrency control prevents data corruption
-- ✅ **Multi-Unit Support** - Track quantities in kg, g, liters, custom units
-- ✅ **Versioned Rates** - Historical rate preservation with automatic application
-- ✅ **Automated Calculations** - Real-time payment calculations and balance tracking
-- ✅ **Secure** - End-to-end encryption, token-based auth, RBAC/ABAC
-- ✅ **Clean Architecture** - SOLID, DRY, KISS principles
+### Core Functionality
+- ✅ **Complete CRUD Operations** for Users, Suppliers, Products, Collections, and Payments
+- ✅ **Multi-Unit Support**: Track quantities in kg, g, liters, ml, etc. with automatic conversion
+- ✅ **Versioned Rates**: Historical rate management with automatic application for new entries
+- ✅ **Automated Calculations**: Payment calculations based on collections, rates, and prior transactions
+- ✅ **Multi-User Support**: Concurrent operations across multiple users without data conflicts
+- ✅ **Multi-Device Support**: Consistent data across all devices
+- ✅ **Audit Trails**: Complete history of all operations for accountability
 
-#### 🆕 Enhanced Features (v2.3.0)
-- ✅ **Date Range Filters** - Filter collections and payments by date with quick presets
-- ✅ **Infinite Scroll Pagination** - Efficient data loading with configurable page sizes
-- ✅ **Advanced Offline Support** - Work seamlessly without internet, with automatic conflict-free sync
-  - Device-specific operation tracking
-  - Batch synchronization with progress indicators
-  - Version-based conflict detection and resolution
-  - Multi-device concurrent operations support
-  - Automatic retry with exponential backoff
-- ✅ **Advanced Picker Component** - Search, loading states, and pagination support
-- ✅ **Print Functionality** - Print receipts, reports, and balance statements with professional formatting
+### Security & Data Integrity
+- 🔒 **End-to-End Encryption**: Data encrypted at rest and in transit
+- 🔒 **RBAC/ABAC**: Role-based and attribute-based access control
+- 🔒 **JWT Authentication**: Secure token-based authentication
+- 🔒 **Optimistic Locking**: Version-based concurrency control
+- 🔒 **Audit Logging**: Comprehensive audit trail for all operations
+- 🔒 **Input Validation**: Multi-layer validation on both frontend and backend
+
+### Architecture
+- 🏗️ **Clean Architecture**: Clear separation of concerns
+- 🏗️ **SOLID Principles**: Maintainable and extensible code
+- 🏗️ **DRY & KISS**: Simple, non-repetitive implementations
+- 🏗️ **Domain-Driven Design**: Business logic at the core
+- 🏗️ **Repository Pattern**: Abstract data access
+- 🏗️ **Value Objects**: Immutable, validated domain primitives
 
 ## 🚀 Quick Start
 
-See **[IMPLEMENTATION.md](IMPLEMENTATION.md)** for complete setup instructions.
+### Prerequisites
+- PHP 8.2+ with extensions: pdo, json, openssl
+- MySQL 5.7+ or PostgreSQL 12+
+- Composer (optional, no external dependencies required)
+- Node.js 18+ and npm
+- Expo CLI (`npm install -g expo-cli`)
 
-### Backend (Laravel 11)
+### Backend Setup
 
 ```bash
+# Navigate to backend directory
 cd backend
-composer install
+
+# Generate autoload files (optional if no composer dependencies)
+composer dump-autoload -o
+
+# Configure environment
 cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan db:seed
-php artisan serve
+# Edit .env with your database credentials and security keys
+
+# Create database
+mysql -u root -p
+CREATE DATABASE trackvault CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+exit;
+
+# Run migrations
+mysql -u root -p trackvault < database/migrations/001_create_tables.sql
+
+# Start development server
+php -S localhost:8000 -t public
 ```
 
-### Frontend (React Native + Expo)
+The API will be available at http://localhost:8000/api
+
+### Frontend Setup
 
 ```bash
+# Navigate to frontend directory
 cd frontend
+
+# Install dependencies
 npm install
+
+# Configure environment
+# Create a .env file or edit frontend/src/application/services/ApiService.ts
+# Update API_BASE_URL to point to your backend (default: http://localhost:8000/api)
+
+# Start Expo
 npm start
+
+# Run on device/simulator
+npm run ios     # For iOS
+npm run android # For Android
+npm run web     # For web browser
 ```
 
-## 📱 Demo Accounts (Development Only)
+### Initial Setup
 
-| Role      | Email                        | Password   |
-|-----------|------------------------------|------------|
-| Admin     | admin@trackvault.com         | password   |
-| Collector | collector@trackvault.com     | password   |
-| Finance   | finance@trackvault.com       | password   |
+1. **Create First User**: Use the register endpoint
+   ```bash
+   curl -X POST http://localhost:8000/api/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "Admin User",
+       "email": "admin@trackvault.com",
+       "password": "secure_password",
+       "roles": ["admin"]
+     }'
+   ```
 
-## 📖 Documentation
+2. **Login**: Use the mobile app or API
+   ```bash
+   curl -X POST http://localhost:8000/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "admin@trackvault.com",
+       "password": "secure_password"
+     }'
+   ```
 
-Complete documentation for TrackVault is now organized in the `/docs` directory.
+3. **Test Health**: Verify the backend is running
+   ```bash
+   curl http://localhost:8000/api/health
+   ```
 
-**📌 [DOCUMENTATION.md](DOCUMENTATION.md) - Complete Documentation Guide with Quick Links**
-
-### Quick Start
-- **[README.md](README.md)** - This file: Project overview and quick start
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - 🚀 Quick reference guide for developers
-- **[docs/INDEX.md](docs/INDEX.md)** - 📚 Complete documentation index
-
-### Essential Documentation
-- **[Implementation Guide](docs/implementation/IMPLEMENTATION.md)** - Complete setup and implementation
-- **[API Reference](docs/api/API.md)** - Complete REST API documentation
-- **[Swagger Guide](docs/api/SWAGGER.md)** - Interactive API documentation
-- **Interactive Swagger UI** - `http://localhost:8000/api/documentation`
-
-### Documentation Categories
-
-All documentation is organized in `/docs` with the following structure:
-
-- **[Requirements](docs/requirements/)** - PRD, SRS, Executive Summary
-- **[API](docs/api/)** - API reference and Swagger documentation
-- **[Implementation](docs/implementation/)** - Setup guides and implementation details
-- **[Frontend](docs/frontend/)** - Frontend architecture, implementation, and enhancements
-- **[Components](docs/components/)** - Component documentation (e.g., Picker Component)
-- **[Verification](docs/verification/)** - Verification reports and test results
-- **[Deployment](docs/deployment/)** - Production deployment guides and checklists
-- **[Security](docs/security/)** - Security architecture and best practices
-- **[Archive](docs/archive/)** - Older versions and superseded documents
-
-### Status Reports
-- **[DOCUMENTATION.md](DOCUMENTATION.md)** - Complete documentation guide
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick developer reference
-- **[Task Completion Report](docs/archive/TASK_COMPLETE.md)** - Task completion report
-- **[Final Summary](docs/archive/FINAL_SUMMARY.md)** - Final implementation summary
-- **[Project Summary](docs/archive/SUMMARY.md)** - Complete project summary
-
-### Component-Specific Documentation
-- **[backend/README.md](backend/README.md)** - Backend API documentation
-- **[frontend/README.md](frontend/README.md)** - Frontend app documentation
-
-## 🏗️ Architecture
+## 📁 Project Structure
 
 ```
 TrackVault/
-├── backend/           # Laravel 11 API
-│   ├── app/Models/    # Eloquent models with business logic
-│   ├── app/Http/Controllers/API/  # RESTful controllers
-│   └── database/migrations/       # Database schema
-├── frontend/          # React Native + Expo
-│   ├── src/api/       # API client & services
-│   ├── src/contexts/  # Global state management
-│   ├── src/navigation/# App navigation
-│   └── src/screens/   # UI screens
-└── docs/             # Project documentation
+├── backend/                    # PHP Backend
+│   ├── src/
+│   │   ├── Domain/            # Business logic layer
+│   │   │   ├── Entities/      # Core business entities
+│   │   │   ├── ValueObjects/  # Immutable value objects
+│   │   │   ├── Repositories/  # Repository interfaces
+│   │   │   └── Services/      # Domain services
+│   │   ├── Application/       # Use cases and DTOs
+│   │   ├── Infrastructure/    # External concerns
+│   │   │   ├── Persistence/   # Database implementations
+│   │   │   ├── Security/      # Auth and security
+│   │   │   ├── Logging/       # Audit logging
+│   │   │   └── Encryption/    # Data encryption
+│   │   └── Presentation/      # API controllers
+│   ├── config/                # Configuration files
+│   ├── database/              # Database migrations
+│   ├── public/                # Web entry point
+│   └── tests/                 # Backend tests
+├── frontend/                   # React Native App
+│   ├── src/
+│   │   ├── domain/            # Domain entities
+│   │   ├── application/       # Use cases & state
+│   │   ├── infrastructure/    # API client, storage
+│   │   └── presentation/      # UI components
+│   ├── assets/                # Images and resources
+│   └── __tests__/             # Frontend tests
+├── docs/                       # Additional documentation
+├── IMPLEMENTATION.md           # Implementation details
+├── DEPLOYMENT.md              # Deployment guide
+└── README.md                  # This file
 ```
 
-## 🔧 Core Functionality
+## 🔧 Technology Stack
 
-### Suppliers
-- Create and manage supplier profiles
-- Track contact information
-- Real-time balance calculation
+### Backend
+- **Language**: PHP 8.2+
+- **Database**: MySQL 5.7+ / PostgreSQL 12+
+- **Authentication**: JWT
+- **Encryption**: AES-256-GCM
+- **Architecture**: Clean Architecture, DDD
 
-### Products
-- Multi-unit product support
-- Versioned rate management
-- Historical rate tracking
+### Frontend
+- **Framework**: React Native with Expo
+- **Language**: TypeScript
+- **State Management**: React Context API
+- **Storage**: Expo SecureStore
+- **Navigation**: React Navigation
 
-### Collections
-- Daily collection recording
-- Automatic rate application
-- Multi-unit quantity tracking
-- Calculated amount per collection
+## 📚 Documentation
 
-### Payments
-- Advance/partial/full payments
-- Automated balance calculation
-- Payment history tracking
-- Supplier reconciliation
-
-## 🛡️ Security
-
-- **Authentication**: Laravel Sanctum token-based
-- **Authorization**: Role-based (RBAC) & attribute-based (ABAC)
-- **Encryption**: Data at rest and in transit (HTTPS)
-- **Storage**: Expo SecureStore for sensitive data
-- **Validation**: Server-side input validation
-- **Concurrency**: Version control prevents race conditions
-- **Audit**: Soft deletes and timestamp tracking
+- [Implementation Details](IMPLEMENTATION.md) - Detailed architecture and design decisions
+- [Deployment Guide](DEPLOYMENT.md) - Production deployment instructions
+- [Backend README](backend/README.md) - Backend-specific documentation
+- [Frontend README](frontend/README.md) - Frontend-specific documentation
+- [SRS Document](SRS.md) - Software Requirements Specification
+- [PRD Document](PRD.md) - Product Requirements Document
 
 ## 🧪 Testing
 
-Backend:
+### Backend Tests
 ```bash
-cd backend && php artisan test
+cd backend
+composer test
 ```
 
-Frontend:
+### Frontend Tests
 ```bash
-cd frontend && npm test
+cd frontend
+npm test
 ```
 
-## 📦 Technology Stack
+## 📦 Use Cases
 
-| Component | Technology |
-|-----------|------------|
-| Backend Framework | Laravel 11 |
-| Frontend Framework | React Native + Expo |
-| Language | PHP 8.2+ / TypeScript |
-| Database | SQLite, MySQL, PostgreSQL |
-| Authentication | Laravel Sanctum |
-| Navigation | React Navigation |
-| State Management | React Context API |
-| HTTP Client | Axios |
+### Agricultural Collection Workflow (Tea Leaves)
+1. **Daily Collection**: Collectors visit multiple suppliers and record quantities in various units
+2. **Payment Tracking**: Advance and partial payments are recorded
+3. **Rate Management**: Monthly rates are updated with historical preservation
+4. **Automated Calculations**: System calculates total amounts owed per supplier
+5. **Multi-User Operations**: Multiple collectors work simultaneously without conflicts
+6. **Audit & Reporting**: Complete transparency and financial oversight
 
-## 🎨 Design Principles
+## 🔐 Security Features
 
-TrackVault strictly adheres to industry best practices and architectural principles:
+- **Password Hashing**: Argon2id algorithm
+- **JWT Tokens**: Secure authentication with expiry
+- **Data Encryption**: AES-256-GCM for sensitive data
+- **HTTPS**: Required for production
+- **CORS**: Configurable cross-origin policies
+- **SQL Injection Prevention**: Prepared statements
+- **XSS Prevention**: Output escaping
+- **Audit Logging**: All operations logged
 
-- **Clean Architecture** - Clear separation of concerns across four distinct layers (Domain, Application, Infrastructure, Presentation)
-- **SOLID Principles**
-  - **Single Responsibility**: Each class has one reason to change
-  - **Open/Closed**: Open for extension, closed for modification
-  - **Liskov Substitution**: Interfaces can be substituted with any implementation
-  - **Interface Segregation**: Small, focused interfaces
-  - **Dependency Inversion**: Depend on abstractions, not concretions
-- **DRY (Don't Repeat Yourself)** - Business logic centralized, no duplication
-- **KISS (Keep It Simple, Stupid)** - Clear, focused classes with minimal complexity
-- **High Modularity** - Independent, loosely coupled components
-- **Testability** - Comprehensive unit, integration, and feature tests
-- **Maintainability** - Self-documenting code with clear structure
-- **Scalability** - Designed to grow with your business needs
+## 🎯 Design Principles
 
-**Architecture Documentation**:
-- [Clean Architecture Implementation Guide](docs/architecture/CLEAN_ARCHITECTURE_IMPLEMENTATION.md)
-- [Backend Clean Architecture](backend/CLEAN_ARCHITECTURE.md)
-- [Frontend Clean Architecture](frontend/CLEAN_ARCHITECTURE.md)
+This project strictly follows:
 
-## ✨ Enhanced Features (v2.3.0)
+- ✅ **Clean Architecture** - Framework-independent, testable core
+- ✅ **SOLID Principles** - Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
+- ✅ **DRY** - Don't Repeat Yourself
+- ✅ **KISS** - Keep It Simple, Stupid
+- ✅ **Domain-Driven Design** - Business logic at the core
+- ✅ **Repository Pattern** - Abstracted data access
+- ✅ **Value Objects** - Immutable domain primitives
 
-### 📅 Date Range Filters
-Filter collections and payments by specific date ranges with convenient presets:
-- **Quick Presets**: Today, Last 7 Days, Last 30 Days, Last 90 Days
-- **Custom Range**: Select any start and end date
-- **Smart Validation**: End date must be after start date
-- **Clear Filter**: Easily reset date filters
+## 📊 Database Schema
 
-**Screens Enhanced**: Collections, Payments
+The system uses a normalized relational database with the following main tables:
 
-### 📊 Infinite Scroll Pagination
-Efficiently handle large datasets with smooth scrolling:
-- **Infinite Scroll**: Automatic loading when scrolling near the end
-- **Page Size Options**: Choose between 25, 50, or 100 items per page
-- **Loading Indicators**: Visual feedback during data loading
-- **Smart Loading**: Prevents duplicate requests
+- **users** - User accounts with RBAC
+- **suppliers** - Supplier profiles
+- **products** - Products with versioned rates
+- **collections** - Collection transactions
+- **payments** - Payment transactions
+- **audit_logs** - Complete audit trail
 
-**Implementation**: Pattern demonstrated in Suppliers screen
+See [IMPLEMENTATION.md](IMPLEMENTATION.md) for detailed schema.
 
-### 🔌 Offline Support (Enhanced v2.4.0)
-Work seamlessly without internet connectivity with production-ready offline support:
+## 🚀 Deployment
 
-**Core Features**:
-- **Offline Mode Indicator**: Visual feedback when disconnected (red bar)
-- **Operation Queuing**: Create, update, and delete operations queued automatically
-- **Automatic Sync**: Changes sync when connection is restored
-- **Batch Processing**: Efficient sync with 10 operations per batch
-- **Retry Logic**: Failed operations retry up to 3 times with backoff
-- **Sync Progress**: Real-time feedback during synchronization
+For production deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
-**Advanced Capabilities**:
-- **Device Tracking**: Unique device identifier for multi-device support
-- **Conflict Detection**: Version-based optimistic locking prevents data loss
-- **Conflict Resolution**: Deterministic resolution with server as authority
-- **Duplicate Prevention**: Smart tracking prevents duplicate syncs
-- **Multi-Device Support**: Concurrent operations across multiple devices
-- **Historical Tracking**: Complete audit trail of all operations
-
-**Architecture**:
-- Local data caching with AsyncStorage
-- Background sync queue management
-- Network status monitoring with auto-reconnect
-- Visual indicators across all screens
-- Server-authoritative conflict resolution
-- Transaction-safe database operations
-
-See **[Offline Sync Architecture](docs/architecture/OFFLINE_SYNC_ARCHITECTURE.md)** and **[Quick Reference](docs/architecture/OFFLINE_SYNC_QUICKREF.md)** for complete documentation.
-
-### 🎯 Advanced Picker Component
-Fully-featured picker with enterprise-grade capabilities:
-- **Search Functionality**: Local and remote search support
-- **Loading States**: Initial loading and "load more" indicators
-- **Pagination**: Infinite scroll with automatic loading
-- **Empty States**: Customizable empty and error states
-- **Type Safety**: Full TypeScript support with exported types
-- **Backward Compatible**: Works with all existing implementations
-
-**Features**:
-- Client-side and server-side search
-- Async data loading with progress indicators
-- Configurable page sizes and load more thresholds
-- Smart filtering and deduplication
-- Error handling and validation support
-
-**Usage**: Collections, Payments, Product Rates, and custom forms
-
-See **[Picker Component Documentation](docs/components/PICKER_COMPONENT.md)** for complete documentation and usage examples.
-
-For detailed implementation information, see the [Implementation Guide](docs/implementation/IMPLEMENTATION_FINAL_SUMMARY.md) and [Verification Reports](docs/verification/).
+Key deployment requirements:
+- PHP 8.2+ with required extensions
+- MySQL 5.7+ or PostgreSQL 12+
+- HTTPS/SSL certificate
+- Secure JWT and encryption keys
+- Regular backups
+- Monitoring and logging
 
 ## 🤝 Contributing
 
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with tests
-4. Submit a pull request
+This is a production-ready application built to specific requirements. For modifications:
+
+1. Follow Clean Architecture principles
+2. Maintain test coverage
+3. Update documentation
+4. Follow existing code style
+5. Ensure backward compatibility
 
 ## 📄 License
 
-MIT License - See LICENSE file for details
+MIT License - See [LICENSE](LICENSE) for details
 
-## 👥 Author
+## 💡 Support
 
-Kasun Vimarshana
+For issues, questions, or support:
+- Review documentation in `docs/` directory
+- Check audit logs for operational issues
+- Review application logs
+
+## 🎓 Learning Resources
+
+This project demonstrates:
+- Clean Architecture implementation in PHP and TypeScript
+- Domain-Driven Design patterns
+- Multi-tier security
+- Optimistic locking for concurrency
+- Value objects and entities
+- Repository pattern
+- SOLID principles in practice
 
 ---
 
-**For detailed technical documentation, see [Implementation Guide](docs/implementation/IMPLEMENTATION.md) and [Documentation Index](docs/INDEX.md)**
-
-- Encrypt sensitive data **in transit and at rest**.
-- Apply **secure data storage and transmission practices** throughout both backend and frontend.
-- Use **tamper-resistant payloads** and enforce secure authentication and authorization consistently.
-
-**Architecture and Design Principles:**
-
-- Follow **Clean Architecture**, **SOLID principles**, **DRY**, and **KISS** practices.
-- Maintain **clear separation of concerns** across domain logic, application services, infrastructure, state management, UI components, and event orchestration.
-- Minimize external dependencies, favoring **native platform capabilities** and relying only on essential, open-source, free, and LTS-supported libraries.
-- Ensure **long-term maintainability, scalability, high performance, deterministic behavior, and minimal technical debt**.
-
-**Key Features:**
-
-- Centralized management of **suppliers, products, collections, and payments**.
-- **Historical and dynamic rate management**, preserving applied rates for historical entries and automatically using the latest rates for new data.
-- Automated, auditable calculations for **advance and partial payments**, ensuring accuracy in total amounts owed.
-- **Multi-device and multi-user support** for real-time collaboration and concurrent data entry.
-- **Robust financial tracking** suitable for complex workflows, including agricultural collection scenarios (e.g., tea leaves, produce collection).
-
-**Example Use Case – Tea Leaves Collection:**
-
-- Users visit multiple suppliers daily and record quantities collected in **multiple units** (kg, g, etc.).
-- Payments may be made intermittently (advance or partial payments).
-- At the end of the month, rates per unit are finalized, and total payments are automatically calculated.
-- The system ensures **accurate tracking, no duplication or corruption**, and provides **transparent and auditable financial oversight**.
-
-**Technical and Operational Goals:**
-
-- Enable reliable **multi-user collaboration** across multiple devices.
-- Guarantee **data integrity** under all operational conditions.
-- Support **precise tracking, reporting, and reconciliation** for multi-unit and multi-rate collections.
-- Ensure **secure, scalable, and maintainable architecture**, optimized for real-world business workflows.
-
-**Deliverables:**
-
-- Production-ready React Native (Expo) frontend with intuitive UI and UX.
-- Laravel backend with robust data management, security, and conflict resolution mechanisms.
-- Fully documented architecture, including **domain models, database schema, business logic, and security protocols**.
-- End-to-end test coverage for CRUD operations, concurrency handling, and financial calculations.
+**Built with ❤️ for reliable, secure, and maintainable data collection and payment management**

@@ -1,225 +1,149 @@
 # TrackVault Backend API
 
-Laravel 11 backend API for the TrackVault Data Collection and Payment Management System.
-
-## 🏗️ Architecture
-
-This backend follows **Clean Architecture** principles with clear separation of concerns across four distinct layers. See [CLEAN_ARCHITECTURE.md](CLEAN_ARCHITECTURE.md) for detailed documentation.
-
-### Layer Overview
-
-```
-┌─────────────────────────────────────────┐
-│     Presentation Layer (Controllers)    │  ← HTTP/API Layer
-├─────────────────────────────────────────┤
-│   Application Layer (Use Cases, DTOs)   │  ← Business Operations
-├─────────────────────────────────────────┤
-│ Domain Layer (Entities, Services, VOs)  │  ← Core Business Logic
-├─────────────────────────────────────────┤
-│ Infrastructure Layer (Repositories, DB)  │  ← Framework & Database
-└─────────────────────────────────────────┘
-```
-
-### Key Principles
-
-- **SOLID**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
-- **DRY**: Don't Repeat Yourself - business logic centralized
-- **KISS**: Keep It Simple - clear, focused classes
-- **Clean Code**: Readable, maintainable, testable
-- **Domain-Driven Design**: Business logic separate from infrastructure
-
-## Overview
-
-This backend provides a RESTful API for managing:
-- Users with role-based access control (Admin, Collector, Finance)
-- Suppliers with detailed profiles
-- Products with versioned rates and multi-unit support
-- Collections with automated rate application
-- Payments with automated calculations
-
-## Features
-
-- **Authentication**: Laravel Sanctum token-based authentication
-- **Authorization**: Role-based (RBAC) and attribute-based (ABAC) access control
-- **Data Integrity**: Version-based concurrency control to prevent conflicts
-- **Multi-unit Support**: Handle quantities in different units (kg, g, liters, etc.)
-- **Rate Versioning**: Historical rate preservation with automatic application
-- **Automated Calculations**: Automatic payment calculations based on collections and rates
-- **Audit Trail**: Soft deletes and version tracking for all entities
-
-## Prerequisites
-
-- PHP 8.2 or higher
-- Composer
-- SQLite (default) or MySQL/PostgreSQL
-
-## Installation
-
-1. Install dependencies:
-```bash
-composer install
-```
-
-2. Copy environment file:
-```bash
-cp .env.example .env
-```
-
-3. Generate application key:
-```bash
-php artisan key:generate
-```
-
-4. Run database migrations:
-```bash
-php artisan migrate
-```
-
-5. Seed the database with sample users:
-```bash
-php artisan db:seed
-```
-
-This creates three default users:
-- Admin: `admin@trackvault.com` / `password`
-- Collector: `collector@trackvault.com` / `password`
-- Finance: `finance@trackvault.com` / `password`
-
-## Running the Application
-
-Start the development server:
-```bash
-php artisan serve
-```
-
-The API will be available at `http://localhost:8000/api`
-
-## API Documentation
-
-### Authentication
-
-**Register**
-```
-POST /api/auth/register
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password",
-  "password_confirmation": "password",
-  "role": "collector"
-}
-```
-
-**Login**
-```
-POST /api/auth/login
-{
-  "email": "admin@trackvault.com",
-  "password": "password"
-}
-```
-
-**Logout**
-```
-POST /api/auth/logout
-Headers: Authorization: Bearer {token}
-```
-
-**Get Current User**
-```
-GET /api/auth/me
-Headers: Authorization: Bearer {token}
-```
-
-### Resources
-
-All resource endpoints require authentication via `Authorization: Bearer {token}` header.
-
-**Suppliers**
-- `GET /api/suppliers` - List suppliers
-- `POST /api/suppliers` - Create supplier
-- `GET /api/suppliers/{id}` - Get supplier
-- `PUT /api/suppliers/{id}` - Update supplier
-- `DELETE /api/suppliers/{id}` - Delete supplier
-
-**Products**
-- `GET /api/products` - List products
-- `POST /api/products` - Create product
-- `GET /api/products/{id}` - Get product
-- `PUT /api/products/{id}` - Update product
-- `DELETE /api/products/{id}` - Delete product
-
-**Product Rates**
-- `GET /api/product-rates` - List rates
-- `POST /api/product-rates` - Create rate
-- `GET /api/product-rates/{id}` - Get rate
-- `PUT /api/product-rates/{id}` - Update rate
-- `DELETE /api/product-rates/{id}` - Delete rate
-
-**Collections**
-- `GET /api/collections` - List collections
-- `POST /api/collections` - Create collection
-- `GET /api/collections/{id}` - Get collection
-- `PUT /api/collections/{id}` - Update collection
-- `DELETE /api/collections/{id}` - Delete collection
-
-**Payments**
-- `GET /api/payments` - List payments
-- `POST /api/payments` - Create payment
-- `GET /api/payments/{id}` - Get payment
-- `PUT /api/payments/{id}` - Update payment
-- `DELETE /api/payments/{id}` - Delete payment
-- `GET /api/suppliers/{id}/balance` - Get supplier balance
-
-## Database Schema
-
-### Key Tables
-
-- **users**: System users with roles and permissions
-- **suppliers**: Supplier profiles with contact information
-- **products**: Products with multi-unit support
-- **product_rates**: Versioned rates for products by unit and date
-- **collections**: Daily collection records with quantities and calculated amounts
-- **payments**: Payment records (advance, partial, full)
-
-### Version Control
-
-All entities include a `version` field for optimistic locking to prevent concurrent update conflicts.
-
-## Testing
-
-Run the test suite:
-```bash
-php artisan test
-```
+Production-ready backend API for the TrackVault Data Collection and Payment Management System.
 
 ## Architecture
 
-The backend follows Clean Architecture principles:
-- **Domain Layer** (`app/Domain/`): Pure business logic with entities, value objects, services, and repository interfaces
-- **Application Layer** (`app/Application/`): Use cases, DTOs, and business orchestration
-- **Infrastructure Layer** (`app/Infrastructure/`): Repository implementations, database access
-- **Presentation Layer** (`app/Http/Controllers/`): Thin controllers handling only HTTP concerns
+This backend follows **Clean Architecture** principles with clear separation of concerns:
 
-### Benefits
+```
+backend/
+├── src/
+│   ├── Domain/           # Business logic and entities
+│   │   ├── Entities/     # Core business entities
+│   │   ├── ValueObjects/ # Immutable value objects
+│   │   ├── Repositories/ # Repository interfaces
+│   │   └── Services/     # Domain services
+│   ├── Application/      # Use cases and DTOs
+│   ├── Infrastructure/   # External concerns (DB, security, etc.)
+│   └── Presentation/     # API controllers and routes
+├── config/               # Configuration files
+├── database/             # Database migrations
+├── public/               # Web-accessible entry point
+└── tests/                # Unit and integration tests
+```
 
-- **Testability**: Business logic can be tested without database or framework
-- **Maintainability**: Clear structure with single responsibility
-- **Flexibility**: Easy to swap implementations (e.g., database, cache)
-- **Scalability**: Modular architecture supports growth
+## Features
 
-For complete architecture documentation, see [CLEAN_ARCHITECTURE.md](CLEAN_ARCHITECTURE.md).
+- **CRUD Operations**: Full support for Users, Suppliers, Products, Collections, and Payments
+- **Multi-Unit Support**: Track quantities in multiple units (kg, g, liters, etc.)
+- **Versioned Rates**: Historical rate management with automatic application
+- **Payment Calculations**: Automated payment calculations based on collections and prior payments
+- **RBAC/ABAC**: Role-based and attribute-based access control
+- **Data Integrity**: Transactional operations with version control
+- **Audit Logging**: Complete audit trail for all operations
+- **Security**: Encrypted data at rest and in transit
+
+## Requirements
+
+- PHP 8.2 or higher
+- MySQL 5.7+ or PostgreSQL 12+
+- Composer (for dependency management)
+
+## Installation
+
+1. **Clone the repository**:
+   ```bash
+   cd backend
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   composer install
+   ```
+
+3. **Configure environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your database credentials and security keys
+   ```
+
+4. **Run database migrations**:
+   ```bash
+   # Execute migrations in database/migrations/
+   mysql -u username -p database_name < database/migrations/001_create_tables.sql
+   ```
+
+5. **Start the development server**:
+   ```bash
+   php -S localhost:8000 -t public
+   ```
+
+## API Endpoints
+
+### Health Check
+- `GET /api/health` - Check API health status
+
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/refresh` - Refresh token
+
+### Users
+- `GET /api/users` - List all users
+- `GET /api/users/{id}` - Get user details
+- `POST /api/users` - Create new user
+- `PUT /api/users/{id}` - Update user
+- `DELETE /api/users/{id}` - Delete user
+
+### Suppliers
+- `GET /api/suppliers` - List all suppliers
+- `GET /api/suppliers/{id}` - Get supplier details
+- `POST /api/suppliers` - Create new supplier
+- `PUT /api/suppliers/{id}` - Update supplier
+- `DELETE /api/suppliers/{id}` - Delete supplier
+
+### Products
+- `GET /api/products` - List all products
+- `GET /api/products/{id}` - Get product details
+- `POST /api/products` - Create new product
+- `POST /api/products/{id}/rates` - Add rate to product
+- `PUT /api/products/{id}` - Update product
+- `DELETE /api/products/{id}` - Delete product
+
+### Collections
+- `GET /api/collections` - List all collections
+- `GET /api/collections/{id}` - Get collection details
+- `GET /api/collections?supplier_id={id}` - Filter by supplier
+- `GET /api/collections?product_id={id}` - Filter by product
+- `POST /api/collections` - Create new collection
+- `PUT /api/collections/{id}` - Update collection
+- `DELETE /api/collections/{id}` - Delete collection
+
+### Payments
+- `GET /api/payments` - List all payments
+- `GET /api/payments/{id}` - Get payment details
+- `GET /api/payments?supplier_id={id}` - Filter by supplier
+- `GET /api/payments/calculate/{supplier_id}` - Calculate total owed
+- `POST /api/payments` - Create new payment
+- `PUT /api/payments/{id}` - Update payment
+- `DELETE /api/payments/{id}` - Delete payment
 
 ## Security
 
-- API authentication via Laravel Sanctum tokens
-- Password hashing with bcrypt
-- HTTPS required for production
-- Role-based access control
-- Version-based concurrency control
-- Input validation on all endpoints
+- All endpoints (except `/api/health`) require authentication
+- JWT tokens are used for authentication
+- Passwords are hashed using Argon2id
+- Data is encrypted at rest and in transit (HTTPS required in production)
+- RBAC and ABAC enforce proper authorization
+
+## Testing
+
+Run tests:
+```bash
+composer test
+```
+
+## Production Deployment
+
+1. Set `APP_ENV=production` in `.env`
+2. Set `APP_DEBUG=false`
+3. Generate secure random strings for `JWT_SECRET` and `ENCRYPTION_KEY`
+4. Configure proper database credentials
+5. Enable HTTPS
+6. Configure CORS for your frontend domain
+7. Set up proper logging and monitoring
 
 ## License
 
-MIT License
-
+MIT

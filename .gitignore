@@ -1,31 +1,45 @@
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*~
-.DS_Store
+# Dependencies
+node_modules/
+vendor/
+.expo/
+.expo-shared/
 
-# Build artifacts
+# Build outputs
 dist/
 build/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# IDE files
-.vscode/
-.idea/
-*.sublime-*
-
-# OS files
-Thumbs.db
-.DS_Store
-
-# Backup files
-*.bak
-*.backup
-
-# Node modules (if any in root)
-node_modules/
-
-# Environment files (if any in root)
+# Environment
 .env
 .env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backend specific
+/backend/storage/*.key
+/backend/storage/framework/cache/**
+/backend/storage/framework/sessions/**
+/backend/storage/framework/testing/**
+/backend/storage/framework/views/**
+/backend/storage/logs/**
+/backend/bootstrap/cache/**
+
+# Frontend specific
+/frontend/.expo-shared/
+
+# Testing
+coverage/
+.phpunit.result.cache
