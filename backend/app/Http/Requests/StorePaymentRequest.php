@@ -27,10 +27,9 @@ class StorePaymentRequest extends FormRequest
         return [
             'supplier_id' => 'required|exists:suppliers,id',
             'amount' => 'required|numeric|min:0',
-            'type' => 'required|in:advance,partial,full,adjustment',
+            'payment_type' => 'required|in:advance,partial,full,adjustment',
             'payment_date' => 'required|date',
-            'reference_number' => 'nullable|string|max:255',
-            'payment_method' => 'nullable|string|max:50',
+            'reference' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ];
     }
@@ -47,8 +46,8 @@ class StorePaymentRequest extends FormRequest
             'supplier_id.exists' => 'Selected supplier does not exist',
             'amount.required' => 'Payment amount is required',
             'amount.min' => 'Payment amount must be greater than or equal to 0',
-            'type.required' => 'Payment type is required',
-            'type.in' => 'Invalid payment type. Must be advance, partial, full, or adjustment',
+            'payment_type.required' => 'Payment type is required',
+            'payment_type.in' => 'Invalid payment type. Must be advance, partial, full, or adjustment',
             'payment_date.required' => 'Payment date is required',
         ];
     }

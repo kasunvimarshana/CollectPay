@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -18,13 +17,11 @@ class Product extends Model
         'base_unit',
         'supported_units',
         'is_active',
-        'version',
     ];
 
     protected $casts = [
         'supported_units' => 'array',
         'is_active' => 'boolean',
-        'version' => 'integer',
     ];
 
     /**

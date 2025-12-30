@@ -105,21 +105,6 @@ class LocalStorageService {
         pending_sync INTEGER DEFAULT 0
       );
     `);
-
-    // Create local rates cache
-    await this.db.execAsync(`
-      CREATE TABLE IF NOT EXISTS rates (
-        id INTEGER PRIMARY KEY,
-        product_id INTEGER,
-        rate REAL,
-        unit TEXT,
-        effective_from TEXT,
-        effective_to TEXT,
-        is_active INTEGER,
-        data TEXT NOT NULL,
-        synced_at INTEGER
-      );
-    `);
   }
 
   /**
@@ -262,157 +247,6 @@ class LocalStorageService {
   }
 
   /**
-   * Cache rates locally
-   */
-  async cacheRates(rates: any[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
-
-    for (const rate of rates) {
-      await this.db.runAsync(
-        `INSERT OR REPLACE INTO rates 
-         (id, product_id, rate, unit, effective_from, effective_to, is_active, data, synced_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          rate.id,
-          rate.product_id,
-          rate.rate,
-          rate.unit,
-          rate.effective_from,
-          rate.effective_to,
-          rate.is_active ? 1 : 0,
-          JSON.stringify(rate),
-          Date.now()
-        ]
-      );
-    }
-  }
-
-  /**
-   * Get cached rates
-   */
-  async getCachedRates(productId?: number): Promise<any[]> {
-    if (!this.db) throw new Error('Database not initialized');
-
-    // Validate productId if provided
-    if (productId !== undefined && (!Number.isInteger(productId) || productId < 0)) {
-      throw new Error('Invalid productId: must be a positive integer');
-    }
-
-    let query = 'SELECT data FROM rates WHERE is_active = 1';
-    const params: any[] = [];
-
-    if (productId !== undefined) {
-      query += ' AND product_id = ?';
-      params.push(productId);
-    }
-
-    query += ' ORDER BY effective_from DESC';
-
-    const result = await this.db.getAllAsync<any>(query, params);
-
-    return result.map(row => {
-      try {
-        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      } catch (error) {
-        console.error('Error parsing rate data:', error);
-        return null;
-      }
-    }).filter(item => item !== null);
-  }
-
-  /**
-   * Cache collections locally
-   */
-  async cacheCollections(collections: any[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
-
-    for (const collection of collections) {
-      await this.db.runAsync(
-        `INSERT OR REPLACE INTO collections 
-         (id, supplier_id, product_id, collection_date, quantity, unit, total_amount, data, synced_at, pending_sync) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          collection.id,
-          collection.supplier_id,
-          collection.product_id,
-          collection.collection_date,
-          collection.quantity,
-          collection.unit,
-          collection.total_amount,
-          JSON.stringify(collection),
-          Date.now(),
-          0
-        ]
-      );
-    }
-  }
-
-  /**
-   * Get cached collections
-   */
-  async getCachedCollections(): Promise<any[]> {
-    if (!this.db) throw new Error('Database not initialized');
-
-    const result = await this.db.getAllAsync<any>(
-      'SELECT data FROM collections WHERE pending_sync = 0 ORDER BY collection_date DESC'
-    );
-
-    return result.map(row => {
-      try {
-        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      } catch (error) {
-        console.error('Error parsing collection data:', error);
-        return null;
-      }
-    }).filter(item => item !== null);
-  }
-
-  /**
-   * Cache payments locally
-   */
-  async cachePayments(payments: any[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
-
-    for (const payment of payments) {
-      await this.db.runAsync(
-        `INSERT OR REPLACE INTO payments 
-         (id, supplier_id, payment_date, amount, type, data, synced_at, pending_sync) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          payment.id,
-          payment.supplier_id,
-          payment.payment_date,
-          payment.amount,
-          payment.type,
-          JSON.stringify(payment),
-          Date.now(),
-          0
-        ]
-      );
-    }
-  }
-
-  /**
-   * Get cached payments
-   */
-  async getCachedPayments(): Promise<any[]> {
-    if (!this.db) throw new Error('Database not initialized');
-
-    const result = await this.db.getAllAsync<any>(
-      'SELECT data FROM payments WHERE pending_sync = 0 ORDER BY payment_date DESC'
-    );
-
-    return result.map(row => {
-      try {
-        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      } catch (error) {
-        console.error('Error parsing payment data:', error);
-        return null;
-      }
-    }).filter(item => item !== null);
-  }
-
-  /**
    * Clear all cached data
    */
   async clearCache(): Promise<void> {
@@ -421,7 +255,6 @@ class LocalStorageService {
     await this.db.execAsync(`
       DELETE FROM suppliers;
       DELETE FROM products;
-      DELETE FROM rates;
       DELETE FROM collections;
       DELETE FROM payments;
     `);

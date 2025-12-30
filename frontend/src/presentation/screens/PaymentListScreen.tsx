@@ -18,64 +18,31 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Payment } from '../../domain/entities/Payment';
-import { useAuth } from '../contexts/AuthContext';
-import { canCreate } from '../../core/utils/permissions';
-import { Pagination } from '../components/Pagination';
-import { SortButton } from '../components/SortButton';
-import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
 export const PaymentListScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Server-side pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [perPage, setPerPage] = useState(10);
-  
-  // Server-side sorting state
-  const [sortBy, setSortBy] = useState<string>('payment_date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearchTerm(searchQuery);
-      setCurrentPage(1);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
 
   useEffect(() => {
     loadPayments();
-  }, [currentPage, sortBy, sortOrder, searchTerm]);
+  }, []);
+
+  useEffect(() => {
+    filterPayments();
+  }, [searchQuery, payments]);
 
   const loadPayments = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        per_page: perPage.toString(),
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      });
-      if (searchTerm.trim()) {
-        params.append('search', searchTerm.trim());
-      }
-      const response = await apiClient.get<any>(`/payments?${params.toString()}`);
-      if (response.success && response.data) {
-        const paginatedData = response.data;
-        setPayments(paginatedData.data || []);
-        setTotalPages(paginatedData.last_page || 1);
-        setTotalItems(paginatedData.total || 0);
-        setCurrentPage(paginatedData.current_page || 1);
-        setPerPage(paginatedData.per_page || 10);
+      const response = await apiClient.get('/payments');
+      if (response.data.success) {
+        const data = response.data.data.data || response.data.data;
+        setPayments(data);
+        setFilteredPayments(data);
       }
     } catch (error) {
       console.error('Error loading payments:', error);
@@ -91,30 +58,28 @@ export const PaymentListScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
+  const filterPayments = () => {
+    if (!searchQuery.trim()) {
+      setFilteredPayments(payments);
+      return;
     }
-    setCurrentPage(1);
-  };
 
-  const getSortDirection = (field: string): 'asc' | 'desc' | null => {
-    return sortBy === field ? sortOrder : null;
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    const query = searchQuery.toLowerCase();
+    const filtered = payments.filter(
+      (payment) =>
+        payment.supplier?.name?.toLowerCase().includes(query) ||
+        payment.type?.toLowerCase().includes(query) ||
+        payment.reference_number?.toLowerCase().includes(query)
+    );
+    setFilteredPayments(filtered);
   };
 
   const handlePaymentPress = (payment: Payment) => {
-    (navigation.navigate as any)('PaymentDetail', { paymentId: payment.id });
+    navigation.navigate('PaymentDetail' as never, { paymentId: payment.id } as never);
   };
 
   const handleAddPayment = () => {
-    (navigation.navigate as any)('PaymentForm');
+    navigation.navigate('PaymentForm' as never);
   };
 
   const getTypeColor = (type: string) => {
@@ -190,18 +155,13 @@ export const PaymentListScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Payments</Text>
-          {canCreate(user, 'payments') && (
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handleAddPayment}
-            >
-              <Text style={styles.addButtonText}>+ Add Payment</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <SyncStatusIndicator showDetails={true} />
+        <Text style={styles.title}>Payments</Text>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAddPayment}
+        >
+          <Text style={styles.addButtonText}>+ Add Payment</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -213,22 +173,8 @@ export const PaymentListScreen: React.FC = () => {
         />
       </View>
 
-      {/* Sort Controls */}
-      <View style={styles.sortContainer}>
-        <SortButton 
-          label="Date" 
-          direction={getSortDirection('payment_date')}
-          onPress={() => handleSort('payment_date')} 
-        />
-        <SortButton 
-          label="Amount" 
-          direction={getSortDirection('amount')}
-          onPress={() => handleSort('amount')} 
-        />
-      </View>
-
       <FlatList
-        data={payments}
+        data={filteredPayments}
         renderItem={renderPaymentItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -240,16 +186,6 @@ export const PaymentListScreen: React.FC = () => {
             <Text style={styles.emptyText}>No payments found</Text>
           </View>
         }
-      />
-
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={handlePageChange}
-        hasNextPage={currentPage < totalPages}
-        hasPreviousPage={currentPage > 1}
       />
     </View>
   );
@@ -268,12 +204,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
   },
   title: {
     fontSize: 24,
@@ -386,15 +316,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#999',
-  },
-  sortContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    justifyContent: 'flex-start',
-    gap: 8,
   },
 });

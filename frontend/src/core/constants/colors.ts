@@ -36,7 +36,6 @@ export const COLORS = {
   textPrimary: '#000000',
   textSecondary: '#8E8E93',
   textLight: '#FFFFFF',
-  text: '#000000',
   
   // Border Colors
   border: '#C7C7CC',

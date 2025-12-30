@@ -18,64 +18,31 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Collection } from '../../domain/entities/Collection';
-import { useAuth } from '../contexts/AuthContext';
-import { canCreate } from '../../core/utils/permissions';
-import { Pagination } from '../components/Pagination';
-import { SortButton } from '../components/SortButton';
-import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
 export const CollectionListScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user } = useAuth();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Server-side pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [perPage, setPerPage] = useState(10);
-  
-  // Server-side sorting state
-  const [sortBy, setSortBy] = useState<string>('collection_date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearchTerm(searchQuery);
-      setCurrentPage(1);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const [filteredCollections, setFilteredCollections] = useState<Collection[]>([]);
 
   useEffect(() => {
     loadCollections();
-  }, [currentPage, sortBy, sortOrder, searchTerm]);
+  }, []);
+
+  useEffect(() => {
+    filterCollections();
+  }, [searchQuery, collections]);
 
   const loadCollections = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        per_page: perPage.toString(),
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      });
-      if (searchTerm.trim()) {
-        params.append('search', searchTerm.trim());
-      }
-      const response = await apiClient.get<any>(`/collections?${params.toString()}`);
-      if (response.success && response.data) {
-        const paginatedData = response.data;
-        setCollections(paginatedData.data || []);
-        setTotalPages(paginatedData.last_page || 1);
-        setTotalItems(paginatedData.total || 0);
-        setCurrentPage(paginatedData.current_page || 1);
-        setPerPage(paginatedData.per_page || 10);
+      const response = await apiClient.get('/collections');
+      if (response.data.success) {
+        const data = response.data.data.data || response.data.data;
+        setCollections(data);
+        setFilteredCollections(data);
       }
     } catch (error) {
       console.error('Error loading collections:', error);
@@ -91,30 +58,28 @@ export const CollectionListScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
+  const filterCollections = () => {
+    if (!searchQuery.trim()) {
+      setFilteredCollections(collections);
+      return;
     }
-    setCurrentPage(1);
-  };
 
-  const getSortDirection = (field: string): 'asc' | 'desc' | null => {
-    return sortBy === field ? sortOrder : null;
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    const query = searchQuery.toLowerCase();
+    const filtered = collections.filter(
+      (collection) =>
+        collection.supplier?.name?.toLowerCase().includes(query) ||
+        collection.product?.name?.toLowerCase().includes(query) ||
+        collection.collection_date?.toLowerCase().includes(query)
+    );
+    setFilteredCollections(filtered);
   };
 
   const handleCollectionPress = (collection: Collection) => {
-    (navigation.navigate as any)('CollectionDetail', { collectionId: collection.id });
+    navigation.navigate('CollectionDetail' as never, { collectionId: collection.id } as never);
   };
 
   const handleAddCollection = () => {
-    (navigation.navigate as any)('CollectionForm');
+    navigation.navigate('CollectionForm' as never);
   };
 
   const renderCollectionItem = ({ item }: { item: Collection }) => (
@@ -175,18 +140,13 @@ export const CollectionListScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Collections</Text>
-          {canCreate(user, 'collections') && (
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handleAddCollection}
-            >
-              <Text style={styles.addButtonText}>+ Add Collection</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <SyncStatusIndicator showDetails={true} />
+        <Text style={styles.title}>Collections</Text>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAddCollection}
+        >
+          <Text style={styles.addButtonText}>+ Add Collection</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -198,17 +158,8 @@ export const CollectionListScreen: React.FC = () => {
         />
       </View>
 
-      {/* Sort Controls */}
-      <View style={styles.sortContainer}>
-        <SortButton 
-          label="Date" 
-          direction={getSortDirection('collection_date')}
-          onPress={() => handleSort('collection_date')} 
-        />
-      </View>
-
       <FlatList
-        data={collections}
+        data={filteredCollections}
         renderItem={renderCollectionItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -220,16 +171,6 @@ export const CollectionListScreen: React.FC = () => {
             <Text style={styles.emptyText}>No collections found</Text>
           </View>
         }
-      />
-
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={handlePageChange}
-        hasNextPage={currentPage < totalPages}
-        hasPreviousPage={currentPage > 1}
       />
     </View>
   );
@@ -248,12 +189,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
   },
   title: {
     fontSize: 24,
@@ -373,15 +308,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#999',
-  },
-  sortContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    justifyContent: 'flex-start',
-    gap: 8,
   },
 });

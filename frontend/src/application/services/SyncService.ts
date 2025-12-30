@@ -1,16 +1,14 @@
 /**
  * Synchronization Service
- * Handles offline/online data synchronization with conflict resolution
+ * Handles offline/online data synchronization
  */
 
 import apiClient from '../../infrastructure/api/apiClient';
 import LocalStorageService, { PendingSync } from '../../infrastructure/storage/LocalStorageService';
-import ConflictResolutionService from './ConflictResolutionService';
 import { API_ENDPOINTS } from '../../core/constants/api';
 
 class SyncService {
   private isSyncing = false;
-  private syncAttempts: Map<number, number> = new Map();
 
   /**
    * Initialize sync service
@@ -57,119 +55,21 @@ class SyncService {
   }
 
   /**
-   * Sync a single item with conflict resolution
+   * Sync a single item
    */
   private async syncItem(item: PendingSync): Promise<void> {
     const data = JSON.parse(item.data);
     const endpoint = this.getEndpoint(item.entity);
-    
-    // Validate data before sync
-    const validation = ConflictResolutionService.validateSyncData(data, item.entity);
-    if (!validation.valid) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
-    }
-    
-    // Prepare sync request with version info
-    const syncData = ConflictResolutionService.prepareSyncRequest(data);
-    
-    try {
-      let response;
-      
-      switch (item.action) {
-        case 'create':
-          response = await apiClient.post(endpoint, syncData);
-          break;
-        case 'update':
-          response = await apiClient.put(`${endpoint}/${data.id}`, syncData);
-          break;
-        case 'delete':
-          response = await apiClient.delete(`${endpoint}/${data.id}`);
-          break;
-      }
-      
-      // Check for version conflicts in response
-      if (response && response.conflict) {
-        await this.handleConflict(item, response);
-      }
-      
-    } catch (error: any) {
-      // Handle version conflicts
-      if (error.response?.status === 409) {
-        const serverData = error.response.data;
-        const conflict = {
-          localVersion: data.version || 1,
-          serverVersion: serverData.version || 1,
-          localData: data,
-          serverData: serverData,
-          entity: item.entity,
-          entityId: data.id,
-        };
-        
-        const resolution = ConflictResolutionService.resolveConflict(conflict);
-        ConflictResolutionService.logConflict(conflict, resolution);
-        
-        if (resolution.action === 'use_server') {
-          // Accept server data and update local cache
-          await this.updateLocalCache(item.entity, resolution.resolvedData);
-        } else if (resolution.action === 'retry') {
-          throw new Error('Retry needed - version conflict');
-        }
-      } else {
-        // Check if should retry
-        const attemptCount = this.syncAttempts.get(item.id!) || 0;
-        if (ConflictResolutionService.shouldRetry(attemptCount, error)) {
-          this.syncAttempts.set(item.id!, attemptCount + 1);
-          const delay = ConflictResolutionService.getRetryDelay(attemptCount);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return this.syncItem(item); // Retry
-        }
-        throw error;
-      }
-    }
-  }
-  
-  /**
-   * Handle conflict resolution
-   */
-  private async handleConflict(item: PendingSync, response: any): Promise<void> {
-    const data = JSON.parse(item.data);
-    const conflict = {
-      localVersion: data.version || 1,
-      serverVersion: response.data?.version || 1,
-      localData: data,
-      serverData: response.data,
-      entity: item.entity,
-      entityId: data.id,
-    };
-    
-    const resolution = ConflictResolutionService.resolveConflict(conflict);
-    ConflictResolutionService.logConflict(conflict, resolution);
-    
-    // Always use server data
-    if (resolution.resolvedData) {
-      await this.updateLocalCache(item.entity, resolution.resolvedData);
-    }
-  }
-  
-  /**
-   * Update local cache with server data
-   */
-  private async updateLocalCache(entity: string, data: any): Promise<void> {
-    switch (entity) {
-      case 'supplier':
-        await LocalStorageService.cacheSuppliers([data]);
+
+    switch (item.action) {
+      case 'create':
+        await apiClient.post(endpoint, data);
         break;
-      case 'product':
-        await LocalStorageService.cacheProducts([data]);
+      case 'update':
+        await apiClient.put(`${endpoint}/${data.id}`, data);
         break;
-      case 'rate':
-        await LocalStorageService.cacheRates([data]);
-        break;
-      case 'collection':
-        await LocalStorageService.cacheCollections([data]);
-        break;
-      case 'payment':
-        await LocalStorageService.cachePayments([data]);
+      case 'delete':
+        await apiClient.delete(`${endpoint}/${data.id}`);
         break;
     }
   }
@@ -183,8 +83,6 @@ class SyncService {
         return API_ENDPOINTS.SUPPLIERS;
       case 'product':
         return API_ENDPOINTS.PRODUCTS;
-      case 'rate':
-        return API_ENDPOINTS.RATES;
       case 'collection':
         return API_ENDPOINTS.COLLECTIONS;
       case 'payment':
@@ -199,11 +97,11 @@ class SyncService {
    */
   async fetchAndCacheSuppliers(): Promise<void> {
     try {
-      const response = await apiClient.get<any>(API_ENDPOINTS.SUPPLIERS);
+      const response = await apiClient.get(API_ENDPOINTS.SUPPLIERS);
       if (response.success && response.data) {
         const suppliers = Array.isArray(response.data) 
           ? response.data 
-          : ((response.data as any).data && Array.isArray((response.data as any).data) ? (response.data as any).data : []);
+          : (response.data.data && Array.isArray(response.data.data) ? response.data.data : []);
         
         if (suppliers.length > 0) {
           await LocalStorageService.cacheSuppliers(suppliers);
@@ -220,11 +118,11 @@ class SyncService {
    */
   async fetchAndCacheProducts(): Promise<void> {
     try {
-      const response = await apiClient.get<any>(API_ENDPOINTS.PRODUCTS);
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS);
       if (response.success && response.data) {
         const products = Array.isArray(response.data) 
           ? response.data 
-          : ((response.data as any).data && Array.isArray((response.data as any).data) ? (response.data as any).data : []);
+          : (response.data.data && Array.isArray(response.data.data) ? response.data.data : []);
         
         if (products.length > 0) {
           await LocalStorageService.cacheProducts(products);
@@ -232,69 +130,6 @@ class SyncService {
       }
     } catch (error) {
       console.error('Error fetching products:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch and cache rates
-   */
-  async fetchAndCacheRates(): Promise<void> {
-    try {
-      const response = await apiClient.get<any>(API_ENDPOINTS.RATES);
-      if (response.success && response.data) {
-        const rates = Array.isArray(response.data) 
-          ? response.data 
-          : ((response.data as any).data && Array.isArray((response.data as any).data) ? (response.data as any).data : []);
-        
-        if (rates.length > 0) {
-          await LocalStorageService.cacheRates(rates);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching rates:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch and cache collections
-   */
-  async fetchAndCacheCollections(): Promise<void> {
-    try {
-      const response = await apiClient.get<any>(API_ENDPOINTS.COLLECTIONS);
-      if (response.success && response.data) {
-        const collections = Array.isArray(response.data) 
-          ? response.data 
-          : ((response.data as any).data && Array.isArray((response.data as any).data) ? (response.data as any).data : []);
-        
-        if (collections.length > 0) {
-          await LocalStorageService.cacheCollections(collections);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching collections:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch and cache payments
-   */
-  async fetchAndCachePayments(): Promise<void> {
-    try {
-      const response = await apiClient.get<any>(API_ENDPOINTS.PAYMENTS);
-      if (response.success && response.data) {
-        const payments = Array.isArray(response.data) 
-          ? response.data 
-          : ((response.data as any).data && Array.isArray((response.data as any).data) ? (response.data as any).data : []);
-        
-        if (payments.length > 0) {
-          await LocalStorageService.cachePayments(payments);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching payments:', error);
       throw error;
     }
   }
@@ -310,9 +145,6 @@ class SyncService {
       // Fetch and cache latest data
       await this.fetchAndCacheSuppliers();
       await this.fetchAndCacheProducts();
-      await this.fetchAndCacheRates();
-      await this.fetchAndCacheCollections();
-      await this.fetchAndCachePayments();
 
       return {
         success: true,

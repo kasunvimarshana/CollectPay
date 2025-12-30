@@ -17,76 +17,32 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
-import LocalStorageService from '../../infrastructure/storage/LocalStorageService';
 import { Product } from '../../domain/entities/Product';
-import { useAuth } from '../contexts/AuthContext';
-import { canCreate } from '../../core/utils/permissions';
-import { Pagination } from '../components/Pagination';
-import { SortButton } from '../components/SortButton';
-import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
 export const ProductListScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Server-side pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [perPage, setPerPage] = useState(10);
-  
-  // Server-side sorting state
-  const [sortBy, setSortBy] = useState<string>('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearchTerm(searchQuery);
-      setCurrentPage(1);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     loadProducts();
-  }, [currentPage, sortBy, sortOrder, searchTerm]);
+  }, []);
+
+  useEffect(() => {
+    filterProducts();
+  }, [searchQuery, products]);
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        per_page: perPage.toString(),
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      });
-      if (searchTerm.trim()) {
-        params.append('search', searchTerm.trim());
-      }
-      const response = await apiClient.get<any>(`/products?${params.toString()}`);
-      if (response.success && response.data) {
-        const paginatedData = response.data;
-        const loadedProducts = paginatedData.data || [];
-        setProducts(loadedProducts);
-        setTotalPages(paginatedData.last_page || 1);
-        setTotalItems(paginatedData.total || 0);
-        setCurrentPage(paginatedData.current_page || 1);
-        setPerPage(paginatedData.per_page || 10);
-        
-        // Cache products for offline use
-        if (loadedProducts.length > 0 && !response.fromCache) {
-          try {
-            await LocalStorageService.cacheProducts(loadedProducts);
-          } catch (cacheError) {
-            console.error('Failed to cache products:', cacheError);
-          }
-        }
+      const response = await apiClient.get('/products');
+      if (response.data.success) {
+        const data = response.data.data.data || response.data.data;
+        setProducts(data);
+        setFilteredProducts(data);
       }
     } catch (error) {
       console.error('Error loading products:', error);
@@ -102,30 +58,28 @@ export const ProductListScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
+  const filterProducts = () => {
+    if (!searchQuery.trim()) {
+      setFilteredProducts(products);
+      return;
     }
-    setCurrentPage(1);
-  };
 
-  const getSortDirection = (field: string): 'asc' | 'desc' | null => {
-    return sortBy === field ? sortOrder : null;
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    const query = searchQuery.toLowerCase();
+    const filtered = products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(query) ||
+        product.code?.toLowerCase().includes(query) ||
+        product.base_unit?.toLowerCase().includes(query)
+    );
+    setFilteredProducts(filtered);
   };
 
   const handleProductPress = (product: Product) => {
-    (navigation.navigate as any)('ProductDetail', { productId: product.id });
+    navigation.navigate('ProductDetail' as never, { productId: product.id } as never);
   };
 
   const handleAddProduct = () => {
-    (navigation.navigate as any)('ProductForm');
+    navigation.navigate('ProductForm' as never);
   };
 
   const renderProductItem = ({ item }: { item: Product }) => (
@@ -181,14 +135,12 @@ export const ProductListScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Products</Text>
-        {canCreate(user, 'products') && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddProduct}
-          >
-            <Text style={styles.addButtonText}>+ Add Product</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAddProduct}
+        >
+          <Text style={styles.addButtonText}>+ Add Product</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -200,22 +152,8 @@ export const ProductListScreen: React.FC = () => {
         />
       </View>
 
-      {/* Sort Controls */}
-      <View style={styles.sortContainer}>
-        <SortButton 
-          label="Name" 
-          direction={getSortDirection('name')}
-          onPress={() => handleSort('name')} 
-        />
-        <SortButton 
-          label="Code" 
-          direction={getSortDirection('code')}
-          onPress={() => handleSort('code')} 
-        />
-      </View>
-
       <FlatList
-        data={products}
+        data={filteredProducts}
         renderItem={renderProductItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -227,16 +165,6 @@ export const ProductListScreen: React.FC = () => {
             <Text style={styles.emptyText}>No products found</Text>
           </View>
         }
-      />
-
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={handlePageChange}
-        hasNextPage={currentPage < totalPages}
-        hasPreviousPage={currentPage > 1}
       />
     </View>
   );
@@ -350,15 +278,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#999',
-  },
-  sortContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    justifyContent: 'flex-start',
-    gap: 8,
   },
 });

@@ -7,9 +7,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import { LoginScreen } from '../screens/LoginScreen';
-import { RegisterScreen } from '../screens/RegisterScreen';
 import { HomeScreen } from '../screens/HomeScreen';
-import { ReportsScreen } from '../screens/ReportsScreen';
 import { SupplierListScreen } from '../screens/SupplierListScreen';
 import { SupplierFormScreen } from '../screens/SupplierFormScreen';
 import { SupplierDetailScreen } from '../screens/SupplierDetailScreen';
@@ -22,13 +20,6 @@ import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
 import { PaymentListScreen } from '../screens/PaymentListScreen';
 import { PaymentFormScreen } from '../screens/PaymentFormScreen';
 import { PaymentDetailScreen } from '../screens/PaymentDetailScreen';
-import { RateHistoryScreen } from '../screens/RateHistoryScreen';
-import { UserListScreen } from '../screens/UserListScreen';
-import { UserDetailScreen } from '../screens/UserDetailScreen';
-import { UserFormScreen } from '../screens/UserFormScreen';
-import { RoleListScreen } from '../screens/RoleListScreen';
-import { RoleDetailScreen } from '../screens/RoleDetailScreen';
-import { RoleFormScreen } from '../screens/RoleFormScreen';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -54,17 +45,6 @@ export const AppNavigator: React.FC = () => {
         {isAuthenticated ? (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Reports" component={ReportsScreen} />
-            
-            {/* User Screens */}
-            <Stack.Screen name="UserList" component={UserListScreen} />
-            <Stack.Screen name="UserDetail" component={UserDetailScreen} />
-            <Stack.Screen name="UserForm" component={UserFormScreen} />
-            
-            {/* Role Screens */}
-            <Stack.Screen name="RoleList" component={RoleListScreen} />
-            <Stack.Screen name="RoleDetail" component={RoleDetailScreen} />
-            <Stack.Screen name="RoleForm" component={RoleFormScreen} />
             
             {/* Supplier Screens */}
             <Stack.Screen name="SupplierList" component={SupplierListScreen} />
@@ -75,7 +55,6 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="ProductList" component={ProductListScreen} />
             <Stack.Screen name="ProductForm" component={ProductFormScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-            <Stack.Screen name="RateHistory" component={RateHistoryScreen} />
             
             {/* Collection Screens */}
             <Stack.Screen name="CollectionList" component={CollectionListScreen} />
@@ -90,7 +69,6 @@ export const AppNavigator: React.FC = () => {
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
           </>
         )}
       </Stack.Navigator>

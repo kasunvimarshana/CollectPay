@@ -15,14 +15,12 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigation } from '@react-navigation/native';
 
 export const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-  const navigation = useNavigation();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -38,10 +36,6 @@ export const LoginScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const goToRegister = () => {
-    (navigation.navigate as any)('Register');
   };
 
   return (
@@ -82,15 +76,6 @@ export const LoginScreen: React.FC = () => {
             ) : (
               <Text style={styles.buttonText}>Login</Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={goToRegister}
-          >
-            <Text style={styles.linkText}>
-              Don't have an account? <Text style={styles.linkTextBold}>Register</Text>
-            </Text>
           </TouchableOpacity>
 
           <View style={styles.testCredentials}>
@@ -153,18 +138,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  linkButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  linkTextBold: {
-    color: '#007bff',
     fontWeight: 'bold',
   },
   testCredentials: {

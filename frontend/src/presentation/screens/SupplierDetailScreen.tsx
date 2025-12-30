@@ -17,13 +17,10 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Supplier } from '../../domain/entities/Supplier';
-import { useAuth } from '../contexts/AuthContext';
-import { canUpdate, canDelete } from '../../core/utils/permissions';
 
 export const SupplierDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { user } = useAuth();
   const supplierId = (route.params as any)?.supplierId;
 
   const [loading, setLoading] = useState(true);
@@ -43,16 +40,16 @@ export const SupplierDetailScreen: React.FC = () => {
       
       // Load supplier details and balance in parallel
       const [supplierResponse, balanceResponse] = await Promise.all([
-        apiClient.get<any>(`/suppliers/${supplierId}`),
-        apiClient.get<any>(`/suppliers/${supplierId}/balance`),
+        apiClient.get(`/suppliers/${supplierId}`),
+        apiClient.get(`/suppliers/${supplierId}/balance`),
       ]);
 
-      if (supplierResponse.success && supplierResponse.data) {
-        setSupplier(supplierResponse.data);
+      if (supplierResponse.data.success) {
+        setSupplier(supplierResponse.data.data);
       }
 
-      if (balanceResponse.success && balanceResponse.data) {
-        setBalance(balanceResponse.data);
+      if (balanceResponse.data.success) {
+        setBalance(balanceResponse.data.data);
       }
     } catch (error) {
       console.error('Error loading supplier data:', error);
@@ -69,7 +66,7 @@ export const SupplierDetailScreen: React.FC = () => {
   };
 
   const handleEdit = () => {
-    (navigation.navigate as any)('SupplierForm', { supplierId });
+    navigation.navigate('SupplierForm' as never, { supplierId } as never);
   };
 
   const handleDelete = () => {
@@ -133,16 +130,12 @@ export const SupplierDetailScreen: React.FC = () => {
       {/* Header with action buttons */}
       <View style={styles.header}>
         <View style={styles.headerActions}>
-          {canUpdate(user, 'suppliers') && (
-            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          )}
-          {canDelete(user, 'suppliers') && (
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
         </View>
       </View>
 

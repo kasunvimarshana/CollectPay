@@ -16,13 +16,10 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Product, Rate } from '../../domain/entities/Product';
-import { useAuth } from '../contexts/AuthContext';
-import { canUpdate, canDelete } from '../../core/utils/permissions';
 
 export const ProductDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { user } = useAuth();
   const productId = (route.params as any)?.productId;
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -36,9 +33,9 @@ export const ProductDetailScreen: React.FC = () => {
 
   const loadProduct = async () => {
     try {
-      const response = await apiClient.get<any>(`/products/${productId}`);
-      if (response.success && response.data) {
-        setProduct(response.data);
+      const response = await apiClient.get(`/products/${productId}`);
+      if (response.data.success) {
+        setProduct(response.data.data);
       }
     } catch (error) {
       console.error('Error loading product:', error);
@@ -50,9 +47,9 @@ export const ProductDetailScreen: React.FC = () => {
 
   const loadCurrentRate = async () => {
     try {
-      const response = await apiClient.get<any>(`/products/${productId}/current-rate`);
-      if (response.success && response.data) {
-        setCurrentRate(response.data);
+      const response = await apiClient.get(`/products/${productId}/current-rate`);
+      if (response.data.success) {
+        setCurrentRate(response.data.data);
       }
     } catch (error) {
       console.error('Error loading current rate:', error);
@@ -60,7 +57,7 @@ export const ProductDetailScreen: React.FC = () => {
   };
 
   const handleEdit = () => {
-    (navigation.navigate as any)('ProductForm', { productId });
+    navigation.navigate('ProductForm' as never, { productId } as never);
   };
 
   const handleDelete = () => {
@@ -90,10 +87,9 @@ export const ProductDetailScreen: React.FC = () => {
   };
 
   const handleViewRateHistory = () => {
-    (navigation.navigate as any)('RateHistory', { 
-      productId, 
-      productName: product?.name 
-    });
+    // TODO: Implement rate history screen
+    Alert.alert('Coming Soon', 'Rate history feature will be available soon');
+    // navigation.navigate('RateHistory' as never, { productId } as never);
   };
 
   if (loading) {
@@ -197,17 +193,13 @@ export const ProductDetailScreen: React.FC = () => {
       )}
 
       <View style={styles.actionButtons}>
-        {canUpdate(user, 'products') && (
-          <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-            <Text style={styles.editButtonText}>Edit Product</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+          <Text style={styles.editButtonText}>Edit Product</Text>
+        </TouchableOpacity>
 
-        {canDelete(user, 'products') && (
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={styles.deleteButtonText}>Delete Product</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+          <Text style={styles.deleteButtonText}>Delete Product</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
