@@ -14,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { canView } from '../../core/utils/permissions';
+import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -30,9 +31,14 @@ export const HomeScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Ledger Dashboard</Text>
-        <Text style={styles.subtitle}>Welcome, {user?.name || 'User'}</Text>
-        <Text style={styles.role}>Role: {user?.role?.display_name || 'N/A'}</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>Ledger Dashboard</Text>
+            <Text style={styles.subtitle}>Welcome, {user?.name || 'User'}</Text>
+            <Text style={styles.role}>Role: {user?.role?.display_name || 'N/A'}</Text>
+          </View>
+          <SyncStatusIndicator showDetails={true} />
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -124,6 +130,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#007bff',
     padding: 20,
     paddingTop: 50,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   title: {
     fontSize: 24,

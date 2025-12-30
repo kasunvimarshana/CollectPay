@@ -17,11 +17,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
+import LocalStorageService from '../../infrastructure/storage/LocalStorageService';
 import { Supplier } from '../../domain/entities/Supplier';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination } from '../components/Pagination';
 import { SortButton } from '../components/SortButton';
+import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
 export const SupplierListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -76,11 +78,21 @@ export const SupplierListScreen: React.FC = () => {
       if (response.success && response.data) {
         // Handle Laravel pagination response
         const paginatedData = response.data;
-        setSuppliers(paginatedData.data || []);
+        const loadedSuppliers = paginatedData.data || [];
+        setSuppliers(loadedSuppliers);
         setTotalPages(paginatedData.last_page || 1);
         setTotalItems(paginatedData.total || 0);
         setCurrentPage(paginatedData.current_page || 1);
         setPerPage(paginatedData.per_page || 10);
+        
+        // Cache suppliers for offline use
+        if (loadedSuppliers.length > 0 && !response.fromCache) {
+          try {
+            await LocalStorageService.cacheSuppliers(loadedSuppliers);
+          } catch (cacheError) {
+            console.error('Failed to cache suppliers:', cacheError);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading suppliers:', error);
@@ -165,7 +177,10 @@ export const SupplierListScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Suppliers</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>Suppliers</Text>
+          <SyncStatusIndicator showDetails={false} />
+        </View>
         {canCreate(user, 'suppliers') && (
           <TouchableOpacity
             style={styles.addButton}
@@ -250,13 +265,16 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   title: {
     fontSize: 24,

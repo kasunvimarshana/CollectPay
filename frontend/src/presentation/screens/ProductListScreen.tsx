@@ -17,11 +17,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
+import LocalStorageService from '../../infrastructure/storage/LocalStorageService';
 import { Product } from '../../domain/entities/Product';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination } from '../components/Pagination';
 import { SortButton } from '../components/SortButton';
+import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
 export const ProductListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -70,11 +72,21 @@ export const ProductListScreen: React.FC = () => {
       const response = await apiClient.get<any>(`/products?${params.toString()}`);
       if (response.success && response.data) {
         const paginatedData = response.data;
-        setProducts(paginatedData.data || []);
+        const loadedProducts = paginatedData.data || [];
+        setProducts(loadedProducts);
         setTotalPages(paginatedData.last_page || 1);
         setTotalItems(paginatedData.total || 0);
         setCurrentPage(paginatedData.current_page || 1);
         setPerPage(paginatedData.per_page || 10);
+        
+        // Cache products for offline use
+        if (loadedProducts.length > 0 && !response.fromCache) {
+          try {
+            await LocalStorageService.cacheProducts(loadedProducts);
+          } catch (cacheError) {
+            console.error('Failed to cache products:', cacheError);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading products:', error);
