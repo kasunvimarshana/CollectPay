@@ -1,59 +1,195 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# FieldPay Ledger - Laravel Backend (Clean Architecture)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 🎯 Overview
 
-## About Laravel
+Production-ready Laravel 10 backend implementing **Clean Architecture** for a data collection and payment management system. Built with SOLID principles, comprehensive audit logging, and multi-user/multi-device support.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📋 Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### ✅ Fully Implemented
+- **Clean Architecture** with clear separation of concerns
+- **Complete CRUD Operations** for:
+  - Users (with role management)
+  - Suppliers
+  - Products
+  - Rates (versioned, time-based)
+  - Collections (multi-unit tracking)
+  - Payments (advance, partial, final)
+- **Automated Payment Calculations**
+- **Multi-Unit Quantity System** (kg, g, l, ml, etc.)
+- **Versioned Rate Management**
+- **Audit Logging System**
+- **Repository Pattern** with Dependency Injection
+- **Use Case Pattern** for business logic
+- **Request Validation** with custom request classes
+- **Standardized API Responses**
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🚀 API Endpoints
 
-## Learning Laravel
+### Users
+```
+GET    /api/v1/users              - List users
+POST   /api/v1/users              - Create user
+GET    /api/v1/users/{id}         - Get user
+PUT    /api/v1/users/{id}         - Update user
+DELETE /api/v1/users/{id}         - Delete user
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Suppliers
+```
+GET    /api/v1/suppliers          - List suppliers
+POST   /api/v1/suppliers          - Create supplier
+GET    /api/v1/suppliers/{id}     - Get supplier
+PUT    /api/v1/suppliers/{id}     - Update supplier
+DELETE /api/v1/suppliers/{id}     - Delete supplier
+GET    /api/v1/suppliers/{id}/balance - Calculate supplier balance
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Products
+```
+GET    /api/v1/products           - List products
+POST   /api/v1/products           - Create product
+GET    /api/v1/products/{id}      - Get product
+PUT    /api/v1/products/{id}      - Update product
+DELETE /api/v1/products/{id}      - Delete product
+```
 
-## Laravel Sponsors
+### Rates
+```
+GET    /api/v1/rates              - List rates
+POST   /api/v1/rates              - Create rate
+GET    /api/v1/rates/{id}         - Get rate
+GET    /api/v1/products/{id}/rates        - Get product rates
+GET    /api/v1/products/{id}/rates/latest - Get latest rate
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Collections
+```
+GET    /api/v1/collections        - List collections
+POST   /api/v1/collections        - Create collection
+GET    /api/v1/collections/{id}   - Get collection
+DELETE /api/v1/collections/{id}   - Delete collection
+```
 
-### Premium Partners
+### Payments
+```
+GET    /api/v1/payments           - List payments
+POST   /api/v1/payments           - Create payment
+GET    /api/v1/payments/{id}      - Get payment
+DELETE /api/v1/payments/{id}      - Delete payment
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🔧 Installation
 
-## Contributing
+### Prerequisites
+- PHP 8.1 or higher
+- Composer
+- MySQL or PostgreSQL
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Setup
 
-## Code of Conduct
+1. **Install Dependencies**
+```bash
+cd backend
+composer install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+2. **Environment Configuration**
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Security Vulnerabilities
+3. **Configure Database**
+Edit `.env` file:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=fieldpay_ledger
+DB_USERNAME=root
+DB_PASSWORD=your_password
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+4. **Run Migrations**
+```bash
+php artisan migrate
+```
 
-## License
+5. **Start Development Server**
+```bash
+php artisan serve
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The API will be available at: `http://localhost:8000/api/v1`
+
+## 📝 API Usage Examples
+
+### Create a User
+```bash
+curl -X POST http://localhost:8000/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "SecurePass123",
+    "roles": ["collector"]
+  }'
+```
+
+### Create a Collection
+```bash
+curl -X POST http://localhost:8000/api/v1/collections \
+  -H "Content-Type: application/json" \
+  -d '{
+    "supplier_id": "uuid-here",
+    "product_id": "uuid-here",
+    "rate_id": "uuid-here",
+    "quantity_value": 50.5,
+    "quantity_unit": "kg",
+    "total_amount": 252.50,
+    "total_amount_currency": "USD",
+    "collection_date": "2025-12-27",
+    "collected_by": "user-uuid-here",
+    "notes": "Morning collection"
+  }'
+```
+
+### Calculate Supplier Balance
+```bash
+curl -X GET http://localhost:8000/api/v1/suppliers/{supplier-id}/balance
+```
+
+## 🏗️ Architecture
+
+### Clean Architecture Layers
+
+```
+┌─────────────────────────────────────────┐
+│   Presentation Layer (Controllers)      │
+│   - HTTP Request Handling               │
+│   - Response Formatting                 │
+├─────────────────────────────────────────┤
+│   Infrastructure Layer                  │
+│   - Eloquent Repositories               │
+│   - Audit Logging                       │
+├─────────────────────────────────────────┤
+│   Application Layer (Use Cases)         │
+│   - Business Workflows                  │
+│   - DTOs                                │
+├─────────────────────────────────────────┤
+│   Domain Layer (Core Business Logic)    │
+│   - Entities                            │
+│   - Value Objects                       │
+│   - Repository Interfaces               │
+└─────────────────────────────────────────┘
+```
+
+## 📚 Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Detailed architecture
+- [IMPLEMENTATION.md](IMPLEMENTATION.md) - Implementation guide
+
+## 📄 License
+
+MIT License

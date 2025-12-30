@@ -4,76 +4,65 @@ declare(strict_types=1);
 
 namespace Domain\Entities;
 
-use Domain\ValueObjects\UUID;
-use Domain\ValueObjects\Email;
-use Domain\ValueObjects\PhoneNumber;
+use Domain\ValueObjects\Money;
 use DateTimeImmutable;
-use InvalidArgumentException;
 
 /**
- * Supplier Domain Entity
- * 
- * Represents a supplier in the system with complete business logic
- * Immutable after creation, follows DDD principles
+ * Supplier Entity
+ * Represents a supplier from whom collections are made
  */
 final class Supplier
 {
-    private UUID $id;
+    private string $id;
     private string $name;
     private string $code;
-    private ?Email $email;
-    private ?PhoneNumber $phone;
     private ?string $address;
-    private bool $active;
+    private ?string $phone;
+    private ?string $email;
+    private bool $isActive;
     private DateTimeImmutable $createdAt;
     private DateTimeImmutable $updatedAt;
-    private int $version;
+    private ?DateTimeImmutable $deletedAt;
 
     private function __construct(
-        UUID $id,
+        string $id,
         string $name,
         string $code,
-        ?Email $email,
-        ?PhoneNumber $phone,
-        ?string $address,
-        bool $active,
-        DateTimeImmutable $createdAt,
-        DateTimeImmutable $updatedAt,
-        int $version
+        ?string $address = null,
+        ?string $phone = null,
+        ?string $email = null,
+        bool $isActive = true,
+        ?DateTimeImmutable $createdAt = null,
+        ?DateTimeImmutable $updatedAt = null,
+        ?DateTimeImmutable $deletedAt = null
     ) {
-        $this->validateName($name);
-        $this->validateCode($code);
-        
         $this->id = $id;
-        $this->name = trim($name);
-        $this->code = strtoupper(trim($code));
-        $this->email = $email;
+        $this->name = $name;
+        $this->code = $code;
+        $this->address = $address;
         $this->phone = $phone;
-        $this->address = $address ? trim($address) : null;
-        $this->active = $active;
-        $this->createdAt = $createdAt;
-        $this->updatedAt = $updatedAt;
-        $this->version = $version;
+        $this->email = $email;
+        $this->isActive = $isActive;
+        $this->createdAt = $createdAt ?? new DateTimeImmutable();
+        $this->updatedAt = $updatedAt ?? new DateTimeImmutable();
+        $this->deletedAt = $deletedAt;
     }
 
     public static function create(
+        string $id,
         string $name,
         string $code,
-        ?string $email = null,
+        ?string $address = null,
         ?string $phone = null,
-        ?string $address = null
+        ?string $email = null
     ): self {
         return new self(
-            UUID::generate(),
+            $id,
             $name,
             $code,
-            $email ? new Email($email) : null,
-            $phone ? new PhoneNumber($phone) : null,
             $address,
-            true,
-            new DateTimeImmutable(),
-            new DateTimeImmutable(),
-            1
+            $phone,
+            $email
         );
     }
 
@@ -81,178 +70,130 @@ final class Supplier
         string $id,
         string $name,
         string $code,
-        ?string $email,
-        ?string $phone,
         ?string $address,
-        bool $active,
+        ?string $phone,
+        ?string $email,
+        bool $isActive,
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
-        int $version
+        ?DateTimeImmutable $deletedAt = null
     ): self {
         return new self(
-            UUID::fromString($id),
+            $id,
             $name,
             $code,
-            $email ? new Email($email) : null,
-            $phone ? new PhoneNumber($phone) : null,
             $address,
-            $active,
+            $phone,
+            $email,
+            $isActive,
             $createdAt,
             $updatedAt,
-            $version
+            $deletedAt
         );
-    }
-
-    public function update(
-        string $name,
-        ?string $email = null,
-        ?string $phone = null,
-        ?string $address = null
-    ): self {
-        return new self(
-            $this->id,
-            $name,
-            $this->code,
-            $email ? new Email($email) : null,
-            $phone ? new PhoneNumber($phone) : null,
-            $address,
-            $this->active,
-            $this->createdAt,
-            new DateTimeImmutable(),
-            $this->version + 1
-        );
-    }
-
-    public function activate(): self
-    {
-        if ($this->active) {
-            return $this;
-        }
-
-        return new self(
-            $this->id,
-            $this->name,
-            $this->code,
-            $this->email,
-            $this->phone,
-            $this->address,
-            true,
-            $this->createdAt,
-            new DateTimeImmutable(),
-            $this->version + 1
-        );
-    }
-
-    public function deactivate(): self
-    {
-        if (!$this->active) {
-            return $this;
-        }
-
-        return new self(
-            $this->id,
-            $this->name,
-            $this->code,
-            $this->email,
-            $this->phone,
-            $this->address,
-            false,
-            $this->createdAt,
-            new DateTimeImmutable(),
-            $this->version + 1
-        );
-    }
-
-    private function validateName(string $name): void
-    {
-        if (empty(trim($name))) {
-            throw new InvalidArgumentException('Supplier name cannot be empty');
-        }
-
-        if (strlen($name) > 255) {
-            throw new InvalidArgumentException('Supplier name cannot exceed 255 characters');
-        }
-    }
-
-    private function validateCode(string $code): void
-    {
-        if (empty(trim($code))) {
-            throw new InvalidArgumentException('Supplier code cannot be empty');
-        }
-
-        if (strlen($code) > 50) {
-            throw new InvalidArgumentException('Supplier code cannot exceed 50 characters');
-        }
-
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $code)) {
-            throw new InvalidArgumentException('Supplier code can only contain letters, numbers, hyphens and underscores');
-        }
     }
 
     // Getters
-    public function id(): UUID
+    public function getId(): string
     {
         return $this->id;
     }
 
-    public function name(): string
+    public function getName(): string
     {
         return $this->name;
     }
 
-    public function code(): string
+    public function getCode(): string
     {
         return $this->code;
     }
 
-    public function email(): ?Email
-    {
-        return $this->email;
-    }
-
-    public function phone(): ?PhoneNumber
-    {
-        return $this->phone;
-    }
-
-    public function address(): ?string
+    public function getAddress(): ?string
     {
         return $this->address;
     }
 
-    public function isActive(): bool
+    public function getPhone(): ?string
     {
-        return $this->active;
+        return $this->phone;
     }
 
-    public function createdAt(): DateTimeImmutable
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function updatedAt(): DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function version(): int
+    public function getDeletedAt(): ?DateTimeImmutable
     {
-        return $this->version;
+        return $this->deletedAt;
+    }
+
+    // Business logic
+    public function updateDetails(
+        string $name,
+        ?string $address = null,
+        ?string $phone = null,
+        ?string $email = null
+    ): void {
+        $this->name = $name;
+        $this->address = $address;
+        $this->phone = $phone;
+        $this->email = $email;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function activate(): void
+    {
+        $this->isActive = true;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function deactivate(): void
+    {
+        $this->isActive = false;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function delete(): void
+    {
+        $this->deletedAt = new DateTimeImmutable();
+        $this->isActive = false;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
     }
 
     public function toArray(): array
     {
         return [
-            'id' => $this->id->value(),
+            'id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
-            'email' => $this->email?->value(),
-            'phone' => $this->phone?->value(),
             'address' => $this->address,
-            'active' => $this->active,
+            'phone' => $this->phone,
+            'email' => $this->email,
+            'is_active' => $this->isActive,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
-            'version' => $this->version,
+            'deleted_at' => $this->deletedAt?->format('Y-m-d H:i:s'),
         ];
     }
 }

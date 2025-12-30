@@ -8,67 +8,60 @@ use InvalidArgumentException;
 
 /**
  * Money Value Object
- * 
- * Represents monetary amounts with validation
- * Immutable value object following DDD principles
+ * Represents monetary amounts with precision
  */
 final class Money
 {
     private float $amount;
     private string $currency;
 
-    public function __construct(float $amount, string $currency = 'LKR')
+    private function __construct(float $amount, string $currency = 'USD')
     {
-        $this->validateAmount($amount);
-        $this->validateCurrency($currency);
-        
-        $this->amount = round($amount, 2);
+        $this->validate($amount, $currency);
+        $this->amount = $amount;
         $this->currency = strtoupper($currency);
     }
 
-    private function validateAmount(float $amount): void
+    public static function fromFloat(float $amount, string $currency = 'USD'): self
+    {
+        return new self($amount, $currency);
+    }
+
+    public static function zero(string $currency = 'USD'): self
+    {
+        return new self(0.0, $currency);
+    }
+
+    private function validate(float $amount, string $currency): void
     {
         if ($amount < 0) {
             throw new InvalidArgumentException('Money amount cannot be negative');
         }
-    }
-
-    private function validateCurrency(string $currency): void
-    {
-        if (empty(trim($currency))) {
-            throw new InvalidArgumentException('Currency cannot be empty');
-        }
 
         if (strlen($currency) !== 3) {
-            throw new InvalidArgumentException('Currency must be a 3-letter ISO code');
+            throw new InvalidArgumentException('Currency must be 3-letter ISO code');
         }
     }
 
-    public function amount(): float
+    public function getAmount(): float
     {
         return $this->amount;
     }
 
-    public function currency(): string
+    public function getCurrency(): string
     {
         return $this->currency;
     }
 
-    public function add(Money $other): self
+    public function add(self $other): self
     {
-        if ($this->currency !== $other->currency) {
-            throw new InvalidArgumentException('Cannot add money with different currencies');
-        }
-
+        $this->ensureSameCurrency($other);
         return new self($this->amount + $other->amount, $this->currency);
     }
 
-    public function subtract(Money $other): self
+    public function subtract(self $other): self
     {
-        if ($this->currency !== $other->currency) {
-            throw new InvalidArgumentException('Cannot subtract money with different currencies');
-        }
-
+        $this->ensureSameCurrency($other);
         return new self($this->amount - $other->amount, $this->currency);
     }
 
@@ -77,18 +70,35 @@ final class Money
         return new self($this->amount * $multiplier, $this->currency);
     }
 
-    public function equals(Money $other): bool
+    public function isGreaterThan(self $other): bool
+    {
+        $this->ensureSameCurrency($other);
+        return $this->amount > $other->amount;
+    }
+
+    public function isLessThan(self $other): bool
+    {
+        $this->ensureSameCurrency($other);
+        return $this->amount < $other->amount;
+    }
+
+    public function equals(self $other): bool
     {
         return $this->amount === $other->amount && $this->currency === $other->currency;
     }
 
-    public function formatted(): string
+    private function ensureSameCurrency(self $other): void
     {
-        return sprintf('%s %.2f', $this->currency, $this->amount);
+        if ($this->currency !== $other->currency) {
+            throw new InvalidArgumentException('Cannot operate on different currencies');
+        }
     }
 
-    public function __toString(): string
+    public function toArray(): array
     {
-        return $this->formatted();
+        return [
+            'amount' => $this->amount,
+            'currency' => $this->currency,
+        ];
     }
 }

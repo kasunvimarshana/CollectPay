@@ -6,105 +6,96 @@ namespace Infrastructure\Persistence\Repositories;
 
 use Domain\Entities\Payment;
 use Domain\Repositories\PaymentRepositoryInterface;
-use Domain\ValueObjects\UUID;
 use Domain\ValueObjects\Money;
-use Infrastructure\Persistence\Eloquent\PaymentModel;
+use Infrastructure\Persistence\Eloquent\Models\PaymentModel;
 use DateTimeImmutable;
 
+/**
+ * Eloquent Payment Repository Implementation
+ */
 final class EloquentPaymentRepository implements PaymentRepositoryInterface
 {
     public function save(Payment $payment): void
     {
-        PaymentModel::updateOrCreate(
-            ['id' => $payment->id()->value()],
-            [
-                'supplier_id' => $payment->supplierId()->value(),
-                'amount' => $payment->amount()->amount(),
-                'currency' => $payment->amount()->currency(),
-                'type' => $payment->type(),
-                'payment_date' => $payment->paymentDate(),
-                'reference' => $payment->reference(),
-                'notes' => $payment->notes(),
-                'version' => $payment->version(),
-                'updated_at' => $payment->updatedAt(),
-            ]
-        );
+        $model = PaymentModel::find($payment->getId()) ?? new PaymentModel();
+
+        $model->fill([
+            'id' => $payment->getId(),
+            'supplier_id' => $payment->getSupplierId(),
+            'type' => $payment->getType(),
+            'amount' => $payment->getAmount()->getAmount(),
+            'currency' => $payment->getAmount()->getCurrency(),
+            'payment_date' => $payment->getPaymentDate()->format('Y-m-d H:i:s'),
+            'paid_by' => $payment->getPaidBy(),
+            'reference_number' => $payment->getReferenceNumber(),
+            'notes' => $payment->getNotes(),
+        ]);
+
+        if (!$model->exists) {
+            $model->created_at = $payment->getCreatedAt()->format('Y-m-d H:i:s');
+        }
+        $model->updated_at = $payment->getUpdatedAt()->format('Y-m-d H:i:s');
+
+        $model->save();
     }
 
-    public function findById(UUID $id): ?Payment
+    public function findById(string $id): ?Payment
     {
-        $model = PaymentModel::find($id->value());
-        return $model ? $this->toDomainEntity($model) : null;
-    }
+        $model = PaymentModel::find($id);
 
-    public function findBySupplierId(UUID $supplierId, ?DateTimeImmutable $from = null, ?DateTimeImmutable $to = null): array
-    {
-        $query = PaymentModel::where('supplier_id', $supplierId->value());
-
-        if ($from) {
-            $query->where('payment_date', '>=', $from);
+        if (!$model) {
+            return null;
         }
 
-        if ($to) {
-            $query->where('payment_date', '<=', $to);
-        }
-
-        $models = $query->orderBy('payment_date', 'desc')->get();
-        return $models->map(fn($model) => $this->toDomainEntity($model))->all();
+        return $this->toDomainEntity($model);
     }
 
-    public function findAll(int $page = 1, int $perPage = 30, ?array $filters = null): array
-    {
-        $query = PaymentModel::query();
+    public function findBySupplierId(
+        string $supplierId,
+        int $page = 1,
+        int $perPage = 20
+    ): array {
+        $models = PaymentModel::where('supplier_id', $supplierId)
+            ->orderBy('payment_date', 'desc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
 
-        if ($filters) {
-            if (isset($filters['supplier_id'])) {
-                $query->where('supplier_id', $filters['supplier_id']);
-            }
-            if (isset($filters['type'])) {
-                $query->where('type', $filters['type']);
-            }
-            if (isset($filters['from'])) {
-                $query->where('payment_date', '>=', $filters['from']);
-            }
-            if (isset($filters['to'])) {
-                $query->where('payment_date', '<=', $filters['to']);
-            }
-        }
-
-        $models = $query->orderBy('payment_date', 'desc')
-                        ->skip(($page - 1) * $perPage)
-                        ->take($perPage)
-                        ->get();
-
-        return $models->map(fn($model) => $this->toDomainEntity($model))->all();
+        return $models->map(fn($model) => $this->toDomainEntity($model))->toArray();
     }
 
-    public function count(?array $filters = null): int
-    {
-        $query = PaymentModel::query();
+    public function findBySupplierAndDateRange(
+        string $supplierId,
+        DateTimeImmutable $startDate,
+        DateTimeImmutable $endDate
+    ): array {
+        $models = PaymentModel::where('supplier_id', $supplierId)
+            ->whereBetween('payment_date', [
+                $startDate->format('Y-m-d H:i:s'),
+                $endDate->format('Y-m-d H:i:s')
+            ])
+            ->orderBy('payment_date', 'desc')
+            ->get();
 
-        if ($filters) {
-            if (isset($filters['supplier_id'])) {
-                $query->where('supplier_id', $filters['supplier_id']);
-            }
-            if (isset($filters['type'])) {
-                $query->where('type', $filters['type']);
-            }
-            if (isset($filters['from'])) {
-                $query->where('payment_date', '>=', $filters['from']);
-            }
-            if (isset($filters['to'])) {
-                $query->where('payment_date', '<=', $filters['to']);
-            }
-        }
-
-        return $query->count();
+        return $models->map(fn($model) => $this->toDomainEntity($model))->toArray();
     }
 
-    public function delete(UUID $id): void
+    public function findAll(int $page = 1, int $perPage = 20): array
     {
-        PaymentModel::where('id', $id->value())->delete();
+        $models = PaymentModel::orderBy('payment_date', 'desc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        return $models->map(fn($model) => $this->toDomainEntity($model))->toArray();
+    }
+
+    public function delete(string $id): void
+    {
+        $model = PaymentModel::find($id);
+        if ($model) {
+            $model->delete();
+        }
     }
 
     private function toDomainEntity(PaymentModel $model): Payment
@@ -112,15 +103,18 @@ final class EloquentPaymentRepository implements PaymentRepositoryInterface
         return Payment::reconstitute(
             $model->id,
             $model->supplier_id,
-            (float) $model->amount,
-            $model->currency,
             $model->type,
+            Money::fromFloat(
+                (float) $model->amount,
+                $model->currency
+            ),
             new DateTimeImmutable($model->payment_date),
-            $model->reference,
+            $model->paid_by,
+            $model->reference_number,
             $model->notes,
             new DateTimeImmutable($model->created_at),
             new DateTimeImmutable($model->updated_at),
-            $model->version
+            $model->deleted_at ? new DateTimeImmutable($model->deleted_at) : null
         );
     }
 }

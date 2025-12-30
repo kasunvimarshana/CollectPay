@@ -1,261 +1,230 @@
-# FieldLedger Platform - Backend Architecture
+# FieldPay Ledger - Laravel Backend
 
-## Overview
+## Architecture Overview
 
-This is a production-ready Laravel backend API implementing **Clean Architecture** principles for a data collection and payment management system. The application follows SOLID, DRY, and KISS principles with clear separation of concerns.
-
-## Architecture
+This project implements a **Clean Architecture** backend for a data collection and payment management system using Laravel 10 (LTS).
 
 ### Clean Architecture Layers
 
 ```
 backend/
 ├── src/
-│   ├── Domain/              # Business logic and rules (pure PHP, framework-independent)
-│   │   ├── Entities/        # Core business entities
-│   │   ├── ValueObjects/    # Immutable value objects
-│   │   ├── Repositories/    # Repository interfaces
-│   │   └── Services/        # Domain services
-│   ├── Application/         # Application business rules
-│   │   ├── UseCases/        # Use cases (application services)
-│   │   ├── DTOs/            # Data Transfer Objects
-│   │   └── Mappers/         # Domain to DTO mappers
-│   ├── Infrastructure/      # External frameworks and tools
-│   │   ├── Persistence/     # Database implementations
-│   │   │   ├── Eloquent/    # Eloquent models
-│   │   │   └── Repositories/# Repository implementations
-│   │   ├── Auth/            # Authentication implementations
-│   │   └── Logging/         # Logging implementations
-│   └── Presentation/        # Interface adapters
-│       └── Http/            # HTTP layer
-│           ├── Controllers/ # API controllers
-│           ├── Requests/    # Form requests (validation)
-│           ├── Resources/   # JSON resources (transformers)
-│           └── Middleware/  # HTTP middleware
-└── app/                     # Laravel app structure (legacy)
+│   ├── Domain/                    # Enterprise Business Rules
+│   │   ├── Entities/             # Core business entities
+│   │   ├── ValueObjects/         # Immutable value objects
+│   │   ├── Repositories/         # Repository interfaces
+│   │   ├── Services/             # Domain services
+│   │   └── Events/               # Domain events
+│   ├── Application/              # Application Business Rules
+│   │   ├── UseCases/            # Use case implementations
+│   │   ├── DTOs/                # Data Transfer Objects
+│   │   └── Contracts/           # Application interfaces
+│   └── Infrastructure/           # Frameworks & Drivers
+│       ├── Persistence/         # Database implementations
+│       ├── Security/            # Security implementations
+│       └── Logging/             # Logging implementations
+└── app/                         # Laravel Presentation Layer
+    └── Http/                    # Controllers, Middleware, Resources
 ```
 
-### Layer Dependencies
-
-- **Domain** layer has no dependencies (pure PHP)
-- **Application** layer depends only on Domain
-- **Infrastructure** layer depends on Domain and Application
-- **Presentation** layer depends on Application and Infrastructure
-
-This follows the **Dependency Rule**: dependencies point inward, toward the domain.
-
-## Key Principles
-
-### 1. SOLID Principles
-
-#### Single Responsibility Principle (SRP)
-- Each class has one reason to change
-- Use cases handle one specific operation
-- Entities encapsulate single business concepts
-
-#### Open/Closed Principle (OCP)
-- Entities are open for extension, closed for modification
-- New functionality added through new classes, not modifying existing ones
-
-#### Liskov Substitution Principle (LSP)
-- Repository implementations can be swapped without affecting business logic
-- Domain interfaces define contracts
-
-#### Interface Segregation Principle (ISP)
-- Repository interfaces are specific to entity needs
-- No fat interfaces with unused methods
-
-#### Dependency Inversion Principle (DIP)
-- High-level modules (Use Cases) don't depend on low-level modules (Repositories)
-- Both depend on abstractions (Interfaces)
-
-### 2. DRY (Don't Repeat Yourself)
-- Value objects encapsulate validation logic
-- Repository pattern eliminates data access duplication
-- Use cases centralize business operations
-
-### 3. KISS (Keep It Simple, Stupid)
-- Clear, understandable code
-- Minimal abstraction where appropriate
-- Direct implementations without over-engineering
-
-## Domain Model
+## Domain Layer
 
 ### Entities
 
-#### Supplier
-- **Purpose**: Represents suppliers in the system
-- **Key Business Rules**:
-  - Supplier code must be unique
-  - Name and code are required
-  - Email and phone are validated via value objects
-  - Version tracking for optimistic locking
-- **Immutability**: Entities are immutable; updates create new instances
+The core business entities representing the problem domain:
+
+- **User**: System users with roles and permissions (RBAC/ABAC)
+- **Supplier**: Suppliers from whom collections are made
+- **Product**: Products with multi-unit support
+- **Rate**: Versioned product rates (time-based, historical preservation)
+- **Collection**: Collection transactions with quantities
+- **Payment**: Payment tracking (advance, partial, final)
 
 ### Value Objects
 
-#### UUID
-- Generates and validates UUIDs
-- Used as entity identifiers
+Immutable objects representing domain concepts:
 
-#### Email
-- Validates email format
-- Immutable
+- **UserId**: Unique user identifier (UUID)
+- **Email**: Validated email address
+- **Money**: Monetary amounts with currency support
+- **Quantity**: Quantities with unit of measurement
+- **Unit**: Multi-unit system (kg, g, l, ml, etc.) with automatic conversions
 
-#### PhoneNumber
-- Validates phone number format
-- Normalizes input
+### Repository Interfaces
 
-### Repositories
+Following the **Dependency Inversion Principle**, the Domain layer defines interfaces:
 
-Repository interfaces define contracts for data persistence without exposing implementation details.
+- `UserRepositoryInterface`
+- `SupplierRepositoryInterface`
+- `ProductRepositoryInterface`
+- `RateRepositoryInterface`
+- `CollectionRepositoryInterface`
+- `PaymentRepositoryInterface`
 
-## Application Layer
+### Domain Services
 
-### Use Cases
+Business logic that doesn't belong to a single entity:
 
-Use cases represent application-specific business rules:
+- **PaymentCalculationService**: Automated payment calculations based on collections, rates, and prior payments
 
-- `CreateSupplierUseCase`: Create a new supplier with validation
-- `UpdateSupplierUseCase`: Update existing supplier
-- `GetSupplierUseCase`: Retrieve single supplier
-- `ListSuppliersUseCase`: List suppliers with filtering and pagination
-- `DeleteSupplierUseCase`: Delete supplier
+## Database Schema
 
-### DTOs
+### Tables
 
-Data Transfer Objects carry data between layers without business logic.
+- **users**: System users with UUID primary keys, roles (JSON), soft deletes
+- **suppliers**: Supplier profiles with unique codes
+- **products**: Products with default units
+- **rates**: Versioned product rates with effective date ranges
+- **collections**: Collection transactions linking suppliers, products, and rates
+- **payments**: Payment records (advance, partial, final) linked to suppliers
+- **audit_logs**: Immutable audit trail for all changes
 
-## Infrastructure Layer
+### Key Features
 
-### Database
+- UUID primary keys for distributed systems support
+- Foreign key constraints for referential integrity
+- Indexes for optimized queries
+- Soft deletes for data preservation
+- Timestamps for audit trails
+- Multi-currency support
+- Multi-unit quantity tracking
 
-- **Driver**: SQLite (development), PostgreSQL/MySQL (production)
-- **ORM**: Eloquent
-- **Migrations**: Version-controlled schema changes
+## SOLID Principles Implementation
 
-### Repositories
+### Single Responsibility Principle (SRP)
+Each entity, value object, and service has one reason to change.
 
-Eloquent implementations of domain repository interfaces.
+### Open/Closed Principle (OCP)
+Entities are closed for modification but open for extension through composition.
 
-## Security
+### Liskov Substitution Principle (LSP)
+Value objects can be substituted without breaking the application.
 
-### Authentication
-- Laravel Sanctum for API token authentication
-- Stateless authentication for mobile apps
+### Interface Segregation Principle (ISP)
+Repository interfaces are focused and specific to each entity.
 
-### Authorization
+### Dependency Inversion Principle (DIP)
+Domain layer depends on abstractions (interfaces), not concrete implementations.
+
+## Multi-Unit Support
+
+The system supports multiple units of measurement with automatic conversions:
+
+### Weight Units
+- **kg** (kilogram) - base: 1000g
+- **g** (gram) - base unit
+- **mg** (milligram) - base: 0.001g
+- **lb** (pound) - base: 453.592g
+- **oz** (ounce) - base: 28.3495g
+
+### Volume Units
+- **l** (liter) - base: 1000ml
+- **ml** (milliliter) - base unit
+- **gal** (gallon) - base: 3785.41ml
+
+### Count Units
+- **unit**, **piece**, **dozen**
+
+Example usage:
+```php
+$quantity = Quantity::create(2.5, Unit::fromString('kg'));
+$inGrams = $quantity->convertTo(Unit::fromString('g')); // 2500g
+```
+
+## Versioned Rate Management
+
+Rates are time-based and historical:
+
+- Each product can have multiple rates over time
+- `effective_from` and `effective_to` define validity periods
+- Historical rates are preserved for audit and calculation accuracy
+- New collections automatically use the latest effective rate
+
+## Payment Calculation
+
+The `PaymentCalculationService` provides:
+
+- **Total Collections**: Sum of all collection amounts for a supplier
+- **Total Payments**: Sum of all payments made to a supplier
+- **Balance Owed**: Total collections minus total payments
+- **Outstanding Balance Check**: Determines if payment is due
+
+## Security Features
+
+### Authentication & Authorization
+- Laravel Sanctum for API authentication (planned)
 - Role-Based Access Control (RBAC)
 - Attribute-Based Access Control (ABAC)
-- Policy-based authorization
 
 ### Data Protection
-- Encrypted sensitive data at rest
-- HTTPS required for all API calls
-- Input validation and sanitization
-- SQL injection prevention via Eloquent
+- Encrypted data at rest (planned)
+- Encrypted data in transit (HTTPS)
+- Audit logs for all operations
+- Soft deletes for data recovery
 
-## API Design
+### Multi-User/Multi-Device Support
+- UUID-based primary keys
+- Optimistic locking (planned)
+- Transaction management
+- Conflict detection and resolution (planned)
 
-### RESTful Principles
-- Resource-based URLs
-- HTTP methods for CRUD operations
-- Proper status codes
-- JSON request/response format
+## Installation
 
-### Endpoints
+### Requirements
+- PHP 8.1 or higher
+- Composer
+- MySQL/PostgreSQL
+- Laravel 10
 
+### Setup
+
+1. Install dependencies:
+```bash
+cd backend
+composer install
 ```
-POST   /api/suppliers          - Create supplier
-GET    /api/suppliers          - List suppliers (with pagination/filters)
-GET    /api/suppliers/{id}     - Get single supplier
-PUT    /api/suppliers/{id}     - Update supplier
-DELETE /api/suppliers/{id}     - Delete supplier
+
+2. Configure environment:
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+3. Configure database in `.env`:
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=fieldpay_ledger
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+4. Run migrations:
+```bash
+php artisan migrate
 ```
 
 ## Testing
 
-### Test Structure
-```
-tests/
-├── Unit/           # Domain and application logic tests
-├── Feature/        # API endpoint tests
-└── Integration/    # Repository and infrastructure tests
-```
-
-### Testing Principles
-- Test domain logic independently
-- Mock external dependencies
-- Integration tests for database operations
-- Feature tests for API endpoints
-
-## Development Setup
-
-### Prerequisites
-- PHP 8.2+
-- Composer
-- SQLite (dev) or PostgreSQL/MySQL (prod)
-
-### Installation
-
-```bash
-cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan serve
-```
-
-### Running Tests
-
+Run tests:
 ```bash
 php artisan test
 ```
 
-## Future Modules
+## API Documentation
 
-Following the established pattern, implement:
+API documentation will be available via OpenAPI/Swagger (planned).
 
-- **Products** with versioned rates
-- **Collections** with multi-unit tracking
-- **Payments** with automated calculations
-- **Users** with RBAC/ABAC
-- **Audit Logs** for transparency
+## Contributing
 
-Each module follows the same Clean Architecture structure demonstrated with Suppliers.
-
-## Best Practices
-
-1. **Always use value objects** for domain concepts with validation
-2. **Keep entities immutable** - create new instances for updates
-3. **Use dependency injection** - never instantiate dependencies manually
-4. **Write tests first** - TDD for business-critical logic
-5. **Document public APIs** - clear docblocks for interfaces
-6. **Handle errors gracefully** - use exceptions for domain violations
-7. **Version your APIs** - prepare for changes
-8. **Log important events** - audit trail for compliance
-
-## Performance Considerations
-
-- Database indexes on frequently queried fields
-- Eager loading relationships to avoid N+1 queries
-- Caching for read-heavy operations
-- Queue long-running tasks
-- Optimize JSON responses
-
-## Maintenance
-
-- Keep dependencies updated
-- Regular security audits
-- Performance monitoring
-- Database backups
-- Code review process
+Follow Clean Architecture principles:
+1. Domain logic stays in the Domain layer
+2. Use cases go in the Application layer
+3. Framework-specific code stays in Infrastructure/App layers
+4. Follow SOLID principles
+5. Write tests for new features
 
 ## License
 
-MIT
-
-## Contact
-
-For questions or support, contact the development team.
+MIT License

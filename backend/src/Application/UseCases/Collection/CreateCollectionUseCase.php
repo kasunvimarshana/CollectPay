@@ -4,61 +4,84 @@ declare(strict_types=1);
 
 namespace Application\UseCases\Collection;
 
-use Application\DTOs\CreateCollectionDTO;
 use Domain\Entities\Collection;
+use Domain\Repositories\CollectionRepositoryInterface;
 use Domain\Repositories\SupplierRepositoryInterface;
 use Domain\Repositories\ProductRepositoryInterface;
-use Domain\Repositories\ProductRateRepositoryInterface;
-use Domain\Repositories\CollectionRepositoryInterface;
-use Domain\ValueObjects\UUID;
+use Domain\Repositories\RateRepositoryInterface;
+use Domain\Services\UuidGeneratorInterface;
 use Domain\ValueObjects\Quantity;
+use Domain\ValueObjects\Unit;
+use Domain\ValueObjects\Money;
+use Application\DTOs\CreateCollectionDTO;
 use DateTimeImmutable;
-use InvalidArgumentException;
 
+/**
+ * Create Collection Use Case
+ * Handles the business logic for creating a new collection
+ */
 final class CreateCollectionUseCase
 {
     public function __construct(
-        private CollectionRepositoryInterface $collectionRepository,
-        private SupplierRepositoryInterface $supplierRepository,
-        private ProductRepositoryInterface $productRepository,
-        private ProductRateRepositoryInterface $rateRepository
+        private readonly CollectionRepositoryInterface $collectionRepository,
+        private readonly SupplierRepositoryInterface $supplierRepository,
+        private readonly ProductRepositoryInterface $productRepository,
+        private readonly RateRepositoryInterface $rateRepository,
+        private readonly UuidGeneratorInterface $uuidGenerator
     ) {}
 
     public function execute(CreateCollectionDTO $dto): Collection
     {
-        $supplierId = UUID::fromString($dto->supplierId);
-        $productId = UUID::fromString($dto->productId);
+        // Validate supplier exists
+        $supplier = $this->supplierRepository->findById($dto->supplierId);
+        if (!$supplier) {
+            throw new \DomainException("Supplier not found");
+        }
+
+        // Validate product exists
+        $product = $this->productRepository->findById($dto->productId);
+        if (!$product) {
+            throw new \DomainException("Product not found");
+        }
+
+        // Validate rate exists
+        $rate = $this->rateRepository->findById($dto->rateId);
+        if (!$rate) {
+            throw new \DomainException("Rate not found");
+        }
+
+        // Create quantity value object
+        $quantity = Quantity::create(
+            $dto->quantityValue,
+            Unit::fromString($dto->quantityUnit)
+        );
+
+        // Create money value object
+        $totalAmount = Money::fromFloat(
+            $dto->totalAmount,
+            $dto->totalAmountCurrency
+        );
+
+        // Create collection date
         $collectionDate = new DateTimeImmutable($dto->collectionDate);
 
-        // Verify supplier exists
-        $supplier = $this->supplierRepository->findById($supplierId);
-        if (!$supplier) {
-            throw new InvalidArgumentException('Supplier not found');
-        }
+        // Generate UUID for new collection
+        $id = $this->uuidGenerator->generate();
 
-        // Verify product exists
-        $product = $this->productRepository->findById($productId);
-        if (!$product) {
-            throw new InvalidArgumentException('Product not found');
-        }
-
-        // Get active rate for the collection date
-        $rate = $this->rateRepository->findActiveRateForProduct($productId, $collectionDate);
-        if (!$rate) {
-            throw new InvalidArgumentException('No active rate found for this product on the collection date');
-        }
-
-        $quantity = new Quantity($dto->quantityAmount, $dto->quantityUnit);
-
+        // Create new collection entity
         $collection = Collection::create(
-            $supplierId,
-            $productId,
+            $id,
+            $dto->supplierId,
+            $dto->productId,
+            $dto->rateId,
             $quantity,
-            $rate->rate(),
+            $totalAmount,
             $collectionDate,
+            $dto->collectedBy,
             $dto->notes
         );
 
+        // Persist to repository
         $this->collectionRepository->save($collection);
 
         return $collection;

@@ -4,76 +4,78 @@ declare(strict_types=1);
 
 namespace Domain\Entities;
 
-use Domain\ValueObjects\UUID;
 use Domain\ValueObjects\Quantity;
 use Domain\ValueObjects\Money;
 use DateTimeImmutable;
-use InvalidArgumentException;
 
 /**
- * Collection Domain Entity
- * 
- * Represents a collection of products from a supplier
- * Immutable after creation to maintain audit trail
+ * Collection Entity
+ * Represents a collection transaction from a supplier
  */
 final class Collection
 {
-    private UUID $id;
-    private UUID $supplierId;
-    private UUID $productId;
+    private string $id;
+    private string $supplierId;
+    private string $productId;
+    private string $rateId;
     private Quantity $quantity;
-    private Money $appliedRate;
     private Money $totalAmount;
     private DateTimeImmutable $collectionDate;
     private ?string $notes;
+    private string $collectedBy;
     private DateTimeImmutable $createdAt;
     private DateTimeImmutable $updatedAt;
-    private int $version;
+    private ?DateTimeImmutable $deletedAt;
 
     private function __construct(
-        UUID $id,
-        UUID $supplierId,
-        UUID $productId,
+        string $id,
+        string $supplierId,
+        string $productId,
+        string $rateId,
         Quantity $quantity,
-        Money $appliedRate,
+        Money $totalAmount,
         DateTimeImmutable $collectionDate,
-        ?string $notes,
-        DateTimeImmutable $createdAt,
-        DateTimeImmutable $updatedAt,
-        int $version
+        string $collectedBy,
+        ?string $notes = null,
+        ?DateTimeImmutable $createdAt = null,
+        ?DateTimeImmutable $updatedAt = null,
+        ?DateTimeImmutable $deletedAt = null
     ) {
         $this->id = $id;
         $this->supplierId = $supplierId;
         $this->productId = $productId;
+        $this->rateId = $rateId;
         $this->quantity = $quantity;
-        $this->appliedRate = $appliedRate;
-        $this->totalAmount = $appliedRate->multiply($quantity->amount());
+        $this->totalAmount = $totalAmount;
         $this->collectionDate = $collectionDate;
-        $this->notes = $notes ? trim($notes) : null;
-        $this->createdAt = $createdAt;
-        $this->updatedAt = $updatedAt;
-        $this->version = $version;
+        $this->collectedBy = $collectedBy;
+        $this->notes = $notes;
+        $this->createdAt = $createdAt ?? new DateTimeImmutable();
+        $this->updatedAt = $updatedAt ?? new DateTimeImmutable();
+        $this->deletedAt = $deletedAt;
     }
 
     public static function create(
-        UUID $supplierId,
-        UUID $productId,
+        string $id,
+        string $supplierId,
+        string $productId,
+        string $rateId,
         Quantity $quantity,
-        Money $appliedRate,
+        Money $totalAmount,
         DateTimeImmutable $collectionDate,
+        string $collectedBy,
         ?string $notes = null
     ): self {
         return new self(
-            UUID::generate(),
+            $id,
             $supplierId,
             $productId,
+            $rateId,
             $quantity,
-            $appliedRate,
+            $totalAmount,
             $collectionDate,
-            $notes,
-            new DateTimeImmutable(),
-            new DateTimeImmutable(),
-            1
+            $collectedBy,
+            $notes
         );
     }
 
@@ -81,118 +83,126 @@ final class Collection
         string $id,
         string $supplierId,
         string $productId,
-        float $quantityAmount,
-        string $quantityUnit,
-        float $rateAmount,
-        string $currency,
+        string $rateId,
+        Quantity $quantity,
+        Money $totalAmount,
         DateTimeImmutable $collectionDate,
+        string $collectedBy,
         ?string $notes,
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
-        int $version
+        ?DateTimeImmutable $deletedAt = null
     ): self {
         return new self(
-            UUID::fromString($id),
-            UUID::fromString($supplierId),
-            UUID::fromString($productId),
-            new Quantity($quantityAmount, $quantityUnit),
-            new Money($rateAmount, $currency),
+            $id,
+            $supplierId,
+            $productId,
+            $rateId,
+            $quantity,
+            $totalAmount,
             $collectionDate,
+            $collectedBy,
             $notes,
             $createdAt,
             $updatedAt,
-            $version
-        );
-    }
-
-    public function updateNotes(string $notes): self
-    {
-        return new self(
-            $this->id,
-            $this->supplierId,
-            $this->productId,
-            $this->quantity,
-            $this->appliedRate,
-            $this->collectionDate,
-            $notes,
-            $this->createdAt,
-            new DateTimeImmutable(),
-            $this->version + 1
+            $deletedAt
         );
     }
 
     // Getters
-    public function id(): UUID
+    public function getId(): string
     {
         return $this->id;
     }
 
-    public function supplierId(): UUID
+    public function getSupplierId(): string
     {
         return $this->supplierId;
     }
 
-    public function productId(): UUID
+    public function getProductId(): string
     {
         return $this->productId;
     }
 
-    public function quantity(): Quantity
+    public function getRateId(): string
+    {
+        return $this->rateId;
+    }
+
+    public function getQuantity(): Quantity
     {
         return $this->quantity;
     }
 
-    public function appliedRate(): Money
-    {
-        return $this->appliedRate;
-    }
-
-    public function totalAmount(): Money
+    public function getTotalAmount(): Money
     {
         return $this->totalAmount;
     }
 
-    public function collectionDate(): DateTimeImmutable
+    public function getCollectionDate(): DateTimeImmutable
     {
         return $this->collectionDate;
     }
 
-    public function notes(): ?string
+    public function getCollectedBy(): string
+    {
+        return $this->collectedBy;
+    }
+
+    public function getNotes(): ?string
     {
         return $this->notes;
     }
 
-    public function createdAt(): DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function updatedAt(): DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function version(): int
+    public function getDeletedAt(): ?DateTimeImmutable
     {
-        return $this->version;
+        return $this->deletedAt;
+    }
+
+    // Business logic
+    public function updateNotes(string $notes): void
+    {
+        $this->notes = $notes;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function delete(): void
+    {
+        $this->deletedAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
     }
 
     public function toArray(): array
     {
         return [
-            'id' => $this->id->value(),
-            'supplier_id' => $this->supplierId->value(),
-            'product_id' => $this->productId->value(),
-            'quantity_amount' => $this->quantity->amount(),
-            'quantity_unit' => $this->quantity->unit(),
-            'applied_rate_amount' => $this->appliedRate->amount(),
-            'currency' => $this->appliedRate->currency(),
-            'total_amount' => $this->totalAmount->amount(),
+            'id' => $this->id,
+            'supplier_id' => $this->supplierId,
+            'product_id' => $this->productId,
+            'rate_id' => $this->rateId,
+            'quantity' => $this->quantity->toArray(),
+            'total_amount' => $this->totalAmount->toArray(),
             'collection_date' => $this->collectionDate->format('Y-m-d H:i:s'),
+            'collected_by' => $this->collectedBy,
             'notes' => $this->notes,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
-            'version' => $this->version,
+            'deleted_at' => $this->deletedAt?->format('Y-m-d H:i:s'),
         ];
     }
 }

@@ -5,24 +5,21 @@ declare(strict_types=1);
 namespace Domain\Repositories;
 
 use Domain\Entities\Product;
-use Domain\ValueObjects\UUID;
 
+/**
+ * Product Repository Interface
+ */
 interface ProductRepositoryInterface
 {
     public function save(Product $product): void;
     
-    public function findById(UUID $id): ?Product;
+    public function findById(string $id): ?Product;
     
     public function findByCode(string $code): ?Product;
     
-    /**
-     * @return Product[]
-     */
-    public function findAll(int $page = 1, int $perPage = 30, ?string $search = null): array;
+    public function findAll(int $page = 1, int $perPage = 20): array;
     
-    public function count(?string $search = null): int;
+    public function delete(string $id): void;
     
-    public function delete(UUID $id): void;
-    
-    public function codeExists(string $code, ?UUID $excludeId = null): bool;
+    public function exists(string $id): bool;
 }

@@ -8,103 +8,82 @@ use InvalidArgumentException;
 
 /**
  * Quantity Value Object
- * 
- * Represents quantities with units (kg, g, liters, etc.)
- * Supports multi-unit tracking
+ * Represents a quantity with a specific unit of measurement
  */
 final class Quantity
 {
-    private float $amount;
-    private string $unit;
+    private float $value;
+    private Unit $unit;
 
-    // Supported units with base conversions (to grams for weight, ml for volume)
-    private const WEIGHT_UNITS = [
-        'kg' => 1000,
-        'g' => 1,
-        'mg' => 0.001,
-    ];
-
-    private const VOLUME_UNITS = [
-        'l' => 1000,
-        'ml' => 1,
-    ];
-
-    public function __construct(float $amount, string $unit)
+    private function __construct(float $value, Unit $unit)
     {
-        $this->validateAmount($amount);
-        $this->validateUnit($unit);
-        
-        $this->amount = $amount;
-        $this->unit = strtolower($unit);
+        $this->validate($value);
+        $this->value = $value;
+        $this->unit = $unit;
     }
 
-    private function validateAmount(float $amount): void
+    public static function create(float $value, Unit $unit): self
     {
-        if ($amount < 0) {
-            throw new InvalidArgumentException('Quantity amount cannot be negative');
+        return new self($value, $unit);
+    }
+
+    private function validate(float $value): void
+    {
+        if ($value < 0) {
+            throw new InvalidArgumentException('Quantity cannot be negative');
         }
     }
 
-    private function validateUnit(string $unit): void
+    public function getValue(): float
     {
-        $unit = strtolower($unit);
-        
-        if (empty(trim($unit))) {
-            throw new InvalidArgumentException('Unit cannot be empty');
-        }
-
-        if (!isset(self::WEIGHT_UNITS[$unit]) && !isset(self::VOLUME_UNITS[$unit])) {
-            throw new InvalidArgumentException("Unsupported unit: {$unit}");
-        }
+        return $this->value;
     }
 
-    public function amount(): float
-    {
-        return $this->amount;
-    }
-
-    public function unit(): string
+    public function getUnit(): Unit
     {
         return $this->unit;
     }
 
-    public function convertTo(string $targetUnit): self
+    public function add(self $other): self
     {
-        $targetUnit = strtolower($targetUnit);
-        $this->validateUnit($targetUnit);
+        $this->ensureSameUnit($other);
+        return new self($this->value + $other->value, $this->unit);
+    }
 
-        // Check if both units are in the same category
-        $sourceIsWeight = isset(self::WEIGHT_UNITS[$this->unit]);
-        $targetIsWeight = isset(self::WEIGHT_UNITS[$targetUnit]);
+    public function subtract(self $other): self
+    {
+        $this->ensureSameUnit($other);
+        return new self($this->value - $other->value, $this->unit);
+    }
 
-        if ($sourceIsWeight !== $targetIsWeight) {
-            throw new InvalidArgumentException('Cannot convert between weight and volume units');
+    public function multiply(float $multiplier): self
+    {
+        return new self($this->value * $multiplier, $this->unit);
+    }
+
+    public function convertTo(Unit $targetUnit): self
+    {
+        $convertedValue = $this->unit->convertTo($this->value, $targetUnit);
+        return new self($convertedValue, $targetUnit);
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->value === $other->value && $this->unit->equals($other->unit);
+    }
+
+    private function ensureSameUnit(self $other): void
+    {
+        if (!$this->unit->equals($other->unit)) {
+            throw new InvalidArgumentException('Cannot operate on different units');
         }
-
-        if ($sourceIsWeight) {
-            $baseAmount = $this->amount * self::WEIGHT_UNITS[$this->unit];
-            $convertedAmount = $baseAmount / self::WEIGHT_UNITS[$targetUnit];
-        } else {
-            $baseAmount = $this->amount * self::VOLUME_UNITS[$this->unit];
-            $convertedAmount = $baseAmount / self::VOLUME_UNITS[$targetUnit];
-        }
-
-        return new self($convertedAmount, $targetUnit);
     }
 
-    public function add(Quantity $other): self
+    public function toArray(): array
     {
-        $converted = $other->convertTo($this->unit);
-        return new self($this->amount + $converted->amount, $this->unit);
-    }
-
-    public function formatted(): string
-    {
-        return sprintf('%.2f %s', $this->amount, $this->unit);
-    }
-
-    public function __toString(): string
-    {
-        return $this->formatted();
+        return [
+            'value' => $this->value,
+            'unit' => $this->unit->toString(),
+        ];
     }
 }
