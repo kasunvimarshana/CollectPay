@@ -15,26 +15,9 @@ class VersionConflictTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $user;
-    protected $token;
-
     protected function setUp(): void
     {
         parent::setUp();
-        
-        // Create a test user
-        $this->user = User::factory()->create([
-            'email' => 'test@example.com',
-            'password' => bcrypt('password'),
-        ]);
-        
-        // Get JWT token
-        $response = $this->postJson('/api/login', [
-            'email' => 'test@example.com',
-            'password' => 'password',
-        ]);
-        
-        $this->token = $response->json('token');
     }
 
     /**
@@ -55,9 +38,7 @@ class VersionConflictTest extends TestCase
         $this->assertEquals(2, $supplier->fresh()->version);
 
         // Try to update with stale version (1)
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/suppliers/{$supplier->id}", [
+        $response = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/suppliers/{$supplier->id}", [
             'name' => 'My Update',
             'code' => 'SUP001',
             'version' => 1, // Stale version
@@ -92,9 +73,7 @@ class VersionConflictTest extends TestCase
         $this->assertEquals(2, $product->fresh()->version);
 
         // Try to update with stale version
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/products/{$product->id}", [
+        $response = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/products/{$product->id}", [
             'name' => 'My Update',
             'code' => 'PROD001',
             'base_unit' => 'kg',
@@ -127,9 +106,7 @@ class VersionConflictTest extends TestCase
         $collection->save();
 
         // Try update with stale version
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/collections/{$collection->id}", [
+        $response = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/collections/{$collection->id}", [
             'supplier_id' => $supplier->id,
             'product_id' => $product->id,
             'rate_id' => $rate->id,
@@ -161,9 +138,7 @@ class VersionConflictTest extends TestCase
         $payment->save();
 
         // Try update with stale version
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/payments/{$payment->id}", [
+        $response = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/payments/{$payment->id}", [
             'supplier_id' => $supplier->id,
             'payment_date' => now()->toDateString(),
             'amount' => 2000,
@@ -193,9 +168,7 @@ class VersionConflictTest extends TestCase
         $rate->save();
 
         // Try update with stale version
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/rates/{$rate->id}", [
+        $response = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/rates/{$rate->id}", [
             'product_id' => $product->id,
             'rate' => 200,
             'unit' => 'kg',
@@ -219,9 +192,7 @@ class VersionConflictTest extends TestCase
         ]);
 
         // Update with correct version
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/suppliers/{$supplier->id}", [
+        $response = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/suppliers/{$supplier->id}", [
             'name' => 'Updated Supplier',
             'code' => 'SUP001',
             'version' => 1, // Correct version
@@ -288,9 +259,7 @@ class VersionConflictTest extends TestCase
         $supplier->save();
 
         // Try to update with stale version
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/suppliers/{$supplier->id}", [
+        $response = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/suppliers/{$supplier->id}", [
             'name' => 'Client Update',
             'code' => $supplier->code,
             'version' => 1,
@@ -316,9 +285,7 @@ class VersionConflictTest extends TestCase
         $deviceBSupplier = Supplier::find($supplier->id);
 
         // Device A updates successfully
-        $responseA = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/suppliers/{$supplier->id}", [
+        $responseA = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/suppliers/{$supplier->id}", [
             'name' => 'Device A Update',
             'code' => $supplier->code,
             'version' => 1,
@@ -328,9 +295,7 @@ class VersionConflictTest extends TestCase
         $this->assertEquals(2, Supplier::find($supplier->id)->version);
 
         // Device B tries to update with stale version
-        $responseB = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/suppliers/{$supplier->id}", [
+        $responseB = $this->withHeaders($this->authenticatedHeaders())->putJson("/api/suppliers/{$supplier->id}", [
             'name' => 'Device B Update',
             'code' => $supplier->code,
             'version' => 1, // Stale

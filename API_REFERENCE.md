@@ -33,6 +33,7 @@ Authorization: Bearer {token}
 6. [Rates](#rates)
 7. [Collections](#collections)
 8. [Payments](#payments)
+9. [Reports](#reports)
 
 ---
 
@@ -978,6 +979,233 @@ Paginated responses include:
   "prev_page_url": null,
   "to": 15,
   "total": 75
+}
+```
+
+---
+
+## Reports
+
+### Get Summary Report
+
+Get overall system summary with key metrics.
+
+**Endpoint:** `GET /reports/summary`
+
+**Authentication:** Required
+
+**Response (200 OK):**
+```json
+{
+  "totalSuppliers": 50,
+  "activeSuppliers": 45,
+  "totalProducts": 20,
+  "activeProducts": 18,
+  "totalCollections": 1500,
+  "totalCollectionAmount": 125000.50,
+  "totalPayments": 300,
+  "totalPaymentAmount": 100000.00,
+  "outstandingBalance": 25000.50,
+  "collectionsThisMonth": 120,
+  "paymentsThisMonth": 25,
+  "collectionAmountThisMonth": 10000.00,
+  "paymentAmountThisMonth": 8000.00
+}
+```
+
+---
+
+### Get Supplier Balances Report
+
+Get supplier balances sorted by outstanding balance.
+
+**Endpoint:** `GET /reports/supplier-balances`
+
+**Authentication:** Required
+
+**Query Parameters:**
+- `limit` (optional): Number of results to return (default: 10)
+- `sort` (optional): Sort order - `asc` or `desc` (default: desc)
+
+**Response (200 OK):**
+```json
+[
+  {
+    "supplier_id": 1,
+    "supplier_name": "John Supplier",
+    "supplier_code": "SUP001",
+    "total_collections": 50000.00,
+    "total_payments": 45000.00,
+    "balance": 5000.00,
+    "collection_count": 50,
+    "payment_count": 10
+  }
+]
+```
+
+---
+
+### Get Collections Summary Report
+
+Get collections summary with breakdown by product and supplier.
+
+**Endpoint:** `GET /reports/collections-summary`
+
+**Authentication:** Required
+
+**Query Parameters:**
+- `start_date` (optional): Start date in YYYY-MM-DD format
+- `end_date` (optional): End date in YYYY-MM-DD format
+- `supplier_id` (optional): Filter by supplier ID
+- `product_id` (optional): Filter by product ID
+
+**Response (200 OK):**
+```json
+{
+  "summary": {
+    "total_count": 150,
+    "total_amount": 50000.00,
+    "total_quantity": 5000.500
+  },
+  "by_product": [
+    {
+      "product_id": 1,
+      "product_name": "Tea Leaves",
+      "count": 100,
+      "total_quantity": 3000.000,
+      "total_amount": 30000.00
+    }
+  ],
+  "by_supplier": [
+    {
+      "supplier_id": 1,
+      "supplier_name": "John Supplier",
+      "supplier_code": "SUP001",
+      "count": 50,
+      "total_quantity": 1500.000,
+      "total_amount": 15000.00
+    }
+  ]
+}
+```
+
+---
+
+### Get Payments Summary Report
+
+Get payments summary with breakdown by type and supplier.
+
+**Endpoint:** `GET /reports/payments-summary`
+
+**Authentication:** Required
+
+**Query Parameters:**
+- `start_date` (optional): Start date in YYYY-MM-DD format
+- `end_date` (optional): End date in YYYY-MM-DD format
+- `supplier_id` (optional): Filter by supplier ID
+
+**Response (200 OK):**
+```json
+{
+  "summary": {
+    "total_count": 50,
+    "total_amount": 25000.00
+  },
+  "by_type": [
+    {
+      "type": "advance",
+      "count": 20,
+      "total_amount": 10000.00
+    },
+    {
+      "type": "partial",
+      "count": 20,
+      "total_amount": 10000.00
+    },
+    {
+      "type": "full",
+      "count": 10,
+      "total_amount": 5000.00
+    }
+  ],
+  "by_supplier": [
+    {
+      "supplier_id": 1,
+      "supplier_name": "John Supplier",
+      "supplier_code": "SUP001",
+      "count": 15,
+      "total_amount": 7500.00
+    }
+  ]
+}
+```
+
+---
+
+### Get Product Performance Report
+
+Get product performance metrics including collection counts and amounts.
+
+**Endpoint:** `GET /reports/product-performance`
+
+**Authentication:** Required
+
+**Query Parameters:**
+- `start_date` (optional): Start date in YYYY-MM-DD format
+- `end_date` (optional): End date in YYYY-MM-DD format
+
+**Response (200 OK):**
+```json
+[
+  {
+    "product_id": 1,
+    "product_name": "Tea Leaves",
+    "product_code": "TEA001",
+    "collection_count": 100,
+    "total_quantity": 5000.500,
+    "total_amount": 50000.00,
+    "unique_suppliers": 15,
+    "avg_rate": 10.00
+  }
+]
+```
+
+---
+
+### Get Financial Summary Report
+
+Get comprehensive financial summary with monthly breakdown.
+
+**Endpoint:** `GET /reports/financial-summary`
+
+**Authentication:** Required
+
+**Query Parameters:**
+- `start_date` (optional): Start date in YYYY-MM-DD format
+- `end_date` (optional): End date in YYYY-MM-DD format
+
+**Response (200 OK):**
+```json
+{
+  "summary": {
+    "total_collections": 125000.50,
+    "total_payments": 100000.00,
+    "net_balance": 25000.50
+  },
+  "monthly_breakdown": [
+    {
+      "month": "2025-01",
+      "collections": 10000.00,
+      "payments": 8000.00,
+      "net": 2000.00
+    },
+    {
+      "month": "2025-02",
+      "collections": 12000.00,
+      "payments": 10000.00,
+      "net": 2000.00
+    }
+  ]
 }
 ```
 

@@ -22,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination } from '../components/Pagination';
 import { SortButton } from '../components/SortButton';
+import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
 export const CollectionListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -174,15 +175,18 @@ export const CollectionListScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Collections</Text>
-        {canCreate(user, 'collections') && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddCollection}
-          >
-            <Text style={styles.addButtonText}>+ Add Collection</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerLeft}>
+          <Text style={styles.title}>Collections</Text>
+          {canCreate(user, 'collections') && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddCollection}
+            >
+              <Text style={styles.addButtonText}>+ Add Collection</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <SyncStatusIndicator showDetails={true} />
       </View>
 
       <View style={styles.searchContainer}>
@@ -244,6 +248,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
   },
   title: {
     fontSize: 24,

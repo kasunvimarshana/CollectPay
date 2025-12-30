@@ -85,6 +85,22 @@ This system provides centralized management of users, suppliers, products, colle
 - ✅ Product Management (CRUD, versioned rates)
 - ✅ Collection Management (daily tracking, multi-unit support)
 - ✅ Payment Management (advance/partial/full payments)
+- ✅ **Reporting & Analytics** (comprehensive reports with date filtering)
+- ✅ **Print & PDF Generation** (print reports and export as PDF)
+
+### Reporting Features
+- ✅ **System Overview**: Real-time metrics for suppliers, products, collections, and payments
+- ✅ **Financial Summary**: Total collections, payments, and outstanding balances
+- ✅ **Supplier Balances**: Top suppliers by outstanding balance with detailed breakdowns
+- ✅ **Collections Analysis**: Breakdown by product and supplier with date range filtering
+- ✅ **Payments Analysis**: Breakdown by payment type and supplier
+- ✅ **Product Performance**: Metrics including collection counts, quantities, and average rates
+- ✅ **Monthly Trends**: Financial summary with monthly breakdown for trend analysis
+- ✅ **Date Filtering**: Quick filters (Today, Last 7 Days, Last 30 Days) and custom date ranges
+- ✅ **Mobile UI**: Enhanced mobile interface with easy-to-use filter buttons
+- ✅ **Print Functionality**: Direct printing from mobile devices to connected printers
+- ✅ **PDF Export**: Client-side PDF generation for quick sharing
+- ✅ **Server PDF Download**: Professional server-generated PDFs with enhanced formatting
 
 ### Advanced Features
 - ✅ End-to-end encryption
@@ -197,11 +213,15 @@ curl -X POST http://localhost:8000/api/login \
 ## 📚 Documentation
 
 ### Primary Documents
-- **[Offline Functionality Guide](./OFFLINE_FUNCTIONALITY_GUIDE.md)** - ⭐ NEW: Complete guide to offline support and network resilience (19KB)
+- **[Print & PDF User Guide](./PRINT_PDF_USER_GUIDE.md)** - ⭐ NEW: Complete guide to print and PDF generation features (7KB)
+- **[Reports User Guide](./REPORTS_USER_GUIDE.md)** - ⭐ Comprehensive guide to using reporting features (10KB)
+- **[Offline Implementation Final Report](./OFFLINE_IMPLEMENTATION_FINAL_REPORT.md)** - ⭐ Complete 20KB implementation report with architecture and deployment guide
+- **[Offline Verification Checklist](./OFFLINE_VERIFICATION_CHECKLIST.md)** - ⭐ 16KB comprehensive verification and testing guide
+- **[Offline Functionality Guide](./OFFLINE_FUNCTIONALITY_GUIDE.md)** - ⭐ Complete guide to offline support and network resilience (19KB)
 - **[Data Integrity Guide](./DATA_INTEGRITY_GUIDE.md)** - ⭐ Complete guide to data integrity and operational continuity (12KB)
 - **[Final System Status](./FINAL_SYSTEM_STATUS.md)** - ⭐ Comprehensive 17KB final report with complete system details
 - **[Synchronization Guide](./SYNC_GUIDE.md)** - ⭐ Detailed offline/online sync and conflict resolution guide
-- **[Swagger API Documentation](http://localhost:8000/api/documentation)** - Interactive API explorer with all 45+ endpoints
+- **[Swagger API Documentation](http://localhost:8000/api/documentation)** - Interactive API explorer with all 50+ endpoints
 - **[README](./README.md)** - This document - Quick start and overview
 
 ### Detailed Documentation
@@ -215,7 +235,7 @@ curl -X POST http://localhost:8000/api/login \
 
 ### API Endpoint Groups
 
-The system provides 45+ fully documented RESTful API endpoints organized into the following groups:
+The system provides 50+ fully documented RESTful API endpoints organized into the following groups:
 
 #### Authentication (5 endpoints)
 - `POST /api/register` - User registration with JWT token
@@ -277,6 +297,14 @@ The system provides 45+ fully documented RESTful API endpoints organized into th
 - `GET /api/payments/{id}` - Get payment details
 - `PUT /api/payments/{id}` - Update payment
 - `DELETE /api/payments/{id}` - Delete payment
+
+#### Reports (6 endpoints)
+- `GET /api/reports/summary` - Get overall system summary
+- `GET /api/reports/supplier-balances` - Get supplier balances sorted by outstanding amount
+- `GET /api/reports/collections-summary` - Get collections summary with breakdown by product/supplier
+- `GET /api/reports/payments-summary` - Get payments summary with breakdown by type/supplier
+- `GET /api/reports/product-performance` - Get product performance metrics
+- `GET /api/reports/financial-summary` - Get financial summary with monthly breakdown
 
 All endpoints include:
 - ✅ Comprehensive request/response schemas

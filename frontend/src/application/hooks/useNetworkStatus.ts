@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
-import SyncService from '../../application/services/SyncService';
+import SyncService from '../services/SyncService';
 
 export interface NetworkStatus {
   isConnected: boolean;
@@ -167,9 +167,9 @@ export const useNetworkStatus = () => {
   };
 
   /**
-   * Get status icon name
+   * Get status icon name (valid Ionicons name)
    */
-  const getStatusIcon = (): keyof typeof Ionicons.glyphMap => {
+  const getStatusIcon = (): 'sync' | 'alert-circle' | 'cloud-upload' | 'cloud-offline' | 'cloud-done' => {
     if (syncStatus.isSyncing) return 'sync';
     if (syncStatus.syncError) return 'alert-circle';
     if (syncStatus.hasPendingChanges) return 'cloud-upload';

@@ -13,9 +13,6 @@ class ProductTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $user;
-    protected $token;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,13 +23,9 @@ class ProductTest extends TestCase
             'display_name' => 'Administrator',
             'permissions' => json_encode(['*']),
         ]);
-
-        // Create authenticated user
-        $this->user = User::factory()->create();
-        $this->token = auth('api')->login($this->user);
     }
 
-    // Using parent TestCase::authenticatedHeaders() method with $this->user parameter
+    // Using parent TestCase::authenticatedHeaders() method to get auth headers
 
     public function test_can_create_product_with_multiple_units(): void
     {
@@ -44,7 +37,7 @@ class ProductTest extends TestCase
             'base_unit' => 'kg',
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->postJson('/api/products', $data);
 
         $response->assertStatus(201)
@@ -69,7 +62,7 @@ class ProductTest extends TestCase
     {
         Product::factory()->count(3)->create();
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->getJson('/api/products');
 
         $response->assertStatus(200)
@@ -93,7 +86,7 @@ class ProductTest extends TestCase
             'code' => 'PROD001',
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->getJson('/api/products/' . $product->id);
 
         $response->assertStatus(200)
@@ -116,7 +109,7 @@ class ProductTest extends TestCase
             'version' => $product->version,
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->putJson('/api/products/' . $product->id, $data);
 
         $response->assertStatus(200)
@@ -133,7 +126,7 @@ class ProductTest extends TestCase
     {
         $product = Product::factory()->create();
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->deleteJson('/api/products/' . $product->id);
 
         $response->assertStatus(200); // Changed to 200 to match actual implementation
@@ -155,7 +148,7 @@ class ProductTest extends TestCase
             'effective_to' => null,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->getJson('/api/products/' . $product->id . '/current-rate');
 
         $response->assertStatus(200)
@@ -193,7 +186,7 @@ class ProductTest extends TestCase
             'version' => 2,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->getJson('/api/products/' . $product->id . '/rate-history');
 
         $response->assertStatus(200)
@@ -219,7 +212,7 @@ class ProductTest extends TestCase
             'code' => 'PROD001',
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->postJson('/api/products', $data);
 
         $response->assertStatus(422)
@@ -228,7 +221,7 @@ class ProductTest extends TestCase
 
     public function test_product_validation_requires_name_and_code(): void
     {
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->postJson('/api/products', []);
 
         $response->assertStatus(422)

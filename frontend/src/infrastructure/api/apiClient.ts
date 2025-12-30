@@ -73,29 +73,6 @@ class ApiClient {
   }
 
   /**
-   * GET request with offline fallback
-   */
-  async get<T>(endpoint: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    try {
-      const response = await this.axiosInstance.get<ApiResponse<T>>(endpoint, config);
-      return response.data;
-    } catch (error: any) {
-      // If network error, try to get cached data
-      if (this.isNetworkError(error)) {
-        const cachedData = await this.getCachedData(endpoint);
-        if (cachedData) {
-          return {
-            success: true,
-            data: cachedData as T,
-            message: 'Data loaded from cache (offline)',
-          };
-        }
-      }
-      return this.handleError(error);
-    }
-  }
-
-  /**
    * POST request with offline support
    */
   async post<T>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
@@ -270,6 +247,10 @@ class ApiClient {
         const match = endpoint.match(/product_id=(\d+)/);
         const productId = match ? parseInt(match[1]) : undefined;
         return await LocalStorageService.getCachedRates(productId);
+      } else if (endpoint.includes('/collections')) {
+        return await LocalStorageService.getCachedCollections();
+      } else if (endpoint.includes('/payments')) {
+        return await LocalStorageService.getCachedPayments();
       }
       return null;
     } catch (error) {

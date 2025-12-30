@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNetworkStatus } from '../../core/hooks/useNetworkStatus';
+import { useNetworkStatus } from '../../application/hooks/useNetworkStatus';
 import { COLORS } from '../../core/constants/colors';
 
 interface SyncStatusIndicatorProps {

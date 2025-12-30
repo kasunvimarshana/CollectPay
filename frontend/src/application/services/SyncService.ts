@@ -165,7 +165,12 @@ class SyncService {
       case 'rate':
         await LocalStorageService.cacheRates([data]);
         break;
-      // Add other entities as needed
+      case 'collection':
+        await LocalStorageService.cacheCollections([data]);
+        break;
+      case 'payment':
+        await LocalStorageService.cachePayments([data]);
+        break;
     }
   }
 
@@ -253,6 +258,48 @@ class SyncService {
   }
 
   /**
+   * Fetch and cache collections
+   */
+  async fetchAndCacheCollections(): Promise<void> {
+    try {
+      const response = await apiClient.get<any>(API_ENDPOINTS.COLLECTIONS);
+      if (response.success && response.data) {
+        const collections = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).data && Array.isArray((response.data as any).data) ? (response.data as any).data : []);
+        
+        if (collections.length > 0) {
+          await LocalStorageService.cacheCollections(collections);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch and cache payments
+   */
+  async fetchAndCachePayments(): Promise<void> {
+    try {
+      const response = await apiClient.get<any>(API_ENDPOINTS.PAYMENTS);
+      if (response.success && response.data) {
+        const payments = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).data && Array.isArray((response.data as any).data) ? (response.data as any).data : []);
+        
+        if (payments.length > 0) {
+          await LocalStorageService.cachePayments(payments);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Full sync - sync pending changes and fetch latest data
    */
   async fullSync(): Promise<{ success: boolean; message: string }> {
@@ -264,6 +311,8 @@ class SyncService {
       await this.fetchAndCacheSuppliers();
       await this.fetchAndCacheProducts();
       await this.fetchAndCacheRates();
+      await this.fetchAndCacheCollections();
+      await this.fetchAndCachePayments();
 
       return {
         success: true,

@@ -82,6 +82,11 @@ class CheckVersionConflict
      */
     protected function hasVersionField($model): bool
     {
-        return $model && property_exists($model, 'version');
+        if (!$model) {
+            return false;
+        }
+        
+        // Check if the model has a version attribute (handles Eloquent models)
+        return array_key_exists('version', $model->getAttributes());
     }
 }

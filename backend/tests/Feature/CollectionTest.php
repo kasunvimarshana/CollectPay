@@ -15,8 +15,6 @@ class CollectionTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $user;
-    protected $token;
     protected $supplier;
     protected $product;
     protected $rate;
@@ -32,14 +30,10 @@ class CollectionTest extends TestCase
             'permissions' => json_encode(['*']),
         ]);
 
-        // Create authenticated user
-        $this->user = User::factory()->create();
-        $this->token = auth('api')->login($this->user);
-
         // Create test data
         $this->supplier = Supplier::factory()->create();
         $this->product = Product::factory()->create([
-            'units' => json_encode(['kg', 'g']),
+            'supported_units' => json_encode(['kg', 'g']),
             'base_unit' => 'kg',
         ]);
         $this->rate = Rate::factory()->create([
@@ -47,7 +41,7 @@ class CollectionTest extends TestCase
             'rate' => 250.00,
             'unit' => 'kg',
             'effective_from' => now()->subDays(1),
-            'effective_until' => null,
+            'effective_to' => null,
         ]);
     }
 
@@ -65,24 +59,31 @@ class CollectionTest extends TestCase
             'notes' => 'Daily collection',
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->postJson('/api/collections', $data);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
-                'id',
-                'supplier_id',
-                'product_id',
-                'rate_id',
-                'quantity',
-                'unit',
-                'amount',
+                'success',
+                'message',
+                'data' => [
+                    'id',
+                    'supplier_id',
+                    'product_id',
+                    'rate_id',
+                    'quantity',
+                    'unit',
+                    'total_amount',
+                ],
             ]);
 
         // Verify amount calculation: 50.5 * 250 = 12,625
         $response->assertJson([
-            'quantity' => 50.5,
-            'amount' => 12625.00,
+            'success' => true,
+            'data' => [
+                'quantity' => 50.5,
+                'total_amount' => 12625.00,
+            ],
         ]);
 
         $this->assertDatabaseHas('collections', [
@@ -103,14 +104,17 @@ class CollectionTest extends TestCase
             'collection_date' => now()->toDateString(),
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->postJson('/api/collections', $data);
 
         $response->assertStatus(201);
 
         // Amount should be: 100 * 250 = 25,000
         $response->assertJson([
-            'amount' => 25000.00,
+            'success' => true,
+            'data' => [
+                'total_amount' => 25000.00,
+            ],
         ]);
     }
 
@@ -122,16 +126,19 @@ class CollectionTest extends TestCase
             'rate_id' => $this->rate->id,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->getJson('/api/collections');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
+                'success',
                 'data' => [
-                    '*' => ['id', 'quantity', 'unit', 'amount'],
+                    'data' => [
+                        '*' => ['id', 'quantity', 'unit', 'total_amount'],
+                    ],
                 ],
             ])
-            ->assertJsonCount(3, 'data');
+            ->assertJsonCount(3, 'data.data');
     }
 
     public function test_can_show_collection(): void
@@ -143,13 +150,16 @@ class CollectionTest extends TestCase
             'quantity' => 50,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->getJson('/api/collections/' . $collection->id);
 
         $response->assertStatus(200)
             ->assertJson([
-                'id' => $collection->id,
-                'quantity' => 50,
+                'success' => true,
+                'data' => [
+                    'id' => $collection->id,
+                    'quantity' => 50,
+                ],
             ]);
     }
 
@@ -172,12 +182,15 @@ class CollectionTest extends TestCase
             'version' => $collection->version,
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->putJson('/api/collections/' . $collection->id, $data);
 
         $response->assertStatus(200)
             ->assertJson([
-                'quantity' => 75,
+                'success' => true,
+                'data' => [
+                    'quantity' => 75,
+                ],
             ]);
 
         $this->assertDatabaseHas('collections', [
@@ -194,10 +207,14 @@ class CollectionTest extends TestCase
             'rate_id' => $this->rate->id,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->deleteJson('/api/collections/' . $collection->id);
 
-        $response->assertStatus(204);
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Collection deleted successfully'
+            ]);
 
         $this->assertSoftDeleted('collections', [
             'id' => $collection->id,
@@ -206,14 +223,13 @@ class CollectionTest extends TestCase
 
     public function test_collection_validation_requires_required_fields(): void
     {
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->postJson('/api/collections', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors([
                 'supplier_id',
                 'product_id',
-                'rate_id',
                 'quantity',
                 'unit',
                 'collection_date',
@@ -231,7 +247,7 @@ class CollectionTest extends TestCase
             'collection_date' => now()->toDateString(),
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
+        $response = $this->withHeaders($this->authenticatedHeaders())
             ->postJson('/api/collections', $data);
 
         $response->assertStatus(422)

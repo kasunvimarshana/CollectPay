@@ -321,6 +321,98 @@ class LocalStorageService {
   }
 
   /**
+   * Cache collections locally
+   */
+  async cacheCollections(collections: any[]): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    for (const collection of collections) {
+      await this.db.runAsync(
+        `INSERT OR REPLACE INTO collections 
+         (id, supplier_id, product_id, collection_date, quantity, unit, total_amount, data, synced_at, pending_sync) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          collection.id,
+          collection.supplier_id,
+          collection.product_id,
+          collection.collection_date,
+          collection.quantity,
+          collection.unit,
+          collection.total_amount,
+          JSON.stringify(collection),
+          Date.now(),
+          0
+        ]
+      );
+    }
+  }
+
+  /**
+   * Get cached collections
+   */
+  async getCachedCollections(): Promise<any[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.getAllAsync<any>(
+      'SELECT data FROM collections WHERE pending_sync = 0 ORDER BY collection_date DESC'
+    );
+
+    return result.map(row => {
+      try {
+        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+      } catch (error) {
+        console.error('Error parsing collection data:', error);
+        return null;
+      }
+    }).filter(item => item !== null);
+  }
+
+  /**
+   * Cache payments locally
+   */
+  async cachePayments(payments: any[]): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    for (const payment of payments) {
+      await this.db.runAsync(
+        `INSERT OR REPLACE INTO payments 
+         (id, supplier_id, payment_date, amount, type, data, synced_at, pending_sync) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          payment.id,
+          payment.supplier_id,
+          payment.payment_date,
+          payment.amount,
+          payment.type,
+          JSON.stringify(payment),
+          Date.now(),
+          0
+        ]
+      );
+    }
+  }
+
+  /**
+   * Get cached payments
+   */
+  async getCachedPayments(): Promise<any[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.getAllAsync<any>(
+      'SELECT data FROM payments WHERE pending_sync = 0 ORDER BY payment_date DESC'
+    );
+
+    return result.map(row => {
+      try {
+        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+      } catch (error) {
+        console.error('Error parsing payment data:', error);
+        return null;
+      }
+    }).filter(item => item !== null);
+  }
+
+  /**
    * Clear all cached data
    */
   async clearCache(): Promise<void> {
