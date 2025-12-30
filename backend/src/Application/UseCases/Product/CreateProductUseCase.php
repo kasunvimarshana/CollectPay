@@ -7,42 +7,30 @@ namespace Application\UseCases\Product;
 use Application\DTOs\CreateProductDTO;
 use Domain\Entities\Product;
 use Domain\Repositories\ProductRepositoryInterface;
-use Domain\ValueObjects\Unit;
+use InvalidArgumentException;
 
-/**
- * Use Case: Create a new product
- */
 final class CreateProductUseCase
 {
     public function __construct(
-        private readonly ProductRepositoryInterface $productRepository
-    ) {
-    }
+        private ProductRepositoryInterface $repository
+    ) {}
 
-    /**
-     * Execute the use case
-     *
-     * @param CreateProductDTO $dto
-     * @return Product
-     */
     public function execute(CreateProductDTO $dto): Product
     {
-        // Validate unit
-        $unit = new Unit($dto->defaultUnit);
+        // Check if code already exists
+        if ($this->repository->codeExists($dto->code)) {
+            throw new InvalidArgumentException('This product code already exists');
+        }
 
-        // Generate UUID for product
-        $id = \Illuminate\Support\Str::uuid()->toString();
-
-        // Create product entity
         $product = Product::create(
-            id: $id,
-            name: $dto->name,
-            description: $dto->description ?? '',
-            defaultUnit: $unit,
-            metadata: $dto->metadata
+            $dto->name,
+            $dto->code,
+            $dto->unit,
+            $dto->description
         );
 
-        // Persist product
-        return $this->productRepository->save($product);
+        $this->repository->save($product);
+
+        return $product;
     }
 }

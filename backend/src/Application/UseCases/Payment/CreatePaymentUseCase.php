@@ -6,76 +6,43 @@ namespace Application\UseCases\Payment;
 
 use Application\DTOs\CreatePaymentDTO;
 use Domain\Entities\Payment;
-use Domain\Repositories\PaymentRepositoryInterface;
 use Domain\Repositories\SupplierRepositoryInterface;
-use Domain\Repositories\UserRepositoryInterface;
+use Domain\Repositories\PaymentRepositoryInterface;
+use Domain\ValueObjects\UUID;
 use Domain\ValueObjects\Money;
+use DateTimeImmutable;
+use InvalidArgumentException;
 
-/**
- * Use Case: Create a new payment
- * 
- * This use case handles recording a payment transaction.
- */
 final class CreatePaymentUseCase
 {
     public function __construct(
-        private readonly PaymentRepositoryInterface $paymentRepository,
-        private readonly SupplierRepositoryInterface $supplierRepository,
-        private readonly UserRepositoryInterface $userRepository
-    ) {
-    }
+        private PaymentRepositoryInterface $paymentRepository,
+        private SupplierRepositoryInterface $supplierRepository
+    ) {}
 
-    /**
-     * Execute the use case
-     *
-     * @param CreatePaymentDTO $dto
-     * @return Payment
-     * @throws \InvalidArgumentException
-     */
     public function execute(CreatePaymentDTO $dto): Payment
     {
-        // Validate supplier exists
-        $supplier = $this->supplierRepository->findById($dto->supplierId);
+        $supplierId = UUID::fromString($dto->supplierId);
+        
+        // Verify supplier exists
+        $supplier = $this->supplierRepository->findById($supplierId);
         if (!$supplier) {
-            throw new \InvalidArgumentException("Supplier with ID {$dto->supplierId} not found");
+            throw new InvalidArgumentException('Supplier not found');
         }
 
-        // Validate user exists
-        $user = $this->userRepository->findById($dto->userId);
-        if (!$user) {
-            throw new \InvalidArgumentException("User with ID {$dto->userId} not found");
-        }
+        $paymentDate = new DateTimeImmutable($dto->paymentDate);
 
-        // Create money value object
-        $amount = new Money($dto->amount, $dto->currency);
-
-        // Validate payment type
-        if (!in_array($dto->paymentType, ['advance', 'partial', 'full'])) {
-            throw new \InvalidArgumentException("Invalid payment type: {$dto->paymentType}");
-        }
-
-        // Create payment date
-        $paymentDate = $dto->paymentDate 
-            ? new \DateTimeImmutable($dto->paymentDate)
-            : new \DateTimeImmutable();
-
-        // Generate UUID for payment
-        $id = \Illuminate\Support\Str::uuid()->toString();
-
-        // Create payment entity
         $payment = Payment::create(
-            id: $id,
-            supplierId: $dto->supplierId,
-            userId: $dto->userId,
-            amount: $amount,
-            type: $dto->paymentType,
-            paymentDate: $paymentDate,
-            reference: $dto->reference,
-            notes: null,
-            metadata: $dto->metadata
+            $supplierId,
+            new Money($dto->amount, $dto->currency),
+            $dto->type,
+            $paymentDate,
+            $dto->reference,
+            $dto->notes
         );
 
-        // Persist payment
-        return $this->paymentRepository->save($payment);
+        $this->paymentRepository->save($payment);
+
+        return $payment;
     }
 }

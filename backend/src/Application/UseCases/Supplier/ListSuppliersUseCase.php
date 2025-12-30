@@ -7,25 +7,33 @@ namespace Application\UseCases\Supplier;
 use Domain\Repositories\SupplierRepositoryInterface;
 
 /**
- * Use Case: List all suppliers
+ * List Suppliers Use Case
+ * 
+ * Application service for listing suppliers with filters and pagination
  */
 final class ListSuppliersUseCase
 {
     public function __construct(
-        private readonly SupplierRepositoryInterface $supplierRepository
+        private readonly SupplierRepositoryInterface $repository
     ) {
     }
 
     /**
-     * Execute the use case
-     *
+     * @param array $filters ['active' => true, 'search' => 'term']
      * @param int $page
      * @param int $perPage
-     * @param array $filters
-     * @return array
+     * @return array ['data' => Supplier[], 'total' => int, 'page' => int, 'per_page' => int]
      */
-    public function execute(int $page = 1, int $perPage = 15, array $filters = []): array
+    public function execute(array $filters = [], int $page = 1, int $perPage = 15): array
     {
-        return $this->supplierRepository->findAll($page, $perPage, $filters);
+        $result = $this->repository->findAll($filters, $page, $perPage);
+
+        return [
+            'data' => $result['data'],
+            'total' => $result['total'],
+            'page' => $page,
+            'per_page' => $perPage,
+            'last_page' => ceil($result['total'] / $perPage),
+        ];
     }
 }

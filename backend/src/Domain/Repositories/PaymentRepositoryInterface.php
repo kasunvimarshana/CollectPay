@@ -5,36 +5,26 @@ declare(strict_types=1);
 namespace Domain\Repositories;
 
 use Domain\Entities\Payment;
+use Domain\ValueObjects\UUID;
 use DateTimeImmutable;
 
-/**
- * Payment Repository Interface
- * 
- * Defines the contract for payment persistence operations.
- */
 interface PaymentRepositoryInterface
 {
-    public function findById(string $id): ?Payment;
+    public function save(Payment $payment): void;
     
-    public function findAll(int $page = 1, int $perPage = 20, array $filters = []): array;
+    public function findById(UUID $id): ?Payment;
     
-    public function findBySupplier(string $supplierId, int $page = 1, int $perPage = 20): array;
+    /**
+     * @return Payment[]
+     */
+    public function findBySupplierId(UUID $supplierId, ?DateTimeImmutable $from = null, ?DateTimeImmutable $to = null): array;
     
-    public function findBySupplierId(
-        string $supplierId,
-        ?DateTimeImmutable $startDate = null,
-        ?DateTimeImmutable $endDate = null
-    ): array;
+    /**
+     * @return Payment[]
+     */
+    public function findAll(int $page = 1, int $perPage = 30, ?array $filters = null): array;
     
-    public function findByDateRange(
-        DateTimeImmutable $startDate,
-        DateTimeImmutable $endDate,
-        ?string $supplierId = null
-    ): array;
+    public function count(?array $filters = null): int;
     
-    public function save(Payment $payment): Payment;
-    
-    public function delete(string $id): bool;
-    
-    public function exists(string $id): bool;
+    public function delete(UUID $id): void;
 }

@@ -5,38 +5,30 @@ declare(strict_types=1);
 namespace Application\DTOs;
 
 /**
- * Data Transfer Object for Supplier Creation
+ * Create Supplier DTO
+ * 
+ * Data Transfer Object for creating a supplier
+ * Immutable and validated
  */
 final class CreateSupplierDTO
 {
     public function __construct(
         public readonly string $name,
-        public readonly ?string $email = null,
-        public readonly ?string $phone = null,
-        public readonly ?string $address = null,
-        public readonly array $metadata = []
+        public readonly string $code,
+        public readonly ?string $email,
+        public readonly ?string $phone,
+        public readonly ?string $address
     ) {
     }
 
     public static function fromArray(array $data): self
     {
         return new self(
-            name: $data['name'] ?? '',
-            email: $data['email'] ?? null,
-            phone: $data['phone'] ?? null,
-            address: $data['address'] ?? null,
-            metadata: $data['metadata'] ?? []
+            $data['name'] ?? '',
+            $data['code'] ?? '',
+            $data['email'] ?? null,
+            $data['phone'] ?? null,
+            $data['address'] ?? null
         );
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'name' => $this->name,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'address' => $this->address,
-            'metadata' => $this->metadata,
-        ];
     }
 }

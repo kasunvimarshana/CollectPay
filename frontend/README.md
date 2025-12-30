@@ -1,259 +1,306 @@
-# Field Ledger - Frontend (React Native / Expo)
+# FieldLedger Platform - Mobile Frontend
 
-## Architecture Overview
+## Overview
 
-This frontend application follows **Clean Architecture** principles, ensuring separation of concerns, testability, and maintainability.
+This is a production-ready React Native (Expo) mobile application implementing **Clean Architecture** principles for a data collection and payment management system. The application follows SOLID, DRY, and KISS principles with clear separation of concerns.
+
+## Tech Stack
+
+- **Framework**: React Native with Expo
+- **Language**: TypeScript
+- **Navigation**: React Navigation
+- **State Management**: Zustand
+- **HTTP Client**: Axios
+- **Architecture**: Clean Architecture with Domain-Driven Design
 
 ## Project Structure
 
 ```
-src/
-├── domain/                 # Business Logic Layer (Framework Independent)
-│   ├── entities/          # Core business entities (User, Supplier, Product, etc.)
-│   ├── repositories/      # Repository interfaces (contracts)
-│   ├── usecases/          # Business use cases
-│   └── valueobjects/      # Value objects (Money, Quantity, etc.)
-│
-├── data/                  # Data Layer
-│   ├── datasources/       # Data sources (API, Local DB)
-│   │   ├── api/          # API data sources
-│   │   └── local/        # Local storage data sources
-│   ├── repositories/      # Repository implementations
-│   └── models/            # Data models
-│
-├── presentation/          # Presentation Layer
-│   ├── screens/          # Screen components
-│   ├── components/       # Reusable UI components
-│   ├── navigation/       # Navigation configuration
-│   └── state/            # State management (Zustand)
-│
-└── core/                  # Core Utilities
-    ├── network/          # API client, network utilities
-    ├── storage/          # Local storage, offline queue
-    ├── utils/            # Helper functions
-    └── constants/        # App constants, configurations
+frontend/
+├── src/
+│   ├── domain/                   # Business logic (pure TypeScript)
+│   │   ├── entities/            # Domain entities
+│   │   ├── repositories/        # Repository interfaces
+│   │   └── value-objects/       # Immutable value objects
+│   ├── application/             # Application business rules
+│   │   ├── usecases/           # Use cases
+│   │   └── dtos/               # Data Transfer Objects
+│   ├── infrastructure/          # External frameworks and tools
+│   │   ├── api/                # API clients
+│   │   ├── storage/            # Local storage (SQLite/AsyncStorage)
+│   │   └── repositories/       # Repository implementations
+│   └── presentation/            # UI layer
+│       ├── screens/            # Screen components
+│       ├── components/         # Reusable UI components
+│       ├── navigation/         # Navigation configuration
+│       └── hooks/              # Custom React hooks
+├── App.tsx                     # Application entry point
+└── package.json
 ```
 
-## Layers Explained
+## Architecture Principles
 
-### 1. Domain Layer (Business Logic)
-- **Entities**: Pure TypeScript interfaces representing business objects
-- **Repositories**: Interfaces defining data operations contracts
-- **Use Cases**: Business logic operations
-- **Framework Independent**: No React Native or external dependencies
+### Layer Dependencies
 
-### 2. Data Layer
-- **Repositories**: Concrete implementations of repository interfaces
-- **Data Sources**: API clients and local database access
-- **Models**: Data transformation between API and domain entities
+- **Domain** layer has no dependencies (pure TypeScript)
+- **Application** layer depends only on Domain
+- **Infrastructure** layer depends on Domain and Application
+- **Presentation** layer depends on Application and Infrastructure
 
-### 3. Presentation Layer
-- **Screens**: Full-page components
-- **Components**: Reusable UI components
-- **Navigation**: React Navigation configuration
-- **State Management**: Zustand for global state
+This follows the **Dependency Rule**: dependencies point inward, toward the domain.
 
-### 4. Core Layer
-- **Network**: API client with authentication
-- **Storage**: AsyncStorage wrapper, offline queue manager
-- **Utils**: Common utilities
-- **Constants**: API endpoints, configuration
+### Key Patterns
 
-## Key Features
+1. **Repository Pattern**: Abstracts data access
+2. **Use Case Pattern**: Encapsulates business operations
+3. **Dependency Injection**: Loose coupling between layers
+4. **Immutable Entities**: Domain entities are immutable
+5. **Value Objects**: Encapsulate domain validation
 
-### Clean Architecture Benefits
-- ✅ **Testability**: Business logic can be tested without UI
-- ✅ **Maintainability**: Clear separation of concerns
-- ✅ **Scalability**: Easy to add new features
-- ✅ **Flexibility**: Can swap implementations easily
+## Features
 
-### Offline Support
-- Local data persistence with AsyncStorage
-- Offline operation queue
-- Automatic sync when connection restored
-- Conflict detection and resolution
+### Implemented
+- ✅ Clean Architecture structure
+- ✅ TypeScript type safety
+- ✅ Navigation setup
+- ✅ State management foundation
+- ✅ API client configuration
 
-### Authentication
-- JWT token-based authentication
-- Automatic token refresh
-- Secure token storage
-- Role-based access control
-
-## Dependencies
-
-### Core Dependencies
-- **React Native**: Mobile framework
-- **Expo**: Development and build tooling
-- **React Navigation**: Navigation library
-- **Zustand**: Lightweight state management
-- **Axios**: HTTP client
-- **AsyncStorage**: Local storage
-
-### Development Dependencies
-- **TypeScript**: Type safety
-- **ESLint**: Code linting
-- **Jest**: Testing framework
+### Planned
+- 🔄 Supplier management screens
+- 🔄 Product management screens
+- 🔄 Collection entry screens
+- 🔄 Payment management screens
+- 🔄 Offline-first data persistence
+- 🔄 Data synchronization
+- 🔄 Authentication
+- 🔄 Multi-unit quantity tracking
+- 🔄 Versioned rate management
 
 ## Getting Started
 
 ### Prerequisites
-```bash
-# Node.js 18+ required
-node --version
-
-# npm or yarn
-npm --version
-```
+- Node.js 20+
+- npm or yarn
+- Expo CLI
+- iOS Simulator (macOS) or Android Emulator
 
 ### Installation
-```bash
-# Install dependencies
-npm install
 
+```bash
+cd frontend
+npm install
+```
+
+### Development
+
+```bash
 # Start Expo development server
 npm start
 
-# Run on Android
-npm run android
-
-# Run on iOS
+# Run on iOS simulator
 npm run ios
 
-# Run on Web
+# Run on Android emulator
+npm run android
+
+# Run in web browser
 npm run web
 ```
 
 ### Configuration
 
-1. **API Configuration**
-   - Update `src/core/constants/api.ts`
-   - Set `API_BASE_URL` to your backend URL
+Create a `.env` file in the frontend directory:
 
-2. **Environment Variables**
-   - Copy `.env.example` to `.env`
-   - Configure API endpoint and other settings
-
-## Development Guidelines
-
-### Adding a New Feature
-
-1. **Define Domain Entity** (if needed)
-   ```typescript
-   // src/domain/entities/NewEntity.ts
-   export interface NewEntity {
-     id: string;
-     name: string;
-     // ... other properties
-   }
-   ```
-
-2. **Define Repository Interface**
-   ```typescript
-   // src/domain/repositories/NewRepositoryInterface.ts
-   export interface NewRepositoryInterface {
-     getAll(): Promise<NewEntity[]>;
-     getById(id: string): Promise<NewEntity>;
-     // ... other methods
-   }
-   ```
-
-3. **Implement Repository**
-   ```typescript
-   // src/data/repositories/NewRepository.ts
-   export class NewRepository implements NewRepositoryInterface {
-     // Implementation using apiClient
-   }
-   ```
-
-4. **Create Screen**
-   ```tsx
-   // src/presentation/screens/NewScreen.tsx
-   export const NewScreen = () => {
-     // Use repository to fetch data
-     // Render UI
-   }
-   ```
-
-### Folder Structure Rules
-
-- **Domain Layer**: No external dependencies (pure TypeScript)
-- **Data Layer**: Can import from Domain and Core
-- **Presentation Layer**: Can import from all layers
-- **Core Layer**: No dependencies on other layers
-
-### Code Style
-
-- Use TypeScript for all new files
-- Follow functional component patterns
-- Use hooks for state management
-- Follow Clean Architecture principles
-- Write meaningful comments
-- Keep components small and focused
-
-## Testing
-
-```bash
-# Run tests
-npm test
-
-# Run tests with coverage
-npm test -- --coverage
-
-# Run tests in watch mode
-npm test -- --watch
+```env
+API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-### Testing Strategy
-- **Unit Tests**: Domain entities, use cases, utils
-- **Integration Tests**: Repository implementations
-- **Component Tests**: UI components
-- **E2E Tests**: Critical user workflows
+## Domain Model
 
-## Build & Deployment
+### Entities
 
-### Build for Production
-```bash
-# Build Android APK
-expo build:android
+#### Supplier
+- **Purpose**: Represents suppliers in the system
+- **Key Attributes**:
+  - `id`: UUID
+  - `name`: string
+  - `code`: string (unique)
+  - `email`: Email value object
+  - `phone`: PhoneNumber value object
+  - `address`: string
+  - `active`: boolean
+  - `version`: number (optimistic locking)
 
-# Build iOS IPA
-expo build:ios
+### Value Objects
 
-# Build for Web
-expo build:web
+Value objects encapsulate validation and ensure data integrity:
+
+- **UUID**: Globally unique identifier
+- **Email**: Validated email address
+- **PhoneNumber**: Validated phone number
+
+## API Integration
+
+The application communicates with the Laravel backend API:
+
+- **Base URL**: `http://localhost:8000/api/v1`
+- **Authentication**: Laravel Sanctum tokens (to be implemented)
+- **Data Format**: JSON
+
+### Example API Calls
+
+```typescript
+// List suppliers
+GET /suppliers?page=1&per_page=15&search=term
+
+// Get single supplier
+GET /suppliers/{id}
+
+// Create supplier
+POST /suppliers
+Body: { name, code, email, phone, address }
+
+// Update supplier
+PUT /suppliers/{id}
+Body: { name, email, phone, address }
+
+// Delete supplier
+DELETE /suppliers/{id}
 ```
 
-### App Configuration
-- Update `app.json` with your app details
-- Configure splash screen and icon
-- Set up environment-specific builds
+## State Management
+
+Using Zustand for lightweight, scalable state management:
+
+```typescript
+// Example store
+interface SupplierStore {
+  suppliers: Supplier[];
+  loading: boolean;
+  error: string | null;
+  fetchSuppliers: () => Promise<void>;
+  createSupplier: (data: CreateSupplierDTO) => Promise<void>;
+}
+```
+
+## Offline Support
+
+### Strategy
+1. **Local Storage**: SQLite for structured data
+2. **Sync Queue**: Track pending operations
+3. **Conflict Resolution**: Last-write-wins with version control
+4. **Background Sync**: Automatic synchronization when online
+
+### Data Flow
+```
+User Action → Local Storage → Sync Queue → Backend API
+                ↓                               ↓
+          Optimistic UI Update         Confirmation/Conflict
+```
+
+## Testing Strategy
+
+### Unit Tests
+- Domain entities and value objects
+- Use cases
+- Validation logic
+
+### Integration Tests
+- Repository implementations
+- API clients
+- State management
+
+### E2E Tests
+- Critical user workflows
+- Offline/online transitions
+- Data synchronization
+
+## Security
+
+### Implemented
+- TypeScript type safety
+- Input validation
+- HTTPS for API calls
+
+### Planned
+- Token-based authentication
+- Secure token storage
+- Biometric authentication
+- Data encryption at rest
+- Certificate pinning
+
+## Performance Optimizations
+
+1. **Lazy Loading**: Load screens on demand
+2. **Memoization**: Cache computed values
+3. **Virtual Lists**: Optimize long lists
+4. **Image Optimization**: Compress and cache images
+5. **Code Splitting**: Reduce initial bundle size
+
+## Best Practices
+
+1. **Always use TypeScript**: Type safety prevents bugs
+2. **Keep components pure**: Separate business logic from UI
+3. **Use custom hooks**: Encapsulate reusable logic
+4. **Write tests**: Test critical business logic
+5. **Document code**: Clear comments for complex logic
+6. **Handle errors gracefully**: User-friendly error messages
+7. **Optimize renders**: Use React.memo and useMemo appropriately
+
+## Deployment
+
+### Development
+```bash
+npm start
+```
+
+### Production Build
+
+#### iOS
+```bash
+eas build --platform ios
+eas submit --platform ios
+```
+
+#### Android
+```bash
+eas build --platform android
+eas submit --platform android
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Problem**: API connection fails
-- Check `API_BASE_URL` in `src/core/constants/api.ts`
-- Ensure backend is running
-- Check network connectivity
+**Metro bundler not starting**
+```bash
+npx expo start --clear
+```
 
-**Problem**: Dependencies not installing
-- Clear npm cache: `npm cache clean --force`
-- Delete `node_modules` and reinstall
-- Update npm/node to latest versions
+**Dependencies not installing**
+```bash
+rm -rf node_modules
+npm install
+```
 
-**Problem**: TypeScript errors
-- Run `npm install` to install types
-- Check `tsconfig.json` configuration
-- Restart TypeScript server in IDE
+**iOS simulator not launching**
+```bash
+xcrun simctl boot <device-id>
+```
 
-## Additional Resources
+## Contributing
 
-- [React Native Documentation](https://reactnative.dev/)
-- [Expo Documentation](https://docs.expo.dev/)
-- [React Navigation](https://reactnavigation.org/)
-- [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+Follow the established architecture patterns:
+1. Domain entities are immutable
+2. Use cases handle business logic
+3. Repositories abstract data access
+4. UI components are presentational
 
 ## License
 
-Private - All Rights Reserved
+MIT
+
+## Contact
+
+For questions or support, contact the development team.

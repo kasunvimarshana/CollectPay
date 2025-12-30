@@ -4,82 +4,137 @@ declare(strict_types=1);
 
 namespace Domain\Entities;
 
+use Domain\ValueObjects\UUID;
 use Domain\ValueObjects\Quantity;
-use Domain\ValueObjects\Rate;
 use Domain\ValueObjects\Money;
 use DateTimeImmutable;
+use InvalidArgumentException;
 
 /**
- * Collection Entity
+ * Collection Domain Entity
  * 
- * Represents a collection transaction with a supplier for a specific product.
+ * Represents a collection of products from a supplier
+ * Immutable after creation to maintain audit trail
  */
-class Collection
+final class Collection
 {
+    private UUID $id;
+    private UUID $supplierId;
+    private UUID $productId;
+    private Quantity $quantity;
+    private Money $appliedRate;
+    private Money $totalAmount;
+    private DateTimeImmutable $collectionDate;
+    private ?string $notes;
+    private DateTimeImmutable $createdAt;
+    private DateTimeImmutable $updatedAt;
+    private int $version;
+
     private function __construct(
-        private string $id,
-        private string $supplierId,
-        private string $productId,
-        private string $userId,
-        private Quantity $quantity,
-        private Rate $appliedRate,
-        private Money $totalAmount,
-        private DateTimeImmutable $collectionDate,
-        private ?string $notes,
-        private array $metadata,
-        private DateTimeImmutable $createdAt,
-        private DateTimeImmutable $updatedAt
+        UUID $id,
+        UUID $supplierId,
+        UUID $productId,
+        Quantity $quantity,
+        Money $appliedRate,
+        DateTimeImmutable $collectionDate,
+        ?string $notes,
+        DateTimeImmutable $createdAt,
+        DateTimeImmutable $updatedAt,
+        int $version
     ) {
+        $this->id = $id;
+        $this->supplierId = $supplierId;
+        $this->productId = $productId;
+        $this->quantity = $quantity;
+        $this->appliedRate = $appliedRate;
+        $this->totalAmount = $appliedRate->multiply($quantity->amount());
+        $this->collectionDate = $collectionDate;
+        $this->notes = $notes ? trim($notes) : null;
+        $this->createdAt = $createdAt;
+        $this->updatedAt = $updatedAt;
+        $this->version = $version;
     }
 
     public static function create(
-        string $id,
-        string $supplierId,
-        string $productId,
-        string $userId,
+        UUID $supplierId,
+        UUID $productId,
         Quantity $quantity,
-        Rate $appliedRate,
+        Money $appliedRate,
         DateTimeImmutable $collectionDate,
-        ?string $notes = null,
-        array $metadata = []
+        ?string $notes = null
     ): self {
-        $now = new DateTimeImmutable();
-        $totalAmount = $appliedRate->calculateAmount($quantity);
-        
         return new self(
-            id: $id,
-            supplierId: $supplierId,
-            productId: $productId,
-            userId: $userId,
-            quantity: $quantity,
-            appliedRate: $appliedRate,
-            totalAmount: $totalAmount,
-            collectionDate: $collectionDate,
-            notes: $notes,
-            metadata: $metadata,
-            createdAt: $now,
-            updatedAt: $now
+            UUID::generate(),
+            $supplierId,
+            $productId,
+            $quantity,
+            $appliedRate,
+            $collectionDate,
+            $notes,
+            new DateTimeImmutable(),
+            new DateTimeImmutable(),
+            1
         );
     }
 
-    public function id(): string
+    public static function reconstitute(
+        string $id,
+        string $supplierId,
+        string $productId,
+        float $quantityAmount,
+        string $quantityUnit,
+        float $rateAmount,
+        string $currency,
+        DateTimeImmutable $collectionDate,
+        ?string $notes,
+        DateTimeImmutable $createdAt,
+        DateTimeImmutable $updatedAt,
+        int $version
+    ): self {
+        return new self(
+            UUID::fromString($id),
+            UUID::fromString($supplierId),
+            UUID::fromString($productId),
+            new Quantity($quantityAmount, $quantityUnit),
+            new Money($rateAmount, $currency),
+            $collectionDate,
+            $notes,
+            $createdAt,
+            $updatedAt,
+            $version
+        );
+    }
+
+    public function updateNotes(string $notes): self
+    {
+        return new self(
+            $this->id,
+            $this->supplierId,
+            $this->productId,
+            $this->quantity,
+            $this->appliedRate,
+            $this->collectionDate,
+            $notes,
+            $this->createdAt,
+            new DateTimeImmutable(),
+            $this->version + 1
+        );
+    }
+
+    // Getters
+    public function id(): UUID
     {
         return $this->id;
     }
 
-    public function supplierId(): string
+    public function supplierId(): UUID
     {
         return $this->supplierId;
     }
 
-    public function productId(): string
+    public function productId(): UUID
     {
         return $this->productId;
-    }
-
-    public function userId(): string
-    {
-        return $this->userId;
     }
 
     public function quantity(): Quantity
@@ -87,7 +142,7 @@ class Collection
         return $this->quantity;
     }
 
-    public function appliedRate(): Rate
+    public function appliedRate(): Money
     {
         return $this->appliedRate;
     }
@@ -107,11 +162,6 @@ class Collection
         return $this->notes;
     }
 
-    public function metadata(): array
-    {
-        return $this->metadata;
-    }
-
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
@@ -122,33 +172,27 @@ class Collection
         return $this->updatedAt;
     }
 
-    public function updateNotes(string $notes): void
+    public function version(): int
     {
-        $this->notes = $notes;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function updateMetadata(array $metadata): void
-    {
-        $this->metadata = $metadata;
-        $this->updatedAt = new DateTimeImmutable();
+        return $this->version;
     }
 
     public function toArray(): array
     {
         return [
-            'id' => $this->id,
-            'supplier_id' => $this->supplierId,
-            'product_id' => $this->productId,
-            'user_id' => $this->userId,
-            'quantity' => $this->quantity->toArray(),
-            'applied_rate' => $this->appliedRate->toArray(),
-            'total_amount' => $this->totalAmount->toArray(),
+            'id' => $this->id->value(),
+            'supplier_id' => $this->supplierId->value(),
+            'product_id' => $this->productId->value(),
+            'quantity_amount' => $this->quantity->amount(),
+            'quantity_unit' => $this->quantity->unit(),
+            'applied_rate_amount' => $this->appliedRate->amount(),
+            'currency' => $this->appliedRate->currency(),
+            'total_amount' => $this->totalAmount->amount(),
             'collection_date' => $this->collectionDate->format('Y-m-d H:i:s'),
             'notes' => $this->notes,
-            'metadata' => $this->metadata,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
+            'version' => $this->version,
         ];
     }
 }

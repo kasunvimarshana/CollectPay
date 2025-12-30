@@ -9,115 +9,102 @@ use InvalidArgumentException;
 /**
  * Quantity Value Object
  * 
- * Represents a measured quantity with a specific unit.
+ * Represents quantities with units (kg, g, liters, etc.)
+ * Supports multi-unit tracking
  */
 final class Quantity
 {
-    private function __construct(
-        private readonly float $value,
-        private readonly Unit $unit
-    ) {
-        $this->validate();
-    }
+    private float $amount;
+    private string $unit;
 
-    public static function from(float $value, Unit $unit): self
+    // Supported units with base conversions (to grams for weight, ml for volume)
+    private const WEIGHT_UNITS = [
+        'kg' => 1000,
+        'g' => 1,
+        'mg' => 0.001,
+    ];
+
+    private const VOLUME_UNITS = [
+        'l' => 1000,
+        'ml' => 1,
+    ];
+
+    public function __construct(float $amount, string $unit)
     {
-        return new self($value, $unit);
+        $this->validateAmount($amount);
+        $this->validateUnit($unit);
+        
+        $this->amount = $amount;
+        $this->unit = strtolower($unit);
     }
 
-    public static function zero(Unit $unit): self
+    private function validateAmount(float $amount): void
     {
-        return new self(0.0, $unit);
+        if ($amount < 0) {
+            throw new InvalidArgumentException('Quantity amount cannot be negative');
+        }
     }
 
-    public function value(): float
+    private function validateUnit(string $unit): void
     {
-        return $this->value;
+        $unit = strtolower($unit);
+        
+        if (empty(trim($unit))) {
+            throw new InvalidArgumentException('Unit cannot be empty');
+        }
+
+        if (!isset(self::WEIGHT_UNITS[$unit]) && !isset(self::VOLUME_UNITS[$unit])) {
+            throw new InvalidArgumentException("Unsupported unit: {$unit}");
+        }
     }
 
-    public function unit(): Unit
+    public function amount(): float
+    {
+        return $this->amount;
+    }
+
+    public function unit(): string
     {
         return $this->unit;
     }
 
+    public function convertTo(string $targetUnit): self
+    {
+        $targetUnit = strtolower($targetUnit);
+        $this->validateUnit($targetUnit);
+
+        // Check if both units are in the same category
+        $sourceIsWeight = isset(self::WEIGHT_UNITS[$this->unit]);
+        $targetIsWeight = isset(self::WEIGHT_UNITS[$targetUnit]);
+
+        if ($sourceIsWeight !== $targetIsWeight) {
+            throw new InvalidArgumentException('Cannot convert between weight and volume units');
+        }
+
+        if ($sourceIsWeight) {
+            $baseAmount = $this->amount * self::WEIGHT_UNITS[$this->unit];
+            $convertedAmount = $baseAmount / self::WEIGHT_UNITS[$targetUnit];
+        } else {
+            $baseAmount = $this->amount * self::VOLUME_UNITS[$this->unit];
+            $convertedAmount = $baseAmount / self::VOLUME_UNITS[$targetUnit];
+        }
+
+        return new self($convertedAmount, $targetUnit);
+    }
+
     public function add(Quantity $other): self
     {
-        if (!$this->unit->isCompatibleWith($other->unit)) {
-            throw new InvalidArgumentException('Cannot add quantities with incompatible units');
-        }
-
-        $convertedValue = $other->unit->convertTo($this->unit, $other->value);
-        return new self($this->value + $convertedValue, $this->unit);
+        $converted = $other->convertTo($this->unit);
+        return new self($this->amount + $converted->amount, $this->unit);
     }
 
-    public function subtract(Quantity $other): self
+    public function formatted(): string
     {
-        if (!$this->unit->isCompatibleWith($other->unit)) {
-            throw new InvalidArgumentException('Cannot subtract quantities with incompatible units');
-        }
-
-        $convertedValue = $other->unit->convertTo($this->unit, $other->value);
-        return new self($this->value - $convertedValue, $this->unit);
-    }
-
-    public function multiply(float $multiplier): self
-    {
-        return new self($this->value * $multiplier, $this->unit);
-    }
-
-    public function convertTo(Unit $targetUnit): self
-    {
-        $convertedValue = $this->unit->convertTo($targetUnit, $this->value);
-        return new self($convertedValue, $targetUnit);
-    }
-
-    public function equals(Quantity $other): bool
-    {
-        if (!$this->unit->isCompatibleWith($other->unit)) {
-            return false;
-        }
-
-        $convertedValue = $other->unit->convertTo($this->unit, $other->value);
-        return abs($this->value - $convertedValue) < 0.0001; // Floating point comparison
-    }
-
-    public function isGreaterThan(Quantity $other): bool
-    {
-        if (!$this->unit->isCompatibleWith($other->unit)) {
-            throw new InvalidArgumentException('Cannot compare quantities with incompatible units');
-        }
-
-        $convertedValue = $other->unit->convertTo($this->unit, $other->value);
-        return $this->value > $convertedValue;
-    }
-
-    public function isNegative(): bool
-    {
-        return $this->value < 0;
-    }
-
-    public function isZero(): bool
-    {
-        return abs($this->value) < 0.0001;
-    }
-
-    private function validate(): void
-    {
-        if (!is_finite($this->value)) {
-            throw new InvalidArgumentException('Quantity value must be finite');
-        }
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'value' => $this->value,
-            'unit' => $this->unit->symbol(),
-        ];
+        return sprintf('%.2f %s', $this->amount, $this->unit);
     }
 
     public function __toString(): string
     {
-        return sprintf('%.3f %s', $this->value, $this->unit);
+        return $this->formatted();
     }
 }

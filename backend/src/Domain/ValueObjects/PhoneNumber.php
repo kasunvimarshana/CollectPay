@@ -9,19 +9,41 @@ use InvalidArgumentException;
 /**
  * PhoneNumber Value Object
  * 
- * Represents a validated phone number.
+ * Immutable value object representing a phone number
+ * Validates basic phone number format
  */
 final class PhoneNumber
 {
-    private function __construct(
-        private readonly string $value
-    ) {
-        $this->validate();
+    private string $value;
+
+    public function __construct(string $value)
+    {
+        $this->validate($value);
+        $this->value = $this->normalize($value);
     }
 
-    public static function from(string $value): self
+    private function validate(string $value): void
     {
-        return new self($value);
+        if (empty($value)) {
+            throw new InvalidArgumentException('Phone number cannot be empty');
+        }
+
+        // Basic validation: contains digits and may contain + - () and spaces
+        if (!preg_match('/^[\d\s\-\+\(\)]+$/', $value)) {
+            throw new InvalidArgumentException("Invalid phone number format: {$value}");
+        }
+
+        // Must contain at least 10 digits
+        $digitsOnly = preg_replace('/[^\d]/', '', $value);
+        if (strlen($digitsOnly) < 10) {
+            throw new InvalidArgumentException('Phone number must contain at least 10 digits');
+        }
+    }
+
+    private function normalize(string $value): string
+    {
+        // Keep original format but trim whitespace
+        return trim($value);
     }
 
     public function value(): string
@@ -31,21 +53,7 @@ final class PhoneNumber
 
     public function equals(PhoneNumber $other): bool
     {
-        return $this->value === $other->value;
-    }
-
-    private function validate(): void
-    {
-        // Remove common formatting characters
-        $cleaned = preg_replace('/[\s\-\(\)\+]/', '', $this->value);
-        
-        if (empty($cleaned)) {
-            throw new InvalidArgumentException('Phone number cannot be empty');
-        }
-
-        if (!preg_match('/^\d{7,15}$/', $cleaned)) {
-            throw new InvalidArgumentException("Invalid phone number format: {$this->value}");
-        }
+        return $this->value === $other->value();
     }
 
     public function __toString(): string

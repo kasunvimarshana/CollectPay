@@ -6,88 +6,61 @@ namespace Application\UseCases\Collection;
 
 use Application\DTOs\CreateCollectionDTO;
 use Domain\Entities\Collection;
-use Domain\Repositories\CollectionRepositoryInterface;
-use Domain\Repositories\ProductRepositoryInterface;
 use Domain\Repositories\SupplierRepositoryInterface;
-use Domain\Repositories\UserRepositoryInterface;
+use Domain\Repositories\ProductRepositoryInterface;
+use Domain\Repositories\ProductRateRepositoryInterface;
+use Domain\Repositories\CollectionRepositoryInterface;
+use Domain\ValueObjects\UUID;
 use Domain\ValueObjects\Quantity;
-use Domain\ValueObjects\Unit;
+use DateTimeImmutable;
+use InvalidArgumentException;
 
-/**
- * Use Case: Create a new collection
- * 
- * This use case handles recording a new collection transaction.
- * It automatically applies the current rate for the product.
- */
 final class CreateCollectionUseCase
 {
     public function __construct(
-        private readonly CollectionRepositoryInterface $collectionRepository,
-        private readonly SupplierRepositoryInterface $supplierRepository,
-        private readonly ProductRepositoryInterface $productRepository,
-        private readonly UserRepositoryInterface $userRepository
-    ) {
-    }
+        private CollectionRepositoryInterface $collectionRepository,
+        private SupplierRepositoryInterface $supplierRepository,
+        private ProductRepositoryInterface $productRepository,
+        private ProductRateRepositoryInterface $rateRepository
+    ) {}
 
-    /**
-     * Execute the use case
-     *
-     * @param CreateCollectionDTO $dto
-     * @return Collection
-     * @throws \InvalidArgumentException
-     */
     public function execute(CreateCollectionDTO $dto): Collection
     {
-        // Validate supplier exists
-        $supplier = $this->supplierRepository->findById($dto->supplierId);
+        $supplierId = UUID::fromString($dto->supplierId);
+        $productId = UUID::fromString($dto->productId);
+        $collectionDate = new DateTimeImmutable($dto->collectionDate);
+
+        // Verify supplier exists
+        $supplier = $this->supplierRepository->findById($supplierId);
         if (!$supplier) {
-            throw new \InvalidArgumentException("Supplier with ID {$dto->supplierId} not found");
+            throw new InvalidArgumentException('Supplier not found');
         }
 
-        // Validate product exists
-        $product = $this->productRepository->findById($dto->productId);
+        // Verify product exists
+        $product = $this->productRepository->findById($productId);
         if (!$product) {
-            throw new \InvalidArgumentException("Product with ID {$dto->productId} not found");
+            throw new InvalidArgumentException('Product not found');
         }
 
-        // Validate user exists
-        $user = $this->userRepository->findById($dto->userId);
-        if (!$user) {
-            throw new \InvalidArgumentException("User with ID {$dto->userId} not found");
+        // Get active rate for the collection date
+        $rate = $this->rateRepository->findActiveRateForProduct($productId, $collectionDate);
+        if (!$rate) {
+            throw new InvalidArgumentException('No active rate found for this product on the collection date');
         }
 
-        // Create quantity value object
-        $unit = new Unit($dto->unit);
-        $quantity = new Quantity($dto->quantity, $unit);
+        $quantity = new Quantity($dto->quantityAmount, $dto->quantityUnit);
 
-        // Get current rate for the product
-        $currentRate = $product->getCurrentRate();
-        if (!$currentRate) {
-            throw new \InvalidArgumentException("Product {$product->name()} has no active rate");
-        }
-
-        // Create collection date
-        $collectionDate = $dto->collectionDate 
-            ? new \DateTimeImmutable($dto->collectionDate)
-            : new \DateTimeImmutable();
-
-        // Generate UUID for collection
-        $id = \Illuminate\Support\Str::uuid()->toString();
-
-        // Create collection entity
         $collection = Collection::create(
-            id: $id,
-            supplierId: $dto->supplierId,
-            productId: $dto->productId,
-            userId: $dto->userId,
-            quantity: $quantity,
-            appliedRate: $currentRate,
-            collectionDate: $collectionDate,
-            notes: null,
-            metadata: $dto->metadata
+            $supplierId,
+            $productId,
+            $quantity,
+            $rate->rate(),
+            $collectionDate,
+            $dto->notes
         );
 
-        // Persist collection
-        return $this->collectionRepository->save($collection);
+        $this->collectionRepository->save($collection);
+
+        return $collection;
     }
 }

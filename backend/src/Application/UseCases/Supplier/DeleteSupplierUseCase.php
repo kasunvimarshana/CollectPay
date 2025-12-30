@@ -5,32 +5,30 @@ declare(strict_types=1);
 namespace Application\UseCases\Supplier;
 
 use Domain\Repositories\SupplierRepositoryInterface;
+use Domain\ValueObjects\UUID;
+use InvalidArgumentException;
 
 /**
- * Use Case: Delete a supplier
+ * Delete Supplier Use Case
+ * 
+ * Application service for deleting suppliers
  */
 final class DeleteSupplierUseCase
 {
     public function __construct(
-        private readonly SupplierRepositoryInterface $supplierRepository
+        private readonly SupplierRepositoryInterface $repository
     ) {
     }
 
-    /**
-     * Execute the use case
-     *
-     * @param string $supplierId
-     * @return bool
-     * @throws \InvalidArgumentException
-     */
-    public function execute(string $supplierId): bool
+    public function execute(string $id): void
     {
-        $supplier = $this->supplierRepository->findById($supplierId);
+        $uuid = UUID::fromString($id);
         
+        $supplier = $this->repository->findById($uuid);
         if (!$supplier) {
-            throw new \InvalidArgumentException("Supplier with ID {$supplierId} not found");
+            throw new InvalidArgumentException("Supplier not found with ID: {$id}");
         }
 
-        return $this->supplierRepository->delete($supplierId);
+        $this->repository->delete($uuid);
     }
 }

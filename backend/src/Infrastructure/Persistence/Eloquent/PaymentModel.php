@@ -10,34 +10,34 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Payment Eloquent Model
+ * 
+ * Infrastructure layer - persistence implementation
+ * Maps domain entity to database
  */
 class PaymentModel extends Model
 {
     use HasUuids;
 
     protected $table = 'payments';
-    
     protected $keyType = 'string';
-    
     public $incrementing = false;
 
     protected $fillable = [
         'id',
         'supplier_id',
-        'user_id',
         'amount',
         'currency',
         'type',
         'payment_date',
         'reference',
         'notes',
-        'metadata',
+        'version',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'version' => 'integer',
         'payment_date' => 'datetime',
-        'metadata' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -45,10 +45,5 @@ class PaymentModel extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(SupplierModel::class, 'supplier_id');
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'user_id');
     }
 }

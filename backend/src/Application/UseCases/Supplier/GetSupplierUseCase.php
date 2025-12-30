@@ -6,30 +6,28 @@ namespace Application\UseCases\Supplier;
 
 use Domain\Entities\Supplier;
 use Domain\Repositories\SupplierRepositoryInterface;
+use Domain\ValueObjects\UUID;
+use InvalidArgumentException;
 
 /**
- * Use Case: Get supplier by ID
+ * Get Supplier Use Case
+ * 
+ * Application service for retrieving a single supplier
  */
 final class GetSupplierUseCase
 {
     public function __construct(
-        private readonly SupplierRepositoryInterface $supplierRepository
+        private readonly SupplierRepositoryInterface $repository
     ) {
     }
 
-    /**
-     * Execute the use case
-     *
-     * @param string $supplierId
-     * @return Supplier
-     * @throws \InvalidArgumentException
-     */
-    public function execute(string $supplierId): Supplier
+    public function execute(string $id): Supplier
     {
-        $supplier = $this->supplierRepository->findById($supplierId);
-        
+        $uuid = UUID::fromString($id);
+        $supplier = $this->repository->findById($uuid);
+
         if (!$supplier) {
-            throw new \InvalidArgumentException("Supplier with ID {$supplierId} not found");
+            throw new InvalidArgumentException("Supplier not found with ID: {$id}");
         }
 
         return $supplier;

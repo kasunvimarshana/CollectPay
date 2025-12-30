@@ -4,54 +4,192 @@ declare(strict_types=1);
 
 namespace Domain\Entities;
 
-use Domain\ValueObjects\Rate;
-use Domain\ValueObjects\Unit;
+use Domain\ValueObjects\UUID;
+use Domain\ValueObjects\Money;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
 /**
- * Product Entity
+ * Product Domain Entity
  * 
- * Represents a product with versioned rates.
+ * Represents a product with versioned rate management
+ * Immutable after creation, follows DDD principles
  */
-class Product
+final class Product
 {
-    private array $rates = [];
+    private UUID $id;
+    private string $name;
+    private string $code;
+    private string $unit;
+    private ?string $description;
+    private bool $active;
+    private DateTimeImmutable $createdAt;
+    private DateTimeImmutable $updatedAt;
+    private int $version;
 
     private function __construct(
-        private string $id,
-        private string $name,
-        private string $description,
-        private Unit $defaultUnit,
-        private array $metadata,
-        private bool $isActive,
-        private DateTimeImmutable $createdAt,
-        private DateTimeImmutable $updatedAt
+        UUID $id,
+        string $name,
+        string $code,
+        string $unit,
+        ?string $description,
+        bool $active,
+        DateTimeImmutable $createdAt,
+        DateTimeImmutable $updatedAt,
+        int $version
     ) {
+        $this->validateName($name);
+        $this->validateCode($code);
+        $this->validateUnit($unit);
+        
+        $this->id = $id;
+        $this->name = trim($name);
+        $this->code = strtoupper(trim($code));
+        $this->unit = strtolower(trim($unit));
+        $this->description = $description ? trim($description) : null;
+        $this->active = $active;
+        $this->createdAt = $createdAt;
+        $this->updatedAt = $updatedAt;
+        $this->version = $version;
     }
 
     public static function create(
-        string $id,
         string $name,
-        string $description,
-        Unit $defaultUnit,
-        array $metadata = []
+        string $code,
+        string $unit,
+        ?string $description = null
     ): self {
-        $now = new DateTimeImmutable();
-        
         return new self(
-            id: $id,
-            name: $name,
-            description: $description,
-            defaultUnit: $defaultUnit,
-            metadata: $metadata,
-            isActive: true,
-            createdAt: $now,
-            updatedAt: $now
+            UUID::generate(),
+            $name,
+            $code,
+            $unit,
+            $description,
+            true,
+            new DateTimeImmutable(),
+            new DateTimeImmutable(),
+            1
         );
     }
 
-    public function id(): string
+    public static function reconstitute(
+        string $id,
+        string $name,
+        string $code,
+        string $unit,
+        ?string $description,
+        bool $active,
+        DateTimeImmutable $createdAt,
+        DateTimeImmutable $updatedAt,
+        int $version
+    ): self {
+        return new self(
+            UUID::fromString($id),
+            $name,
+            $code,
+            $unit,
+            $description,
+            $active,
+            $createdAt,
+            $updatedAt,
+            $version
+        );
+    }
+
+    public function update(
+        string $name,
+        string $unit,
+        ?string $description = null
+    ): self {
+        return new self(
+            $this->id,
+            $name,
+            $this->code,
+            $unit,
+            $description,
+            $this->active,
+            $this->createdAt,
+            new DateTimeImmutable(),
+            $this->version + 1
+        );
+    }
+
+    public function activate(): self
+    {
+        if ($this->active) {
+            return $this;
+        }
+
+        return new self(
+            $this->id,
+            $this->name,
+            $this->code,
+            $this->unit,
+            $this->description,
+            true,
+            $this->createdAt,
+            new DateTimeImmutable(),
+            $this->version + 1
+        );
+    }
+
+    public function deactivate(): self
+    {
+        if (!$this->active) {
+            return $this;
+        }
+
+        return new self(
+            $this->id,
+            $this->name,
+            $this->code,
+            $this->unit,
+            $this->description,
+            false,
+            $this->createdAt,
+            new DateTimeImmutable(),
+            $this->version + 1
+        );
+    }
+
+    private function validateName(string $name): void
+    {
+        if (empty(trim($name))) {
+            throw new InvalidArgumentException('Product name cannot be empty');
+        }
+
+        if (strlen($name) > 255) {
+            throw new InvalidArgumentException('Product name cannot exceed 255 characters');
+        }
+    }
+
+    private function validateCode(string $code): void
+    {
+        if (empty(trim($code))) {
+            throw new InvalidArgumentException('Product code cannot be empty');
+        }
+
+        if (strlen($code) > 50) {
+            throw new InvalidArgumentException('Product code cannot exceed 50 characters');
+        }
+
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $code)) {
+            throw new InvalidArgumentException('Product code can only contain letters, numbers, hyphens and underscores');
+        }
+    }
+
+    private function validateUnit(string $unit): void
+    {
+        $unit = strtolower(trim($unit));
+        $validUnits = ['kg', 'g', 'mg', 'l', 'ml'];
+        
+        if (!in_array($unit, $validUnits, true)) {
+            throw new InvalidArgumentException('Invalid unit. Supported units: ' . implode(', ', $validUnits));
+        }
+    }
+
+    // Getters
+    public function id(): UUID
     {
         return $this->id;
     }
@@ -61,29 +199,24 @@ class Product
         return $this->name;
     }
 
-    public function description(): string
+    public function code(): string
+    {
+        return $this->code;
+    }
+
+    public function unit(): string
+    {
+        return $this->unit;
+    }
+
+    public function description(): ?string
     {
         return $this->description;
     }
 
-    public function defaultUnit(): Unit
-    {
-        return $this->defaultUnit;
-    }
-
-    public function metadata(): array
-    {
-        return $this->metadata;
-    }
-
-    public function rates(): array
-    {
-        return $this->rates;
-    }
-
     public function isActive(): bool
     {
-        return $this->isActive;
+        return $this->active;
     }
 
     public function createdAt(): DateTimeImmutable
@@ -96,96 +229,23 @@ class Product
         return $this->updatedAt;
     }
 
-    public function updateName(string $name): void
+    public function version(): int
     {
-        $this->name = $name;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function updateDescription(string $description): void
-    {
-        $this->description = $description;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function updateDefaultUnit(Unit $unit): void
-    {
-        $this->defaultUnit = $unit;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function addRate(Rate $rate): void
-    {
-        $this->rates[] = $rate;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function setRates(array $rates): void
-    {
-        foreach ($rates as $rate) {
-            if (!$rate instanceof Rate) {
-                throw new InvalidArgumentException('All items must be Rate instances');
-            }
-        }
-        
-        $this->rates = $rates;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    /**
-     * Get the applicable rate for a specific date
-     */
-    public function getRateAt(DateTimeImmutable $date): ?Rate
-    {
-        $applicableRates = array_filter(
-            $this->rates,
-            fn(Rate $rate) => $rate->isEffectiveAt($date)
-        );
-
-        if (empty($applicableRates)) {
-            return null;
-        }
-
-        // Sort by effective date descending and get the most recent
-        usort($applicableRates, function (Rate $a, Rate $b) {
-            return $b->effectiveFrom() <=> $a->effectiveFrom();
-        });
-
-        return $applicableRates[0];
-    }
-
-    /**
-     * Get the current applicable rate
-     */
-    public function getCurrentRate(): ?Rate
-    {
-        return $this->getRateAt(new DateTimeImmutable());
-    }
-
-    public function activate(): void
-    {
-        $this->isActive = true;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function deactivate(): void
-    {
-        $this->isActive = false;
-        $this->updatedAt = new DateTimeImmutable();
+        return $this->version;
     }
 
     public function toArray(): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->id->value(),
             'name' => $this->name,
+            'code' => $this->code,
+            'unit' => $this->unit,
             'description' => $this->description,
-            'default_unit' => $this->defaultUnit->symbol(),
-            'metadata' => $this->metadata,
-            'rates' => array_map(fn(Rate $rate) => $rate->toArray(), $this->rates),
-            'is_active' => $this->isActive,
+            'active' => $this->active,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
+            'version' => $this->version,
         ];
     }
 }

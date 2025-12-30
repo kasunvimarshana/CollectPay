@@ -9,19 +9,28 @@ use InvalidArgumentException;
 /**
  * Email Value Object
  * 
- * Represents a validated email address.
+ * Immutable value object representing an email address
+ * Following DDD principles and KISS
  */
 final class Email
 {
-    private function __construct(
-        private readonly string $value
-    ) {
-        $this->validate();
+    private string $value;
+
+    public function __construct(string $value)
+    {
+        $this->validate($value);
+        $this->value = strtolower(trim($value));
     }
 
-    public static function from(string $value): self
+    private function validate(string $value): void
     {
-        return new self($value);
+        if (empty($value)) {
+            throw new InvalidArgumentException('Email cannot be empty');
+        }
+
+        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            throw new InvalidArgumentException("Invalid email format: {$value}");
+        }
     }
 
     public function value(): string
@@ -31,14 +40,7 @@ final class Email
 
     public function equals(Email $other): bool
     {
-        return strtolower($this->value) === strtolower($other->value);
-    }
-
-    private function validate(): void
-    {
-        if (!filter_var($this->value, FILTER_VALIDATE_EMAIL)) {
-            throw new InvalidArgumentException("Invalid email address: {$this->value}");
-        }
+        return $this->value === $other->value();
     }
 
     public function __toString(): string
