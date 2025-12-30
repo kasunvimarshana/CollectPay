@@ -17,9 +17,16 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { User } from '../../domain/entities/User';
+import { useAuth } from '../contexts/AuthContext';
+import { canCreate } from '../../core/utils/permissions';
+import { usePagination } from '../../core/hooks/usePagination';
+import { useSort } from '../../core/hooks/useSort';
+import { Pagination } from '../components/Pagination';
+import { SortButton } from '../components/SortButton';
 
 export const UserListScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +57,21 @@ export const UserListScreen: React.FC = () => {
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Sorting hook
+  const { sortedData, requestSort, getSortDirection } = useSort<User>(filteredUsers);
+
+  // Pagination hook
+  const {
+    currentData,
+    currentPage,
+    totalPages,
+    totalItems,
+    perPage,
+    goToPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePagination(sortedData, { initialPerPage: 10 });
 
   const handleUserPress = (userId: number) => {
     (navigation.navigate as any)('UserDetail', { userId });
@@ -98,6 +120,11 @@ export const UserListScreen: React.FC = () => {
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Users</Text>
+        {canCreate(currentUser, 'users') && (
+          <TouchableOpacity style={styles.addButton} onPress={handleAddUser}>
+            <Text style={styles.addButtonText}>+ Add User</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.searchContainer}>
@@ -109,8 +136,22 @@ export const UserListScreen: React.FC = () => {
         />
       </View>
 
+      {/* Sort Controls */}
+      <View style={styles.sortContainer}>
+        <SortButton 
+          label="Name" 
+          direction={getSortDirection('name')}
+          onPress={() => requestSort('name')} 
+        />
+        <SortButton 
+          label="Email" 
+          direction={getSortDirection('email')}
+          onPress={() => requestSort('email')} 
+        />
+      </View>
+
       <FlatList
-        data={filteredUsers}
+        data={currentData}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderUserItem}
         contentContainerStyle={styles.listContent}
@@ -121,9 +162,15 @@ export const UserListScreen: React.FC = () => {
         }
       />
 
-      <TouchableOpacity style={styles.addButton} onPress={handleAddUser}>
-        <Text style={styles.addButtonText}>+ Add User</Text>
-      </TouchableOpacity>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        perPage={perPage}
+        onPageChange={goToPage}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
+      />
     </View>
   );
 };
@@ -238,5 +285,15 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#666',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    justifyContent: 'flex-start',
+    gap: 8,
   },
 });

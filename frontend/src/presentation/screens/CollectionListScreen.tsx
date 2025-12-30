@@ -18,14 +18,36 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Collection } from '../../domain/entities/Collection';
+import { useAuth } from '../contexts/AuthContext';
+import { canCreate } from '../../core/utils/permissions';
+import { usePagination } from '../../core/hooks/usePagination';
+import { useSort } from '../../core/hooks/useSort';
+import { Pagination } from '../components/Pagination';
+import { SortButton } from '../components/SortButton';
 
 export const CollectionListScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredCollections, setFilteredCollections] = useState<Collection[]>([]);
+
+  // Sorting hook
+  const { sortedData, requestSort, getSortDirection } = useSort<Collection>(filteredCollections);
+
+  // Pagination hook
+  const {
+    currentData,
+    currentPage,
+    totalPages,
+    totalItems,
+    perPage,
+    goToPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePagination(sortedData, { initialPerPage: 10 });
 
   useEffect(() => {
     loadCollections();
@@ -141,12 +163,14 @@ export const CollectionListScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Collections</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddCollection}
-        >
-          <Text style={styles.addButtonText}>+ Add Collection</Text>
-        </TouchableOpacity>
+        {canCreate(user, 'collections') && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddCollection}
+          >
+            <Text style={styles.addButtonText}>+ Add Collection</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.searchContainer}>
@@ -158,8 +182,17 @@ export const CollectionListScreen: React.FC = () => {
         />
       </View>
 
+      {/* Sort Controls */}
+      <View style={styles.sortContainer}>
+        <SortButton 
+          label="Date" 
+          direction={getSortDirection('collection_date')}
+          onPress={() => requestSort('collection_date')} 
+        />
+      </View>
+
       <FlatList
-        data={filteredCollections}
+        data={currentData}
         renderItem={renderCollectionItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -171,6 +204,16 @@ export const CollectionListScreen: React.FC = () => {
             <Text style={styles.emptyText}>No collections found</Text>
           </View>
         }
+      />
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        perPage={perPage}
+        onPageChange={goToPage}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
       />
     </View>
   );
@@ -308,5 +351,15 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#999',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    justifyContent: 'flex-start',
+    gap: 8,
   },
 });

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { canView } from '../../core/utils/permissions';
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -36,46 +37,57 @@ export const HomeScreen: React.FC = () => {
 
       <ScrollView style={styles.content}>
         <View style={styles.menuGrid}>
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => navigateTo('SupplierList')}
-          >
-            <Text style={styles.menuIcon}>👥</Text>
-            <Text style={styles.menuText}>Suppliers</Text>
-          </TouchableOpacity>
+          {canView(user, 'suppliers') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('SupplierList')}
+            >
+              <Text style={styles.menuIcon}>👥</Text>
+              <Text style={styles.menuText}>Suppliers</Text>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => navigateTo('ProductList')}
-          >
-            <Text style={styles.menuIcon}>📦</Text>
-            <Text style={styles.menuText}>Products</Text>
-          </TouchableOpacity>
+          {canView(user, 'products') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('ProductList')}
+            >
+              <Text style={styles.menuIcon}>📦</Text>
+              <Text style={styles.menuText}>Products</Text>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => navigateTo('CollectionList')}
-          >
-            <Text style={styles.menuIcon}>📊</Text>
-            <Text style={styles.menuText}>Collections</Text>
-          </TouchableOpacity>
+          {canView(user, 'collections') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('CollectionList')}
+            >
+              <Text style={styles.menuIcon}>📊</Text>
+              <Text style={styles.menuText}>Collections</Text>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => navigateTo('PaymentList')}
-          >
-            <Text style={styles.menuIcon}>💰</Text>
-            <Text style={styles.menuText}>Payments</Text>
-          </TouchableOpacity>
+          {canView(user, 'payments') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('PaymentList')}
+            >
+              <Text style={styles.menuIcon}>💰</Text>
+              <Text style={styles.menuText}>Payments</Text>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => navigateTo('UserList')}
-          >
-            <Text style={styles.menuIcon}>👤</Text>
-            <Text style={styles.menuText}>Users</Text>
-          </TouchableOpacity>
+          {canView(user, 'users') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('UserList')}
+            >
+              <Text style={styles.menuIcon}>👤</Text>
+              <Text style={styles.menuText}>Users</Text>
+            </TouchableOpacity>
+          )}
 
+          {/* Reports available to all authenticated users */}
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuIcon}>📈</Text>
             <Text style={styles.menuText}>Reports</Text>

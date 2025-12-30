@@ -18,14 +18,36 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Product } from '../../domain/entities/Product';
+import { useAuth } from '../contexts/AuthContext';
+import { canCreate } from '../../core/utils/permissions';
+import { usePagination } from '../../core/hooks/usePagination';
+import { useSort } from '../../core/hooks/useSort';
+import { Pagination } from '../components/Pagination';
+import { SortButton } from '../components/SortButton';
 
 export const ProductListScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+
+  // Sorting hook
+  const { sortedData, requestSort, getSortDirection } = useSort<Product>(filteredProducts);
+
+  // Pagination hook
+  const {
+    currentData,
+    currentPage,
+    totalPages,
+    totalItems,
+    perPage,
+    goToPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePagination(sortedData, { initialPerPage: 10 });
 
   useEffect(() => {
     loadProducts();
@@ -138,12 +160,14 @@ export const ProductListScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Products</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddProduct}
-        >
-          <Text style={styles.addButtonText}>+ Add Product</Text>
-        </TouchableOpacity>
+        {canCreate(user, 'products') && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddProduct}
+          >
+            <Text style={styles.addButtonText}>+ Add Product</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.searchContainer}>
@@ -155,8 +179,22 @@ export const ProductListScreen: React.FC = () => {
         />
       </View>
 
+      {/* Sort Controls */}
+      <View style={styles.sortContainer}>
+        <SortButton 
+          label="Name" 
+          direction={getSortDirection('name')}
+          onPress={() => requestSort('name')} 
+        />
+        <SortButton 
+          label="Code" 
+          direction={getSortDirection('code')}
+          onPress={() => requestSort('code')} 
+        />
+      </View>
+
       <FlatList
-        data={filteredProducts}
+        data={currentData}
         renderItem={renderProductItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -168,6 +206,16 @@ export const ProductListScreen: React.FC = () => {
             <Text style={styles.emptyText}>No products found</Text>
           </View>
         }
+      />
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        perPage={perPage}
+        onPageChange={goToPage}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
       />
     </View>
   );
@@ -281,5 +329,15 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#999',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    justifyContent: 'flex-start',
+    gap: 8,
   },
 });

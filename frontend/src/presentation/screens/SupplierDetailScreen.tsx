@@ -17,10 +17,13 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Supplier } from '../../domain/entities/Supplier';
+import { useAuth } from '../contexts/AuthContext';
+import { canUpdate, canDelete } from '../../core/utils/permissions';
 
 export const SupplierDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { user } = useAuth();
   const supplierId = (route.params as any)?.supplierId;
 
   const [loading, setLoading] = useState(true);
@@ -130,12 +133,16 @@ export const SupplierDetailScreen: React.FC = () => {
       {/* Header with action buttons */}
       <View style={styles.header}>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </TouchableOpacity>
+          {canUpdate(user, 'suppliers') && (
+            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          )}
+          {canDelete(user, 'suppliers') && (
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 

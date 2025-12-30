@@ -18,14 +18,36 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Payment } from '../../domain/entities/Payment';
+import { useAuth } from '../contexts/AuthContext';
+import { canCreate } from '../../core/utils/permissions';
+import { usePagination } from '../../core/hooks/usePagination';
+import { useSort } from '../../core/hooks/useSort';
+import { Pagination } from '../components/Pagination';
+import { SortButton } from '../components/SortButton';
 
 export const PaymentListScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
+
+  // Sorting hook
+  const { sortedData, requestSort, getSortDirection } = useSort<Payment>(filteredPayments);
+
+  // Pagination hook
+  const {
+    currentData,
+    currentPage,
+    totalPages,
+    totalItems,
+    perPage,
+    goToPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePagination(sortedData, { initialPerPage: 10 });
 
   useEffect(() => {
     loadPayments();
@@ -159,12 +181,14 @@ export const PaymentListScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Payments</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddPayment}
-        >
-          <Text style={styles.addButtonText}>+ Add Payment</Text>
-        </TouchableOpacity>
+        {canCreate(user, 'payments') && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddPayment}
+          >
+            <Text style={styles.addButtonText}>+ Add Payment</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.searchContainer}>
@@ -176,8 +200,22 @@ export const PaymentListScreen: React.FC = () => {
         />
       </View>
 
+      {/* Sort Controls */}
+      <View style={styles.sortContainer}>
+        <SortButton 
+          label="Date" 
+          direction={getSortDirection('payment_date')}
+          onPress={() => requestSort('payment_date')} 
+        />
+        <SortButton 
+          label="Amount" 
+          direction={getSortDirection('amount')}
+          onPress={() => requestSort('amount')} 
+        />
+      </View>
+
       <FlatList
-        data={filteredPayments}
+        data={currentData}
         renderItem={renderPaymentItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -189,6 +227,16 @@ export const PaymentListScreen: React.FC = () => {
             <Text style={styles.emptyText}>No payments found</Text>
           </View>
         }
+      />
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        perPage={perPage}
+        onPageChange={goToPage}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
       />
     </View>
   );
@@ -319,5 +367,15 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#999',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    justifyContent: 'flex-start',
+    gap: 8,
   },
 });

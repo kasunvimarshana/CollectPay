@@ -16,10 +16,13 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Product, Rate } from '../../domain/entities/Product';
+import { useAuth } from '../contexts/AuthContext';
+import { canUpdate, canDelete } from '../../core/utils/permissions';
 
 export const ProductDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { user } = useAuth();
   const productId = (route.params as any)?.productId;
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -194,13 +197,17 @@ export const ProductDetailScreen: React.FC = () => {
       )}
 
       <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-          <Text style={styles.editButtonText}>Edit Product</Text>
-        </TouchableOpacity>
+        {canUpdate(user, 'products') && (
+          <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+            <Text style={styles.editButtonText}>Edit Product</Text>
+          </TouchableOpacity>
+        )}
 
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteButtonText}>Delete Product</Text>
-        </TouchableOpacity>
+        {canDelete(user, 'products') && (
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+            <Text style={styles.deleteButtonText}>Delete Product</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );

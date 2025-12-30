@@ -18,14 +18,36 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Supplier } from '../../domain/entities/Supplier';
+import { useAuth } from '../contexts/AuthContext';
+import { canCreate } from '../../core/utils/permissions';
+import { usePagination } from '../../core/hooks/usePagination';
+import { useSort } from '../../core/hooks/useSort';
+import { Pagination } from '../components/Pagination';
+import { SortButton } from '../components/SortButton';
 
 export const SupplierListScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
+
+  // Sorting hook
+  const { sortedData, requestSort, getSortDirection } = useSort<Supplier>(filteredSuppliers);
+
+  // Pagination hook
+  const {
+    currentData,
+    currentPage,
+    totalPages,
+    totalItems,
+    perPage,
+    goToPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePagination(sortedData, { initialPerPage: 10 });
 
   useEffect(() => {
     loadSuppliers();
@@ -127,12 +149,14 @@ export const SupplierListScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Suppliers</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddSupplier}
-        >
-          <Text style={styles.addButtonText}>+ Add Supplier</Text>
-        </TouchableOpacity>
+        {canCreate(user, 'suppliers') && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddSupplier}
+          >
+            <Text style={styles.addButtonText}>+ Add Supplier</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.searchContainer}>
@@ -144,8 +168,27 @@ export const SupplierListScreen: React.FC = () => {
         />
       </View>
 
+      {/* Sort Controls */}
+      <View style={styles.sortContainer}>
+        <SortButton 
+          label="Name" 
+          direction={getSortDirection('name')}
+          onPress={() => requestSort('name')} 
+        />
+        <SortButton 
+          label="Code" 
+          direction={getSortDirection('code')}
+          onPress={() => requestSort('code')} 
+        />
+        <SortButton 
+          label="Region" 
+          direction={getSortDirection('region')}
+          onPress={() => requestSort('region')} 
+        />
+      </View>
+
       <FlatList
-        data={filteredSuppliers}
+        data={currentData}
         renderItem={renderSupplierItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContainer}
@@ -160,6 +203,16 @@ export const SupplierListScreen: React.FC = () => {
             </Text>
           </View>
         }
+      />
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        perPage={perPage}
+        onPageChange={goToPage}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
       />
     </View>
   );
@@ -273,5 +326,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    justifyContent: 'flex-start',
+    gap: 8,
   },
 });
