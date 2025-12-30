@@ -57,9 +57,9 @@ export const SupplierFormScreen: React.FC = () => {
   const loadSupplier = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(`/suppliers/${supplierId}`);
-      if (response.data.success) {
-        const supplier = response.data.data;
+      const response = await apiClient.get<any>(`/suppliers/${supplierId}`);
+      if (response.success && response.data) {
+        const supplier = response.data;
         setFormData({
           name: supplier.name || '',
           code: supplier.code || '',

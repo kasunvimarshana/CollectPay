@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register model observers for version tracking
+        \App\Models\Supplier::observe(\App\Observers\SupplierObserver::class);
     }
 }

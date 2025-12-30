@@ -23,7 +23,7 @@ export const HomeScreen: React.FC = () => {
   };
 
   const navigateTo = (screen: string) => {
-    navigation.navigate(screen as never);
+    (navigation.navigate as any)(screen);
   };
 
   return (

@@ -44,7 +44,7 @@ export const CollectionDetailScreen: React.FC = () => {
   };
 
   const handleEdit = () => {
-    navigation.navigate('CollectionForm' as never, { collectionId } as never);
+    (navigation.navigate as any)('CollectionForm', { collectionId });
   };
 
   const handleDelete = () => {

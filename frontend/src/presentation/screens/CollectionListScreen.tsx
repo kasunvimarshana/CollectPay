@@ -38,11 +38,11 @@ export const CollectionListScreen: React.FC = () => {
   const loadCollections = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/collections');
-      if (response.data.success) {
-        const data = response.data.data.data || response.data.data;
-        setCollections(data);
-        setFilteredCollections(data);
+      const response = await apiClient.get<any>('/collections');
+      if (response.success && response.data) {
+        const collections = Array.isArray(response.data) ? response.data : (response.data?.data || response.data);
+        setCollections(collections || []);
+        setFilteredCollections(collections || []);
       }
     } catch (error) {
       console.error('Error loading collections:', error);
@@ -75,11 +75,11 @@ export const CollectionListScreen: React.FC = () => {
   };
 
   const handleCollectionPress = (collection: Collection) => {
-    navigation.navigate('CollectionDetail' as never, { collectionId: collection.id } as never);
+    (navigation.navigate as any)('CollectionDetail', { collectionId: collection.id });
   };
 
   const handleAddCollection = () => {
-    navigation.navigate('CollectionForm' as never);
+    (navigation.navigate as any)('CollectionForm');
   };
 
   const renderCollectionItem = ({ item }: { item: Collection }) => (

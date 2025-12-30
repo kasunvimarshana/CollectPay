@@ -40,16 +40,16 @@ export const SupplierDetailScreen: React.FC = () => {
       
       // Load supplier details and balance in parallel
       const [supplierResponse, balanceResponse] = await Promise.all([
-        apiClient.get(`/suppliers/${supplierId}`),
-        apiClient.get(`/suppliers/${supplierId}/balance`),
+        apiClient.get<any>(`/suppliers/${supplierId}`),
+        apiClient.get<any>(`/suppliers/${supplierId}/balance`),
       ]);
 
-      if (supplierResponse.data.success) {
-        setSupplier(supplierResponse.data.data);
+      if (supplierResponse.success && supplierResponse.data) {
+        setSupplier(supplierResponse.data);
       }
 
-      if (balanceResponse.data.success) {
-        setBalance(balanceResponse.data.data);
+      if (balanceResponse.success && balanceResponse.data) {
+        setBalance(balanceResponse.data);
       }
     } catch (error) {
       console.error('Error loading supplier data:', error);
@@ -66,7 +66,7 @@ export const SupplierDetailScreen: React.FC = () => {
   };
 
   const handleEdit = () => {
-    navigation.navigate('SupplierForm' as never, { supplierId } as never);
+    (navigation.navigate as any)('SupplierForm', { supplierId });
   };
 
   const handleDelete = () => {

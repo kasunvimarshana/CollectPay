@@ -38,11 +38,14 @@ export const PaymentListScreen: React.FC = () => {
   const loadPayments = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/payments');
-      if (response.data.success) {
-        const data = response.data.data.data || response.data.data;
-        setPayments(data);
-        setFilteredPayments(data);
+      const response = await apiClient.get<any>('/payments');
+      if (response.success && response.data) {
+        // Handle paginated response
+        const payments = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).data || response.data);
+        setPayments(payments);
+        setFilteredPayments(payments);
       }
     } catch (error) {
       console.error('Error loading payments:', error);
@@ -75,11 +78,11 @@ export const PaymentListScreen: React.FC = () => {
   };
 
   const handlePaymentPress = (payment: Payment) => {
-    navigation.navigate('PaymentDetail' as never, { paymentId: payment.id } as never);
+    (navigation.navigate as any)('PaymentDetail', { paymentId: payment.id });
   };
 
   const handleAddPayment = () => {
-    navigation.navigate('PaymentForm' as never);
+    (navigation.navigate as any)('PaymentForm');
   };
 
   const getTypeColor = (type: string) => {

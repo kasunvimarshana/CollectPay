@@ -33,9 +33,9 @@ export const ProductDetailScreen: React.FC = () => {
 
   const loadProduct = async () => {
     try {
-      const response = await apiClient.get(`/products/${productId}`);
-      if (response.data.success) {
-        setProduct(response.data.data);
+      const response = await apiClient.get<any>(`/products/${productId}`);
+      if (response.success && response.data) {
+        setProduct(response.data);
       }
     } catch (error) {
       console.error('Error loading product:', error);
@@ -47,9 +47,9 @@ export const ProductDetailScreen: React.FC = () => {
 
   const loadCurrentRate = async () => {
     try {
-      const response = await apiClient.get(`/products/${productId}/current-rate`);
-      if (response.data.success) {
-        setCurrentRate(response.data.data);
+      const response = await apiClient.get<any>(`/products/${productId}/current-rate`);
+      if (response.success && response.data) {
+        setCurrentRate(response.data);
       }
     } catch (error) {
       console.error('Error loading current rate:', error);
@@ -57,7 +57,7 @@ export const ProductDetailScreen: React.FC = () => {
   };
 
   const handleEdit = () => {
-    navigation.navigate('ProductForm' as never, { productId } as never);
+    (navigation.navigate as any)('ProductForm', { productId });
   };
 
   const handleDelete = () => {
@@ -89,7 +89,7 @@ export const ProductDetailScreen: React.FC = () => {
   const handleViewRateHistory = () => {
     // TODO: Implement rate history screen
     Alert.alert('Coming Soon', 'Rate history feature will be available soon');
-    // navigation.navigate('RateHistory' as never, { productId } as never);
+    // (navigation.navigate as any)('RateHistory', { productId });
   };
 
   if (loading) {

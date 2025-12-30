@@ -71,10 +71,13 @@ export const CollectionFormScreen: React.FC = () => {
 
   const loadSuppliers = async () => {
     try {
-      const response = await apiClient.get('/suppliers');
-      if (response.data.success) {
-        const data = response.data.data.data || response.data.data;
-        setSuppliers(data.filter((s: Supplier) => s.is_active));
+      const response = await apiClient.get<{data: Supplier[]}>('/suppliers');
+      if (response.success && response.data) {
+        // Handle paginated response: response.data might be {data: [], ...pagination}
+        const suppliers = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).data || response.data);
+        setSuppliers((suppliers as Supplier[]).filter((s: Supplier) => s.is_active));
       }
     } catch (error) {
       console.error('Error loading suppliers:', error);
@@ -83,10 +86,13 @@ export const CollectionFormScreen: React.FC = () => {
 
   const loadProducts = async () => {
     try {
-      const response = await apiClient.get('/products');
-      if (response.data.success) {
-        const data = response.data.data.data || response.data.data;
-        setProducts(data.filter((p: Product) => p.is_active));
+      const response = await apiClient.get<{data: Product[]}>('/products');
+      if (response.success && response.data) {
+        // Handle paginated response: response.data might be {data: [], ...pagination}
+        const products = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).data || response.data);
+        setProducts((products as Product[]).filter((p: Product) => p.is_active));
       }
     } catch (error) {
       console.error('Error loading products:', error);
@@ -96,9 +102,9 @@ export const CollectionFormScreen: React.FC = () => {
   const loadCollection = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(`/collections/${collectionId}`);
-      if (response.data.success) {
-        const collection = response.data.data;
+      const response = await apiClient.get<any>(`/collections/${collectionId}`);
+      if (response.success && response.data) {
+        const collection = response.data;
         setFormData({
           supplier_id: collection.supplier_id?.toString() || '',
           product_id: collection.product_id?.toString() || '',
@@ -119,9 +125,9 @@ export const CollectionFormScreen: React.FC = () => {
 
   const loadCurrentRate = async (productId: string) => {
     try {
-      const response = await apiClient.get(`/products/${productId}/current-rate`);
-      if (response.data.success) {
-        setCurrentRate(response.data.data);
+      const response = await apiClient.get<Rate>(`/products/${productId}/current-rate`);
+      if (response.success && response.data) {
+        setCurrentRate(response.data as Rate);
       } else {
         setCurrentRate(null);
         Alert.alert('Warning', 'No current rate found for this product');

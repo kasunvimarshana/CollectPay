@@ -44,7 +44,7 @@ export const PaymentDetailScreen: React.FC = () => {
   };
 
   const handleEdit = () => {
-    navigation.navigate('PaymentForm' as never, { paymentId } as never);
+    (navigation.navigate as any)('PaymentForm', { paymentId });
   };
 
   const handleDelete = () => {

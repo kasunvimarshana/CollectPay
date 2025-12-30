@@ -17,11 +17,13 @@ class Product extends Model
         'base_unit',
         'supported_units',
         'is_active',
+        'version',
     ];
 
     protected $casts = [
         'supported_units' => 'array',
         'is_active' => 'boolean',
+        'version' => 'integer',
     ];
 
     /**

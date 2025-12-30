@@ -68,10 +68,13 @@ export const PaymentFormScreen: React.FC = () => {
 
   const loadSuppliers = async () => {
     try {
-      const response = await apiClient.get('/suppliers');
-      if (response.data.success) {
-        const data = response.data.data.data || response.data.data;
-        setSuppliers(data.filter((s: Supplier) => s.is_active));
+      const response = await apiClient.get<any>('/suppliers');
+      if (response.success && response.data) {
+        // Handle paginated response
+        const suppliers = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).data || response.data);
+        setSuppliers(suppliers.filter((s: Supplier) => s.is_active));
       }
     } catch (error) {
       console.error('Error loading suppliers:', error);
@@ -81,9 +84,9 @@ export const PaymentFormScreen: React.FC = () => {
   const loadPayment = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(`/payments/${paymentId}`);
-      if (response.data.success) {
-        const payment = response.data.data;
+      const response = await apiClient.get<any>(`/payments/${paymentId}`);
+      if (response.success && response.data as any) {
+        const payment = response.data as any;
         setFormData({
           supplier_id: payment.supplier_id?.toString() || '',
           payment_date: payment.payment_date?.split('T')[0] || '',
@@ -105,9 +108,9 @@ export const PaymentFormScreen: React.FC = () => {
 
   const loadSupplierBalance = async (supplierId: string) => {
     try {
-      const response = await apiClient.get(`/suppliers/${supplierId}/balance`);
-      if (response.data.success) {
-        setSupplierBalance(response.data.data.balance);
+      const response = await apiClient.get<any>(`/suppliers/${supplierId}/balance`);
+      if (response.success && response.data) {
+        setSupplierBalance((response.data as any).balance);
       }
     } catch (error) {
       console.error('Error loading supplier balance:', error);

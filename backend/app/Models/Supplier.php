@@ -19,10 +19,12 @@ class Supplier extends Model
         'address',
         'region',
         'is_active',
+        'version',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'version' => 'integer',
     ];
 
     /**

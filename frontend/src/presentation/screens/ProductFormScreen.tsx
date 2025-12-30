@@ -53,9 +53,9 @@ export const ProductFormScreen: React.FC = () => {
   const loadProduct = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(`/products/${productId}`);
-      if (response.data.success) {
-        const product = response.data.data;
+      const response = await apiClient.get<any>(`/products/${productId}`);
+      if (response.success && response.data) {
+        const product = response.data;
         setFormData({
           name: product.name || '',
           code: product.code || '',

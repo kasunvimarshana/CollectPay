@@ -11,6 +11,8 @@ export interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   errors?: Record<string, string[]>;
+  conflict?: boolean;
+  serverData?: any;
 }
 
 class ApiClient {

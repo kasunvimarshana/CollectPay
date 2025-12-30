@@ -38,11 +38,14 @@ export const SupplierListScreen: React.FC = () => {
   const loadSuppliers = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/suppliers');
-      if (response.data.success) {
-        const data = response.data.data.data || response.data.data;
-        setSuppliers(data);
-        setFilteredSuppliers(data);
+      const response = await apiClient.get<any>('/suppliers');
+      if (response.success && response.data) {
+        // Handle paginated response
+        const suppliers = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).data || response.data);
+        setSuppliers(suppliers);
+        setFilteredSuppliers(suppliers);
       }
     } catch (error) {
       console.error('Error loading suppliers:', error);
@@ -75,11 +78,11 @@ export const SupplierListScreen: React.FC = () => {
   };
 
   const handleSupplierPress = (supplier: Supplier) => {
-    navigation.navigate('SupplierDetail' as never, { supplierId: supplier.id } as never);
+    (navigation.navigate as any)('SupplierDetail', { supplierId: supplier.id });
   };
 
   const handleAddSupplier = () => {
-    navigation.navigate('SupplierForm' as never);
+    (navigation.navigate as any)('SupplierForm');
   };
 
   const renderSupplierItem = ({ item }: { item: Supplier }) => (
