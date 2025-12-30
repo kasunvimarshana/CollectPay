@@ -20,8 +20,6 @@ import apiClient from '../../infrastructure/api/apiClient';
 import { Product } from '../../domain/entities/Product';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { usePagination } from '../../core/hooks/usePagination';
-import { useSort } from '../../core/hooks/useSort';
 import { Pagination } from '../components/Pagination';
 import { SortButton } from '../components/SortButton';
 
@@ -32,42 +30,51 @@ export const ProductListScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [perPage, setPerPage] = useState(10);
+  
+  // Server-side sorting state
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Sorting hook
-  const { sortedData, requestSort, getSortDirection } = useSort<Product>(filteredProducts);
-
-  // Pagination hook
-  const {
-    currentData,
-    currentPage,
-    totalPages,
-    totalItems,
-    perPage,
-    goToPage,
-    hasNextPage,
-    hasPreviousPage,
-  } = usePagination(sortedData, { initialPerPage: 10 });
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchQuery);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     loadProducts();
-  }, []);
-
-  useEffect(() => {
-    filterProducts();
-  }, [searchQuery, products]);
+  }, [currentPage, sortBy, sortOrder, searchTerm]);
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<any>('/products');
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        per_page: perPage.toString(),
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      });
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      const response = await apiClient.get<any>(`/products?${params.toString()}`);
       if (response.success && response.data) {
-        // Handle paginated response
-        const products = Array.isArray(response.data) 
-          ? response.data 
-          : ((response.data as any).data || response.data);
-        setProducts(products);
-        setFilteredProducts(products);
+        const paginatedData = response.data;
+        setProducts(paginatedData.data || []);
+        setTotalPages(paginatedData.last_page || 1);
+        setTotalItems(paginatedData.total || 0);
+        setCurrentPage(paginatedData.current_page || 1);
+        setPerPage(paginatedData.per_page || 10);
       }
     } catch (error) {
       console.error('Error loading products:', error);
@@ -83,20 +90,22 @@ export const ProductListScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const filterProducts = () => {
-    if (!searchQuery.trim()) {
-      setFilteredProducts(products);
-      return;
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
     }
+    setCurrentPage(1);
+  };
 
-    const query = searchQuery.toLowerCase();
-    const filtered = products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(query) ||
-        product.code?.toLowerCase().includes(query) ||
-        product.base_unit?.toLowerCase().includes(query)
-    );
-    setFilteredProducts(filtered);
+  const getSortDirection = (field: string): 'asc' | 'desc' | null => {
+    return sortBy === field ? sortOrder : null;
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   const handleProductPress = (product: Product) => {
@@ -184,17 +193,17 @@ export const ProductListScreen: React.FC = () => {
         <SortButton 
           label="Name" 
           direction={getSortDirection('name')}
-          onPress={() => requestSort('name')} 
+          onPress={() => handleSort('name')} 
         />
         <SortButton 
           label="Code" 
           direction={getSortDirection('code')}
-          onPress={() => requestSort('code')} 
+          onPress={() => handleSort('code')} 
         />
       </View>
 
       <FlatList
-        data={currentData}
+        data={products}
         renderItem={renderProductItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -213,9 +222,9 @@ export const ProductListScreen: React.FC = () => {
         totalPages={totalPages}
         totalItems={totalItems}
         perPage={perPage}
-        onPageChange={goToPage}
-        hasNextPage={hasNextPage}
-        hasPreviousPage={hasPreviousPage}
+        onPageChange={handlePageChange}
+        hasNextPage={currentPage < totalPages}
+        hasPreviousPage={currentPage > 1}
       />
     </View>
   );

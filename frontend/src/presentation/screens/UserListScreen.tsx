@@ -19,8 +19,6 @@ import apiClient from '../../infrastructure/api/apiClient';
 import { User } from '../../domain/entities/User';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { usePagination } from '../../core/hooks/usePagination';
-import { useSort } from '../../core/hooks/useSort';
 import { Pagination } from '../components/Pagination';
 import { SortButton } from '../components/SortButton';
 
@@ -30,20 +28,57 @@ export const UserListScreen: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchTerm, setSearchTerm] = useState(''); // Debounced search term
+  
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [perPage, setPerPage] = useState(10);
+  
+  // Server-side sorting state
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchQuery);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [currentPage, sortBy, sortOrder, searchTerm]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<any>('/users');
+      
+      // Build query parameters for server-side operations
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        per_page: perPage.toString(),
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      });
+      
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      
+      const response = await apiClient.get<any>(`/users?${params.toString()}`);
       if (response.success && response.data) {
-        const userData = Array.isArray(response.data) 
-          ? response.data 
-          : (response.data.data && Array.isArray(response.data.data) ? response.data.data : []);
-        setUsers(userData);
+        // Handle Laravel pagination response
+        const paginatedData = response.data;
+        setUsers(paginatedData.data || []);
+        setTotalPages(paginatedData.last_page || 1);
+        setTotalItems(paginatedData.total || 0);
+        setCurrentPage(paginatedData.current_page || 1);
+        setPerPage(paginatedData.per_page || 10);
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -53,25 +88,25 @@ export const UserListScreen: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      // Toggle sort order
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting changes
+  };
 
-  // Sorting hook
-  const { sortedData, requestSort, getSortDirection } = useSort<User>(filteredUsers);
+  const getSortDirection = (field: string): 'asc' | 'desc' | null => {
+    return sortBy === field ? sortOrder : null;
+  };
 
-  // Pagination hook
-  const {
-    currentData,
-    currentPage,
-    totalPages,
-    totalItems,
-    perPage,
-    goToPage,
-    hasNextPage,
-    hasPreviousPage,
-  } = usePagination(sortedData, { initialPerPage: 10 });
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const handleUserPress = (userId: number) => {
     (navigation.navigate as any)('UserDetail', { userId });
@@ -141,17 +176,17 @@ export const UserListScreen: React.FC = () => {
         <SortButton 
           label="Name" 
           direction={getSortDirection('name')}
-          onPress={() => requestSort('name')} 
+          onPress={() => handleSort('name')} 
         />
         <SortButton 
           label="Email" 
           direction={getSortDirection('email')}
-          onPress={() => requestSort('email')} 
+          onPress={() => handleSort('email')} 
         />
       </View>
 
       <FlatList
-        data={currentData}
+        data={users}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderUserItem}
         contentContainerStyle={styles.listContent}
@@ -167,9 +202,9 @@ export const UserListScreen: React.FC = () => {
         totalPages={totalPages}
         totalItems={totalItems}
         perPage={perPage}
-        onPageChange={goToPage}
-        hasNextPage={hasNextPage}
-        hasPreviousPage={hasPreviousPage}
+        onPageChange={handlePageChange}
+        hasNextPage={currentPage < totalPages}
+        hasPreviousPage={currentPage > 1}
       />
     </View>
   );

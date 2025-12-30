@@ -24,6 +24,9 @@ import { RateHistoryScreen } from '../screens/RateHistoryScreen';
 import { UserListScreen } from '../screens/UserListScreen';
 import { UserDetailScreen } from '../screens/UserDetailScreen';
 import { UserFormScreen } from '../screens/UserFormScreen';
+import { RoleListScreen } from '../screens/RoleListScreen';
+import { RoleDetailScreen } from '../screens/RoleDetailScreen';
+import { RoleFormScreen } from '../screens/RoleFormScreen';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -54,6 +57,11 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="UserList" component={UserListScreen} />
             <Stack.Screen name="UserDetail" component={UserDetailScreen} />
             <Stack.Screen name="UserForm" component={UserFormScreen} />
+            
+            {/* Role Screens */}
+            <Stack.Screen name="RoleList" component={RoleListScreen} />
+            <Stack.Screen name="RoleDetail" component={RoleDetailScreen} />
+            <Stack.Screen name="RoleForm" component={RoleFormScreen} />
             
             {/* Supplier Screens */}
             <Stack.Screen name="SupplierList" component={SupplierListScreen} />

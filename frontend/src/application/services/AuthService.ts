@@ -21,7 +21,7 @@ export interface RegisterData {
 
 export interface AuthResponse {
   user: User;
-  access_token: string;
+  token: string;
   token_type: string;
   expires_in: number;
 }
@@ -39,7 +39,7 @@ class AuthService {
 
       if (response.success && response.data) {
         // Store token and user data
-        await this.storeAuthData(response.data.access_token, response.data.user);
+        await this.storeAuthData(response.data.token, response.data.user);
         return response.data;
       }
 
@@ -61,7 +61,7 @@ class AuthService {
 
       if (response.success && response.data) {
         // Store token and user data
-        await this.storeAuthData(response.data.access_token, response.data.user);
+        await this.storeAuthData(response.data.token, response.data.user);
         return response.data;
       }
 

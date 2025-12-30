@@ -87,6 +87,16 @@ export const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           )}
 
+          {canView(user, 'roles') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('RoleList')}
+            >
+              <Text style={styles.menuIcon}>🔐</Text>
+              <Text style={styles.menuText}>Roles</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Reports available to all authenticated users */}
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuIcon}>📈</Text>

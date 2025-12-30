@@ -20,8 +20,6 @@ import apiClient from '../../infrastructure/api/apiClient';
 import { Collection } from '../../domain/entities/Collection';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { usePagination } from '../../core/hooks/usePagination';
-import { useSort } from '../../core/hooks/useSort';
 import { Pagination } from '../components/Pagination';
 import { SortButton } from '../components/SortButton';
 
@@ -32,39 +30,51 @@ export const CollectionListScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredCollections, setFilteredCollections] = useState<Collection[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [perPage, setPerPage] = useState(10);
+  
+  // Server-side sorting state
+  const [sortBy, setSortBy] = useState<string>('collection_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Sorting hook
-  const { sortedData, requestSort, getSortDirection } = useSort<Collection>(filteredCollections);
-
-  // Pagination hook
-  const {
-    currentData,
-    currentPage,
-    totalPages,
-    totalItems,
-    perPage,
-    goToPage,
-    hasNextPage,
-    hasPreviousPage,
-  } = usePagination(sortedData, { initialPerPage: 10 });
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchQuery);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     loadCollections();
-  }, []);
-
-  useEffect(() => {
-    filterCollections();
-  }, [searchQuery, collections]);
+  }, [currentPage, sortBy, sortOrder, searchTerm]);
 
   const loadCollections = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<any>('/collections');
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        per_page: perPage.toString(),
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      });
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      const response = await apiClient.get<any>(`/collections?${params.toString()}`);
       if (response.success && response.data) {
-        const collections = Array.isArray(response.data) ? response.data : (response.data?.data || response.data);
-        setCollections(collections || []);
-        setFilteredCollections(collections || []);
+        const paginatedData = response.data;
+        setCollections(paginatedData.data || []);
+        setTotalPages(paginatedData.last_page || 1);
+        setTotalItems(paginatedData.total || 0);
+        setCurrentPage(paginatedData.current_page || 1);
+        setPerPage(paginatedData.per_page || 10);
       }
     } catch (error) {
       console.error('Error loading collections:', error);
@@ -80,20 +90,22 @@ export const CollectionListScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const filterCollections = () => {
-    if (!searchQuery.trim()) {
-      setFilteredCollections(collections);
-      return;
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
     }
+    setCurrentPage(1);
+  };
 
-    const query = searchQuery.toLowerCase();
-    const filtered = collections.filter(
-      (collection) =>
-        collection.supplier?.name?.toLowerCase().includes(query) ||
-        collection.product?.name?.toLowerCase().includes(query) ||
-        collection.collection_date?.toLowerCase().includes(query)
-    );
-    setFilteredCollections(filtered);
+  const getSortDirection = (field: string): 'asc' | 'desc' | null => {
+    return sortBy === field ? sortOrder : null;
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   const handleCollectionPress = (collection: Collection) => {
@@ -187,12 +199,12 @@ export const CollectionListScreen: React.FC = () => {
         <SortButton 
           label="Date" 
           direction={getSortDirection('collection_date')}
-          onPress={() => requestSort('collection_date')} 
+          onPress={() => handleSort('collection_date')} 
         />
       </View>
 
       <FlatList
-        data={currentData}
+        data={collections}
         renderItem={renderCollectionItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -211,9 +223,9 @@ export const CollectionListScreen: React.FC = () => {
         totalPages={totalPages}
         totalItems={totalItems}
         perPage={perPage}
-        onPageChange={goToPage}
-        hasNextPage={hasNextPage}
-        hasPreviousPage={hasPreviousPage}
+        onPageChange={handlePageChange}
+        hasNextPage={currentPage < totalPages}
+        hasPreviousPage={currentPage > 1}
       />
     </View>
   );

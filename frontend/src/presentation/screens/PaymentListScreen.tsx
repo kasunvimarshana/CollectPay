@@ -20,8 +20,6 @@ import apiClient from '../../infrastructure/api/apiClient';
 import { Payment } from '../../domain/entities/Payment';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { usePagination } from '../../core/hooks/usePagination';
-import { useSort } from '../../core/hooks/useSort';
 import { Pagination } from '../components/Pagination';
 import { SortButton } from '../components/SortButton';
 
@@ -32,42 +30,51 @@ export const PaymentListScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [perPage, setPerPage] = useState(10);
+  
+  // Server-side sorting state
+  const [sortBy, setSortBy] = useState<string>('payment_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Sorting hook
-  const { sortedData, requestSort, getSortDirection } = useSort<Payment>(filteredPayments);
-
-  // Pagination hook
-  const {
-    currentData,
-    currentPage,
-    totalPages,
-    totalItems,
-    perPage,
-    goToPage,
-    hasNextPage,
-    hasPreviousPage,
-  } = usePagination(sortedData, { initialPerPage: 10 });
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchQuery);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     loadPayments();
-  }, []);
-
-  useEffect(() => {
-    filterPayments();
-  }, [searchQuery, payments]);
+  }, [currentPage, sortBy, sortOrder, searchTerm]);
 
   const loadPayments = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<any>('/payments');
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        per_page: perPage.toString(),
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      });
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      const response = await apiClient.get<any>(`/payments?${params.toString()}`);
       if (response.success && response.data) {
-        // Handle paginated response
-        const payments = Array.isArray(response.data) 
-          ? response.data 
-          : ((response.data as any).data || response.data);
-        setPayments(payments);
-        setFilteredPayments(payments);
+        const paginatedData = response.data;
+        setPayments(paginatedData.data || []);
+        setTotalPages(paginatedData.last_page || 1);
+        setTotalItems(paginatedData.total || 0);
+        setCurrentPage(paginatedData.current_page || 1);
+        setPerPage(paginatedData.per_page || 10);
       }
     } catch (error) {
       console.error('Error loading payments:', error);
@@ -83,20 +90,22 @@ export const PaymentListScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const filterPayments = () => {
-    if (!searchQuery.trim()) {
-      setFilteredPayments(payments);
-      return;
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
     }
+    setCurrentPage(1);
+  };
 
-    const query = searchQuery.toLowerCase();
-    const filtered = payments.filter(
-      (payment) =>
-        payment.supplier?.name?.toLowerCase().includes(query) ||
-        payment.type?.toLowerCase().includes(query) ||
-        payment.reference_number?.toLowerCase().includes(query)
-    );
-    setFilteredPayments(filtered);
+  const getSortDirection = (field: string): 'asc' | 'desc' | null => {
+    return sortBy === field ? sortOrder : null;
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   const handlePaymentPress = (payment: Payment) => {
@@ -205,17 +214,17 @@ export const PaymentListScreen: React.FC = () => {
         <SortButton 
           label="Date" 
           direction={getSortDirection('payment_date')}
-          onPress={() => requestSort('payment_date')} 
+          onPress={() => handleSort('payment_date')} 
         />
         <SortButton 
           label="Amount" 
           direction={getSortDirection('amount')}
-          onPress={() => requestSort('amount')} 
+          onPress={() => handleSort('amount')} 
         />
       </View>
 
       <FlatList
-        data={currentData}
+        data={payments}
         renderItem={renderPaymentItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -234,9 +243,9 @@ export const PaymentListScreen: React.FC = () => {
         totalPages={totalPages}
         totalItems={totalItems}
         perPage={perPage}
-        onPageChange={goToPage}
-        hasNextPage={hasNextPage}
-        hasPreviousPage={hasPreviousPage}
+        onPageChange={handlePageChange}
+        hasNextPage={currentPage < totalPages}
+        hasPreviousPage={currentPage > 1}
       />
     </View>
   );
