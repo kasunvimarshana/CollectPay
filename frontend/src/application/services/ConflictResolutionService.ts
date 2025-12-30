@@ -111,6 +111,13 @@ class ConflictResolutionService {
         if (!data.name) errors.push('Missing product name');
         if (!data.base_unit) errors.push('Missing base unit');
         break;
+
+      case 'rate':
+        if (!data.product_id) errors.push('Missing product_id');
+        if (!data.rate || data.rate <= 0) errors.push('Invalid rate');
+        if (!data.unit) errors.push('Missing unit');
+        if (!data.effective_from) errors.push('Missing effective_from date');
+        break;
     }
 
     return {

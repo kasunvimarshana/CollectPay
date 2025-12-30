@@ -33,11 +33,19 @@ Route::middleware(['auth:api', 'audit'])->group(function () {
     Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->middleware('check.version');
     Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy']);
     
-    // Products
-    Route::apiResource('products', ProductController::class);
+    // Products with version conflict checking
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
+    Route::put('/products/{product}', [ProductController::class, 'update'])->middleware('check.version');
+    Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     
-    // Rates
-    Route::apiResource('rates', RateController::class);
+    // Rates with version conflict checking
+    Route::get('/rates', [RateController::class, 'index']);
+    Route::post('/rates', [RateController::class, 'store']);
+    Route::get('/rates/{rate}', [RateController::class, 'show']);
+    Route::put('/rates/{rate}', [RateController::class, 'update'])->middleware('check.version');
+    Route::delete('/rates/{rate}', [RateController::class, 'destroy']);
     
     // Collections with version conflict checking
     Route::get('/collections', [CollectionController::class, 'index']);

@@ -162,6 +162,9 @@ class SyncService {
       case 'product':
         await LocalStorageService.cacheProducts([data]);
         break;
+      case 'rate':
+        await LocalStorageService.cacheRates([data]);
+        break;
       // Add other entities as needed
     }
   }
@@ -175,6 +178,8 @@ class SyncService {
         return API_ENDPOINTS.SUPPLIERS;
       case 'product':
         return API_ENDPOINTS.PRODUCTS;
+      case 'rate':
+        return API_ENDPOINTS.RATES;
       case 'collection':
         return API_ENDPOINTS.COLLECTIONS;
       case 'payment':
@@ -227,6 +232,27 @@ class SyncService {
   }
 
   /**
+   * Fetch and cache rates
+   */
+  async fetchAndCacheRates(): Promise<void> {
+    try {
+      const response = await apiClient.get<any>(API_ENDPOINTS.RATES);
+      if (response.success && response.data) {
+        const rates = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).data && Array.isArray((response.data as any).data) ? (response.data as any).data : []);
+        
+        if (rates.length > 0) {
+          await LocalStorageService.cacheRates(rates);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching rates:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Full sync - sync pending changes and fetch latest data
    */
   async fullSync(): Promise<{ success: boolean; message: string }> {
@@ -237,6 +263,7 @@ class SyncService {
       // Fetch and cache latest data
       await this.fetchAndCacheSuppliers();
       await this.fetchAndCacheProducts();
+      await this.fetchAndCacheRates();
 
       return {
         success: true,
