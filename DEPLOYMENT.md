@@ -1,123 +1,203 @@
-# TrackVault - Deployment Guide
+# TrackVault Deployment Guide
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Backend Deployment](#backend-deployment)
+3. [Frontend Deployment](#frontend-deployment)
+4. [Production Configuration](#production-configuration)
+5. [Security Checklist](#security-checklist)
+6. [Monitoring & Maintenance](#monitoring--maintenance)
 
 ## Prerequisites
 
 ### Backend Requirements
-- **Server**: Linux (Ubuntu 20.04+ recommended)
-- **PHP**: 8.2 or higher with extensions:
-  - pdo_mysql
-  - openssl
-  - json
-  - mbstring
-- **Database**: MySQL 5.7+ or PostgreSQL 12+
-- **Web Server**: Apache or Nginx
-- **Composer**: Latest version
+- PHP 8.1 or higher
+- Composer 2.x
+- MySQL 8.0+ or PostgreSQL 13+
+- Web server (Apache/Nginx)
+- SSL certificate
+- Redis (optional, for caching and queues)
 
 ### Frontend Requirements
-- **Node.js**: 18+ LTS
-- **npm or yarn**: Latest version
-- **Expo CLI**: For building mobile apps
+- Node.js 18+ and npm/yarn
+- Expo CLI
+- EAS CLI (for building)
+- Apple Developer Account (for iOS)
+- Google Play Console Account (for Android)
 
 ## Backend Deployment
 
-### 1. Server Setup
+### Step 1: Server Setup
+
+#### For Ubuntu/Debian Server
 
 ```bash
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install PHP 8.2
-sudo apt install -y php8.2 php8.2-cli php8.2-fpm php8.2-mysql php8.2-mbstring php8.2-xml php8.2-curl
-
-# Install MySQL
-sudo apt install -y mysql-server
+# Install PHP and extensions
+sudo apt install -y php8.1 php8.1-fpm php8.1-cli php8.1-mysql php8.1-pgsql \
+  php8.1-mbstring php8.1-xml php8.1-curl php8.1-zip php8.1-bcmath \
+  php8.1-gd php8.1-intl php8.1-redis
 
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
+
+# Install MySQL
+sudo apt install -y mysql-server
+
+# Or install PostgreSQL
+sudo apt install -y postgresql postgresql-contrib
+
+# Install Nginx
+sudo apt install -y nginx
+
+# Install Certbot for SSL
+sudo apt install -y certbot python3-certbot-nginx
 ```
 
-### 2. Database Setup
-
-```bash
-# Login to MySQL
-sudo mysql -u root
-
-# Create database and user
-CREATE DATABASE trackvault CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'trackvault'@'localhost' IDENTIFIED BY 'your-secure-password';
-GRANT ALL PRIVILEGES ON trackvault.* TO 'trackvault'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-
-# Run migrations
-mysql -u trackvault -p trackvault < backend/database/migrations/001_create_tables.sql
-```
-
-### 3. Application Setup
+### Step 2: Deploy Laravel Application
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/TrackVault.git
+cd /var/www
+sudo git clone https://github.com/yourusername/TrackVault.git
 cd TrackVault/backend
 
 # Install dependencies
 composer install --no-dev --optimize-autoloader
 
-# Configure environment
+# Set permissions
+sudo chown -R www-data:www-data /var/www/TrackVault/backend
+sudo chmod -R 755 /var/www/TrackVault/backend
+sudo chmod -R 775 /var/www/TrackVault/backend/storage
+sudo chmod -R 775 /var/www/TrackVault/backend/bootstrap/cache
+
+# Create .env file
 cp .env.example .env
-nano .env  # Edit with your settings
+nano .env  # Edit configuration
 ```
 
-### 4. Environment Configuration
+### Step 3: Configure Environment
 
-Edit `backend/.env`:
+Edit `/var/www/TrackVault/backend/.env`:
 
-```ini
-# Application
+```env
+APP_NAME=TrackVault
 APP_ENV=production
+APP_KEY=
 APP_DEBUG=false
+APP_URL=https://api.yourdomain.com
 
-# Database
-DB_HOST=localhost
+LOG_CHANNEL=daily
+LOG_LEVEL=error
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_NAME=trackvault
-DB_USER=trackvault
-DB_PASSWORD=your-secure-password
+DB_DATABASE=trackvault_prod
+DB_USERNAME=trackvault_user
+DB_PASSWORD=strong_password_here
 
-# Security (Generate secure random strings!)
-JWT_SECRET=your-secure-jwt-secret-min-32-chars
-ENCRYPTION_KEY=your-secure-encryption-key-exactly-32-chars
+BROADCAST_DRIVER=log
+CACHE_DRIVER=redis
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+SESSION_LIFETIME=120
 
-# CORS
-CORS_ALLOWED_ORIGINS=https://yourdomain.com
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
 
-# Logging
-LOG_LEVEL=info
+JWT_SECRET=
+JWT_TTL=60
+JWT_REFRESH_TTL=20160
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="noreply@yourdomain.com"
+MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-### 5. Web Server Configuration
+### Step 4: Generate Keys and Run Migrations
 
-#### Nginx Configuration
+```bash
+# Generate application key
+php artisan key:generate
+
+# Generate JWT secret
+php artisan jwt:secret
+
+# Run migrations
+php artisan migrate --force
+
+# Clear and cache config
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Seed initial data (optional)
+php artisan db:seed --force
+```
+
+### Step 5: Configure Nginx
 
 Create `/etc/nginx/sites-available/trackvault`:
 
 ```nginx
 server {
     listen 80;
+    listen [::]:80;
     server_name api.yourdomain.com;
-    root /var/www/TrackVault/backend/public;
+    
+    # Redirect to HTTPS
+    return 301 https://$server_name$request_uri;
+}
 
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.yourdomain.com;
+    
+    root /var/www/TrackVault/backend/public;
     index index.php;
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Security Headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+
+    # Logging
+    access_log /var/log/nginx/trackvault-access.log;
+    error_log /var/log/nginx/trackvault-error.log;
+
+    # Client upload size
+    client_max_body_size 20M;
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
     location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
     }
 
@@ -127,212 +207,400 @@ server {
 }
 ```
 
-Enable site:
+Enable site and restart Nginx:
+
 ```bash
 sudo ln -s /etc/nginx/sites-available/trackvault /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-### 6. SSL Certificate (Let's Encrypt)
+### Step 6: Set Up SSL Certificate
 
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
+# Obtain SSL certificate
 sudo certbot --nginx -d api.yourdomain.com
+
+# Auto-renewal is set up automatically
+# Test renewal
+sudo certbot renew --dry-run
 ```
 
-### 7. Permissions
+### Step 7: Configure Cron Jobs
 
 ```bash
-cd /var/www/TrackVault/backend
-sudo chown -R www-data:www-data storage
-sudo chmod -R 775 storage
+# Edit crontab
+sudo crontab -e -u www-data
+
+# Add Laravel scheduler
+* * * * * cd /var/www/TrackVault/backend && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### Step 8: Set Up Queue Worker (Optional)
+
+Create systemd service `/etc/systemd/system/trackvault-worker.service`:
+
+```ini
+[Unit]
+Description=TrackVault Queue Worker
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+Restart=always
+RestartSec=5s
+ExecStart=/usr/bin/php /var/www/TrackVault/backend/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start service:
+
+```bash
+sudo systemctl enable trackvault-worker
+sudo systemctl start trackvault-worker
+sudo systemctl status trackvault-worker
 ```
 
 ## Frontend Deployment
 
-### 1. Build for Production
+### Method 1: Expo EAS Build (Recommended)
+
+#### Step 1: Install EAS CLI
+
+```bash
+npm install -g eas-cli
+```
+
+#### Step 2: Login to Expo
+
+```bash
+eas login
+```
+
+#### Step 3: Configure EAS
+
+```bash
+cd frontend
+eas build:configure
+```
+
+This creates `eas.json`:
+
+```json
+{
+  "cli": {
+    "version": ">= 5.9.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+```
+
+#### Step 4: Update app.json
+
+```json
+{
+  "expo": {
+    "name": "TrackVault",
+    "slug": "trackvault",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourdomain.trackvault"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.yourdomain.trackvault"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
+```
+
+#### Step 5: Build for Android
+
+```bash
+# Production build
+eas build --platform android --profile production
+
+# Preview build (APK)
+eas build --platform android --profile preview
+```
+
+#### Step 6: Build for iOS
+
+```bash
+eas build --platform ios --profile production
+```
+
+#### Step 7: Submit to App Stores
+
+```bash
+# Submit to Google Play
+eas submit --platform android
+
+# Submit to App Store
+eas submit --platform ios
+```
+
+### Method 2: Local Build
+
+#### Android
 
 ```bash
 cd frontend
 
-# Install dependencies
-npm install
+# Build APK
+expo build:android -t apk
 
-# Configure production API endpoint
-echo "API_BASE_URL=https://api.yourdomain.com/api" > .env
+# Build AAB (for Play Store)
+expo build:android -t app-bundle
+```
 
-# Build for iOS
+#### iOS
+
+```bash
+cd frontend
+
+# Build IPA
 expo build:ios
-
-# Build for Android
-expo build:android
 ```
 
-### 2. App Store Deployment
+## Production Configuration
 
-#### iOS (Apple App Store)
-1. Create App Store Connect account
-2. Create app in App Store Connect
-3. Upload IPA file using Transporter or Xcode
-4. Submit for review
+### Backend Optimizations
 
-#### Android (Google Play Store)
-1. Create Google Play Console account
-2. Create new application
-3. Upload APK/AAB file
-4. Submit for review
+1. **Enable OPcache**
 
-## Security Hardening
+Edit `/etc/php/8.1/fpm/php.ini`:
 
-### 1. Generate Secure Keys
-
-```bash
-# Generate JWT Secret (32+ characters)
-openssl rand -base64 32
-
-# Generate Encryption Key (exactly 32 characters)
-openssl rand -hex 16
+```ini
+opcache.enable=1
+opcache.memory_consumption=256
+opcache.interned_strings_buffer=16
+opcache.max_accelerated_files=20000
+opcache.revalidate_freq=60
+opcache.fast_shutdown=1
 ```
 
-### 2. Firewall Configuration
+2. **Optimize PHP-FPM**
 
-```bash
-# Allow SSH, HTTP, HTTPS
-sudo ufw allow ssh
-sudo ufw allow http
-sudo ufw allow https
-sudo ufw enable
+Edit `/etc/php/8.1/fpm/pool.d/www.conf`:
+
+```ini
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 10
+pm.min_spare_servers = 5
+pm.max_spare_servers = 20
+pm.max_requests = 500
 ```
 
-### 3. Database Security
+3. **Enable Redis Caching**
 
 ```bash
-# Run MySQL secure installation
-sudo mysql_secure_installation
+sudo apt install redis-server
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
 ```
 
-### 4. Regular Updates
+### Frontend Environment Variables
 
-```bash
-# Create update script
-cat > /usr/local/bin/update-trackvault.sh << 'EOF'
-#!/bin/bash
-cd /var/www/TrackVault
-git pull
-cd backend
-composer install --no-dev --optimize-autoloader
-sudo systemctl restart php8.2-fpm
-sudo systemctl restart nginx
-EOF
+Create `.env.production`:
 
-chmod +x /usr/local/bin/update-trackvault.sh
+```env
+EXPO_PUBLIC_API_URL=https://api.yourdomain.com/api
 ```
 
-## Monitoring
+## Security Checklist
 
-### 1. Application Logs
+### Backend Security
+
+- [ ] Set `APP_DEBUG=false` in production
+- [ ] Use strong database passwords
+- [ ] Enable HTTPS/SSL
+- [ ] Set up firewall (UFW/iptables)
+- [ ] Configure CORS properly
+- [ ] Enable rate limiting
+- [ ] Set up fail2ban
+- [ ] Regular security updates
+- [ ] Backup database regularly
+- [ ] Use environment-specific JWT secrets
+- [ ] Disable unnecessary PHP modules
+- [ ] Set proper file permissions
+
+### Frontend Security
+
+- [ ] Use HTTPS for API calls
+- [ ] Secure token storage
+- [ ] Implement certificate pinning
+- [ ] Code obfuscation
+- [ ] Enable ProGuard (Android)
+- [ ] App Transport Security (iOS)
+- [ ] Regular dependency updates
+
+## Monitoring & Maintenance
+
+### Backend Monitoring
+
+1. **Set up Log Monitoring**
 
 ```bash
-# View backend logs
-tail -f /var/www/TrackVault/backend/storage/logs/*.log
+# View Laravel logs
+tail -f /var/www/TrackVault/backend/storage/logs/laravel.log
 
 # View Nginx logs
-tail -f /var/log/nginx/error.log
-tail -f /var/log/nginx/access.log
-
-# View PHP-FPM logs
-tail -f /var/log/php8.2-fpm.log
+tail -f /var/log/nginx/trackvault-error.log
 ```
 
-### 2. Database Backups
+2. **Database Backups**
 
 ```bash
 # Create backup script
-cat > /usr/local/bin/backup-trackvault.sh << 'EOF'
-#!/bin/bash
-BACKUP_DIR="/var/backups/trackvault"
-DATE=$(date +%Y%m%d_%H%M%S)
-mkdir -p $BACKUP_DIR
-mysqldump -u trackvault -p trackvault > $BACKUP_DIR/trackvault_$DATE.sql
-gzip $BACKUP_DIR/trackvault_$DATE.sql
-# Keep only last 30 days
-find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
-EOF
-
-chmod +x /usr/local/bin/backup-trackvault.sh
-
-# Add to cron (daily at 2 AM)
-crontab -e
-# Add: 0 2 * * * /usr/local/bin/backup-trackvault.sh
+sudo nano /usr/local/bin/backup-trackvault.sh
 ```
 
-### 3. Performance Monitoring
+```bash
+#!/bin/bash
+BACKUP_DIR="/backups/trackvault"
+DATE=$(date +%Y%m%d_%H%M%S)
+mkdir -p $BACKUP_DIR
 
-Consider using:
-- New Relic
-- Datadog
-- Sentry for error tracking
+# Database backup
+mysqldump -u trackvault_user -p trackvault_prod > $BACKUP_DIR/db_backup_$DATE.sql
 
-## Scaling
+# Compress
+gzip $BACKUP_DIR/db_backup_$DATE.sql
 
-### Horizontal Scaling
+# Keep only last 7 days
+find $BACKUP_DIR -name "db_backup_*.sql.gz" -mtime +7 -delete
+```
 
-1. **Load Balancer**: Use Nginx or HAProxy
-2. **Database Replication**: MySQL master-slave setup
-3. **Session Storage**: Use Redis for shared sessions
-4. **File Storage**: Use S3 or similar for file uploads
+```bash
+sudo chmod +x /usr/local/bin/backup-trackvault.sh
 
-### Vertical Scaling
+# Add to crontab
+sudo crontab -e
+0 2 * * * /usr/local/bin/backup-trackvault.sh
+```
 
-Increase server resources as needed:
-- CPU: 2-4 cores minimum
-- RAM: 4-8 GB minimum
-- Storage: SSD recommended
+3. **Health Checks**
+
+```bash
+# Create health check endpoint
+# Already available at /api/health (if implemented)
+
+# Monitor with cron
+*/5 * * * * curl -f https://api.yourdomain.com/api/health || echo "API Down!"
+```
+
+### Frontend Monitoring
+
+1. **Expo Analytics**
+2. **Sentry for error tracking**
+3. **App store reviews monitoring**
+4. **Crash analytics**
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Permission Errors**
-   ```bash
-   sudo chown -R www-data:www-data /var/www/TrackVault/backend/storage
-   ```
+1. **Permission denied errors**
+```bash
+sudo chown -R www-data:www-data /var/www/TrackVault/backend
+sudo chmod -R 775 storage bootstrap/cache
+```
 
-2. **Database Connection Issues**
-   - Check credentials in `.env`
-   - Verify MySQL is running: `sudo systemctl status mysql`
+2. **502 Bad Gateway**
+```bash
+sudo systemctl restart php8.1-fpm
+sudo systemctl restart nginx
+```
 
-3. **PHP Extension Missing**
-   ```bash
-   sudo apt install php8.2-{extension-name}
-   sudo systemctl restart php8.2-fpm
-   ```
+3. **Database connection issues**
+- Check database credentials in `.env`
+- Verify database server is running
+- Check firewall rules
 
-## Rollback Procedure
+4. **JWT token issues**
+- Regenerate JWT secret
+- Clear config cache
+- Check token expiration settings
+
+## Updates
+
+### Backend Updates
 
 ```bash
-# Rollback to previous version
-cd /var/www/TrackVault
-git log --oneline  # Find previous commit
-git checkout {commit-hash}
-cd backend
-composer install --no-dev
-sudo systemctl restart php8.2-fpm
+cd /var/www/TrackVault/backend
+git pull origin main
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+sudo systemctl restart php8.1-fpm
+```
+
+### Frontend Updates
+
+```bash
+cd frontend
+git pull origin main
+npm install
+eas build --platform all --profile production
 ```
 
 ## Support
 
-For production support issues:
-1. Check application logs
-2. Check audit logs in database
-3. Review error messages
-4. Contact development team
+For issues and questions:
+- GitHub Issues: https://github.com/yourusername/TrackVault/issues
+- Email: support@yourdomain.com
+- Documentation: https://docs.yourdomain.com
 
-## Maintenance Schedule
+---
 
-Recommended maintenance windows:
-- **Weekly**: Log review and cleanup
-- **Monthly**: Security updates
-- **Quarterly**: Performance optimization
-- **Annually**: Security audit
+**Note**: Replace `yourdomain.com`, `yourusername`, and other placeholders with actual values.

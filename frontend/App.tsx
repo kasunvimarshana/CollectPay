@@ -1,13 +1,17 @@
 import React from 'react';
-import { StatusBar } from 'react-native';
-import { AuthProvider } from './src/application/state/AuthContext';
-import { AppNavigator } from './src/presentation/navigation/AppNavigator';
+import { StatusBar } from 'expo-status-bar';
+import { AuthProvider } from './src/application/store/AuthContext';
+import { SyncProvider } from './src/application/store/SyncContext';
+import AppNavigator from './src/presentation/navigation/AppNavigator';
 
 export default function App() {
   return (
     <AuthProvider>
-      <StatusBar barStyle="light-content" />
-      <AppNavigator />
+      <SyncProvider>
+        <AppNavigator />
+        <StatusBar style="auto" />
+      </SyncProvider>
     </AuthProvider>
   );
 }
+

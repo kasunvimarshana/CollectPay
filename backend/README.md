@@ -1,149 +1,59 @@
-# TrackVault Backend API
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-Production-ready backend API for the TrackVault Data Collection and Payment Management System.
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-## Architecture
+## About Laravel
 
-This backend follows **Clean Architecture** principles with clear separation of concerns:
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-```
-backend/
-├── src/
-│   ├── Domain/           # Business logic and entities
-│   │   ├── Entities/     # Core business entities
-│   │   ├── ValueObjects/ # Immutable value objects
-│   │   ├── Repositories/ # Repository interfaces
-│   │   └── Services/     # Domain services
-│   ├── Application/      # Use cases and DTOs
-│   ├── Infrastructure/   # External concerns (DB, security, etc.)
-│   └── Presentation/     # API controllers and routes
-├── config/               # Configuration files
-├── database/             # Database migrations
-├── public/               # Web-accessible entry point
-└── tests/                # Unit and integration tests
-```
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-## Features
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-- **CRUD Operations**: Full support for Users, Suppliers, Products, Collections, and Payments
-- **Multi-Unit Support**: Track quantities in multiple units (kg, g, liters, etc.)
-- **Versioned Rates**: Historical rate management with automatic application
-- **Payment Calculations**: Automated payment calculations based on collections and prior payments
-- **RBAC/ABAC**: Role-based and attribute-based access control
-- **Data Integrity**: Transactional operations with version control
-- **Audit Logging**: Complete audit trail for all operations
-- **Security**: Encrypted data at rest and in transit
+## Learning Laravel
 
-## Requirements
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
 
-- PHP 8.2 or higher
-- MySQL 5.7+ or PostgreSQL 12+
-- Composer (for dependency management)
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-## Installation
+## Laravel Sponsors
 
-1. **Clone the repository**:
-   ```bash
-   cd backend
-   ```
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-2. **Install dependencies**:
-   ```bash
-   composer install
-   ```
+### Premium Partners
 
-3. **Configure environment**:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your database credentials and security keys
-   ```
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
 
-4. **Run database migrations**:
-   ```bash
-   # Execute migrations in database/migrations/
-   mysql -u username -p database_name < database/migrations/001_create_tables.sql
-   ```
+## Contributing
 
-5. **Start the development server**:
-   ```bash
-   php -S localhost:8000 -t public
-   ```
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-## API Endpoints
+## Code of Conduct
 
-### Health Check
-- `GET /api/health` - Check API health status
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `POST /api/auth/refresh` - Refresh token
+## Security Vulnerabilities
 
-### Users
-- `GET /api/users` - List all users
-- `GET /api/users/{id}` - Get user details
-- `POST /api/users` - Create new user
-- `PUT /api/users/{id}` - Update user
-- `DELETE /api/users/{id}` - Delete user
-
-### Suppliers
-- `GET /api/suppliers` - List all suppliers
-- `GET /api/suppliers/{id}` - Get supplier details
-- `POST /api/suppliers` - Create new supplier
-- `PUT /api/suppliers/{id}` - Update supplier
-- `DELETE /api/suppliers/{id}` - Delete supplier
-
-### Products
-- `GET /api/products` - List all products
-- `GET /api/products/{id}` - Get product details
-- `POST /api/products` - Create new product
-- `POST /api/products/{id}/rates` - Add rate to product
-- `PUT /api/products/{id}` - Update product
-- `DELETE /api/products/{id}` - Delete product
-
-### Collections
-- `GET /api/collections` - List all collections
-- `GET /api/collections/{id}` - Get collection details
-- `GET /api/collections?supplier_id={id}` - Filter by supplier
-- `GET /api/collections?product_id={id}` - Filter by product
-- `POST /api/collections` - Create new collection
-- `PUT /api/collections/{id}` - Update collection
-- `DELETE /api/collections/{id}` - Delete collection
-
-### Payments
-- `GET /api/payments` - List all payments
-- `GET /api/payments/{id}` - Get payment details
-- `GET /api/payments?supplier_id={id}` - Filter by supplier
-- `GET /api/payments/calculate/{supplier_id}` - Calculate total owed
-- `POST /api/payments` - Create new payment
-- `PUT /api/payments/{id}` - Update payment
-- `DELETE /api/payments/{id}` - Delete payment
-
-## Security
-
-- All endpoints (except `/api/health`) require authentication
-- JWT tokens are used for authentication
-- Passwords are hashed using Argon2id
-- Data is encrypted at rest and in transit (HTTPS required in production)
-- RBAC and ABAC enforce proper authorization
-
-## Testing
-
-Run tests:
-```bash
-composer test
-```
-
-## Production Deployment
-
-1. Set `APP_ENV=production` in `.env`
-2. Set `APP_DEBUG=false`
-3. Generate secure random strings for `JWT_SECRET` and `ENCRYPTION_KEY`
-4. Configure proper database credentials
-5. Enable HTTPS
-6. Configure CORS for your frontend domain
-7. Set up proper logging and monitoring
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
 ## License
 
-MIT
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
