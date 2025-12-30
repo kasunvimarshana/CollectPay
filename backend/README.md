@@ -1,59 +1,203 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# LedgerFlow Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Production-ready backend API for the LedgerFlow Platform following Clean Architecture principles.
 
-## About Laravel
+## Architecture
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This backend follows **Clean Architecture** with clear separation of concerns:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Domain Layer**: Business entities and repository interfaces
+- **Application Layer**: Use cases and business logic
+- **Infrastructure Layer**: Database, HTTP, security implementations
+- **Presentation Layer**: API controllers and routes
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Technology Stack
 
-## Learning Laravel
+- PHP 8.1+
+- Slim Framework 4.x
+- SQLite (development) / MySQL/PostgreSQL (production)
+- JWT Authentication
+- PSR-7, PSR-11, PSR-15 standards
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Directory Structure
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+backend/
+├── src/
+│   ├── Domain/          # Business logic (framework-independent)
+│   ├── Application/     # Use cases and DTOs
+│   ├── Infrastructure/  # External services
+│   └── Presentation/    # HTTP layer
+├── database/
+│   ├── schema.sql       # Database schema
+│   └── migrations/      # Migration files
+├── public/
+│   ├── index.php        # Entry point
+│   ├── bootstrap.php    # Application bootstrap
+│   ├── container.php    # DI configuration
+│   ├── middleware.php   # Middleware setup
+│   └── routes.php       # Route definitions
+├── tests/
+├── storage/
+│   ├── database.sqlite  # SQLite database (development)
+│   └── logs/           # Application logs
+└── composer.json
+```
 
-## Laravel Sponsors
+## Setup
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Prerequisites
 
-### Premium Partners
+- PHP 8.1 or higher
+- Composer
+- SQLite extension (or MySQL/PostgreSQL)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Installation
+
+1. Install dependencies:
+```bash
+cd backend
+composer install
+```
+
+2. Configure environment:
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
+
+3. Initialize database:
+```bash
+# Database is automatically initialized on first request
+# Or manually:
+sqlite3 storage/database.sqlite < database/schema.sql
+```
+
+### Running the Server
+
+Using PHP built-in server:
+```bash
+cd public
+php -S localhost:8080
+```
+
+Using Docker (optional):
+```bash
+docker run -p 8080:8080 -v $(pwd):/app php:8.1-cli php -S 0.0.0.0:8080 -t /app/public
+```
+
+### Testing
+
+```bash
+composer test
+```
+
+## API Endpoints
+
+### Health Check
+```
+GET /health
+```
+
+### Authentication
+```
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+```
+
+### Users
+```
+GET    /api/v1/users
+POST   /api/v1/users
+GET    /api/v1/users/{id}
+PUT    /api/v1/users/{id}
+DELETE /api/v1/users/{id}
+```
+
+### Suppliers
+```
+GET    /api/v1/suppliers
+POST   /api/v1/suppliers
+GET    /api/v1/suppliers/{id}
+PUT    /api/v1/suppliers/{id}
+DELETE /api/v1/suppliers/{id}
+```
+
+### Products
+```
+GET    /api/v1/products
+POST   /api/v1/products
+GET    /api/v1/products/{id}
+PUT    /api/v1/products/{id}
+DELETE /api/v1/products/{id}
+```
+
+### Collections
+```
+GET    /api/v1/collections
+POST   /api/v1/collections
+GET    /api/v1/collections/{id}
+PUT    /api/v1/collections/{id}
+DELETE /api/v1/collections/{id}
+```
+
+### Payments
+```
+GET    /api/v1/payments
+POST   /api/v1/payments
+GET    /api/v1/payments/{id}
+PUT    /api/v1/payments/{id}
+DELETE /api/v1/payments/{id}
+```
+
+## Security
+
+- JWT-based authentication
+- CORS configuration
+- Input validation
+- SQL injection prevention (PDO prepared statements)
+- Password hashing (bcrypt)
+- Rate limiting
+- Audit logging
+
+## Database Schema
+
+The database includes:
+- `users` - User accounts with roles
+- `suppliers` - Supplier profiles
+- `products` - Product definitions
+- `product_rates` - Versioned product rates
+- `collections` - Collection records
+- `payments` - Payment transactions
+- `audit_logs` - Audit trail
+- `sync_conflicts` - Offline sync conflict resolution
+
+## Development
+
+### Code Style
+
+Follow PSR-12 coding standards:
+```bash
+composer analyse
+```
+
+### Adding New Features
+
+1. Create domain entities in `src/Domain/Entities/`
+2. Define repository interfaces in `src/Domain/Repositories/`
+3. Implement use cases in `src/Application/UseCases/`
+4. Create repository implementations in `src/Infrastructure/Database/`
+5. Add controllers in `src/Presentation/Controllers/`
+6. Register routes in `public/routes.php`
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1. Follow Clean Architecture principles
+2. Maintain SOLID principles
+3. Write unit tests for business logic
+4. Document API endpoints
+5. Keep dependencies minimal
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT
