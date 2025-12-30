@@ -20,6 +20,10 @@ import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
 import { PaymentListScreen } from '../screens/PaymentListScreen';
 import { PaymentFormScreen } from '../screens/PaymentFormScreen';
 import { PaymentDetailScreen } from '../screens/PaymentDetailScreen';
+import { RateHistoryScreen } from '../screens/RateHistoryScreen';
+import { UserListScreen } from '../screens/UserListScreen';
+import { UserDetailScreen } from '../screens/UserDetailScreen';
+import { UserFormScreen } from '../screens/UserFormScreen';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -46,6 +50,11 @@ export const AppNavigator: React.FC = () => {
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
             
+            {/* User Screens */}
+            <Stack.Screen name="UserList" component={UserListScreen} />
+            <Stack.Screen name="UserDetail" component={UserDetailScreen} />
+            <Stack.Screen name="UserForm" component={UserFormScreen} />
+            
             {/* Supplier Screens */}
             <Stack.Screen name="SupplierList" component={SupplierListScreen} />
             <Stack.Screen name="SupplierForm" component={SupplierFormScreen} />
@@ -55,6 +64,7 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="ProductList" component={ProductListScreen} />
             <Stack.Screen name="ProductForm" component={ProductFormScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+            <Stack.Screen name="RateHistory" component={RateHistoryScreen} />
             
             {/* Collection Screens */}
             <Stack.Screen name="CollectionList" component={CollectionListScreen} />

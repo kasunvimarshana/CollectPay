@@ -92,21 +92,22 @@ class AuthenticationTest extends TestCase
     public function test_authenticated_user_can_get_profile(): void
     {
         $user = User::factory()->create();
-        $token = auth()->login($user);
+        $token = auth('api')->login($user);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
         ])->getJson('/api/me');
 
         $response->assertStatus(200)
-            ->assertJsonPath('id', $user->id)
-            ->assertJsonPath('email', $user->email);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.email', $user->email);
     }
 
     public function test_authenticated_user_can_logout(): void
     {
         $user = User::factory()->create();
-        $token = auth()->login($user);
+        $token = auth('api')->login($user);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
@@ -119,7 +120,7 @@ class AuthenticationTest extends TestCase
     public function test_user_can_refresh_token(): void
     {
         $user = User::factory()->create();
-        $token = auth()->login($user);
+        $token = auth('api')->login($user);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,

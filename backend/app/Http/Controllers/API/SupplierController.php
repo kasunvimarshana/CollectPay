@@ -132,6 +132,32 @@ class SupplierController extends Controller
 
     /**
      * Display the specified supplier
+     * 
+     * @OA\Get(
+     *     path="/suppliers/{id}",
+     *     tags={"Suppliers"},
+     *     summary="Get supplier by ID",
+     *     description="Retrieve a specific supplier with profile details",
+     *     operationId="getSupplierById",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Supplier ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object", description="Supplier details")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Supplier not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function show(Supplier $supplier)
     {
@@ -143,6 +169,48 @@ class SupplierController extends Controller
 
     /**
      * Update the specified supplier
+     * 
+     * @OA\Put(
+     *     path="/suppliers/{id}",
+     *     tags={"Suppliers"},
+     *     summary="Update supplier",
+     *     description="Update supplier profile details with version control",
+     *     operationId="updateSupplier",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Supplier ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Updated supplier data",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", example="ABC Tea Suppliers Ltd"),
+     *             @OA\Property(property="code", type="string", example="SUP001"),
+     *             @OA\Property(property="region", type="string", example="Western"),
+     *             @OA\Property(property="contact_person", type="string", example="Jane Smith"),
+     *             @OA\Property(property="phone", type="string", example="+94777654321"),
+     *             @OA\Property(property="email", type="string", example="updated@example.com"),
+     *             @OA\Property(property="address", type="string", example="456 New Address"),
+     *             @OA\Property(property="is_active", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Supplier updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Supplier updated successfully"),
+     *             @OA\Property(property="data", type="object", description="Updated supplier details")
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=404, description="Supplier not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function update(Request $request, Supplier $supplier)
     {
@@ -175,6 +243,32 @@ class SupplierController extends Controller
 
     /**
      * Remove the specified supplier
+     * 
+     * @OA\Delete(
+     *     path="/suppliers/{id}",
+     *     tags={"Suppliers"},
+     *     summary="Delete supplier",
+     *     description="Remove a supplier from the system",
+     *     operationId="deleteSupplier",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Supplier ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Supplier deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Supplier deleted successfully")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Supplier not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function destroy(Supplier $supplier)
     {
@@ -188,6 +282,59 @@ class SupplierController extends Controller
 
     /**
      * Get supplier balance
+     * 
+     * @OA\Get(
+     *     path="/suppliers/{id}/balance",
+     *     tags={"Suppliers"},
+     *     summary="Get supplier balance",
+     *     description="Calculate and retrieve supplier balance based on collections and payments",
+     *     operationId="getSupplierBalance",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Supplier ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start_date",
+     *         in="query",
+     *         required=false,
+     *         description="Start date for balance calculation",
+     *         @OA\Schema(type="string", format="date", example="2025-01-01")
+     *     ),
+     *     @OA\Parameter(
+     *         name="end_date",
+     *         in="query",
+     *         required=false,
+     *         description="End date for balance calculation",
+     *         @OA\Schema(type="string", format="date", example="2025-12-31")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="supplier", type="object", description="Supplier details"),
+     *                 @OA\Property(property="total_collected", type="number", format="float", example=125000.00, description="Total amount collected"),
+     *                 @OA\Property(property="total_paid", type="number", format="float", example=100000.00, description="Total amount paid"),
+     *                 @OA\Property(property="balance", type="number", format="float", example=25000.00, description="Outstanding balance"),
+     *                 @OA\Property(
+     *                     property="period",
+     *                     type="object",
+     *                     @OA\Property(property="start_date", type="string", nullable=true),
+     *                     @OA\Property(property="end_date", type="string", nullable=true)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Supplier not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function balance(Request $request, Supplier $supplier)
     {
@@ -215,6 +362,53 @@ class SupplierController extends Controller
 
     /**
      * Get supplier collections
+     * 
+     * @OA\Get(
+     *     path="/suppliers/{id}/collections",
+     *     tags={"Suppliers"},
+     *     summary="Get supplier collections",
+     *     description="Retrieve all collections for a specific supplier with date filtering",
+     *     operationId="getSupplierCollections",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Supplier ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start_date",
+     *         in="query",
+     *         required=false,
+     *         description="Filter collections from this date",
+     *         @OA\Schema(type="string", format="date", example="2025-01-01")
+     *     ),
+     *     @OA\Parameter(
+     *         name="end_date",
+     *         in="query",
+     *         required=false,
+     *         description="Filter collections until this date",
+     *         @OA\Schema(type="string", format="date", example="2025-12-31")
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         required=false,
+     *         description="Results per page",
+     *         @OA\Schema(type="integer", default=15)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object", description="Paginated collections with product, user, and rate details")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Supplier not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function collections(Request $request, Supplier $supplier)
     {
@@ -238,6 +432,53 @@ class SupplierController extends Controller
 
     /**
      * Get supplier payments
+     * 
+     * @OA\Get(
+     *     path="/suppliers/{id}/payments",
+     *     tags={"Suppliers"},
+     *     summary="Get supplier payments",
+     *     description="Retrieve all payments for a specific supplier with date filtering",
+     *     operationId="getSupplierPayments",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Supplier ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start_date",
+     *         in="query",
+     *         required=false,
+     *         description="Filter payments from this date",
+     *         @OA\Schema(type="string", format="date", example="2025-01-01")
+     *     ),
+     *     @OA\Parameter(
+     *         name="end_date",
+     *         in="query",
+     *         required=false,
+     *         description="Filter payments until this date",
+     *         @OA\Schema(type="string", format="date", example="2025-12-31")
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         required=false,
+     *         description="Results per page",
+     *         @OA\Schema(type="integer", default=15)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object", description="Paginated payments with user details")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Supplier not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function payments(Request $request, Supplier $supplier)
     {

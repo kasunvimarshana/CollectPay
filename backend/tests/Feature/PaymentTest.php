@@ -36,7 +36,7 @@ class PaymentTest extends TestCase
 
         // Create authenticated user
         $this->user = User::factory()->create();
-        $this->token = auth()->login($this->user);
+        $this->token = auth('api')->login($this->user);
 
         // Create test data
         $this->supplier = Supplier::factory()->create();
@@ -55,10 +55,7 @@ class PaymentTest extends TestCase
         ]);
     }
 
-    protected function authenticatedHeaders(): array
-    {
-        return ['Authorization' => 'Bearer ' . $this->token];
-    }
+    // Using parent TestCase::authenticatedHeaders() method with $this->user parameter
 
     public function test_can_create_advance_payment(): void
     {
@@ -71,7 +68,7 @@ class PaymentTest extends TestCase
             'notes' => 'Advance payment',
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/payments', $data);
 
         $response->assertStatus(201)
@@ -104,7 +101,7 @@ class PaymentTest extends TestCase
             'reference' => 'PART-001',
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/payments', $data);
 
         $response->assertStatus(201)
@@ -124,7 +121,7 @@ class PaymentTest extends TestCase
             'reference' => 'FULL-001',
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/payments', $data);
 
         $response->assertStatus(201)
@@ -140,7 +137,7 @@ class PaymentTest extends TestCase
             'supplier_id' => $this->supplier->id,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->getJson('/api/payments');
 
         $response->assertStatus(200)
@@ -159,7 +156,7 @@ class PaymentTest extends TestCase
             'amount' => 5000.00,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->getJson('/api/payments/' . $payment->id);
 
         $response->assertStatus(200)
@@ -184,7 +181,7 @@ class PaymentTest extends TestCase
             'version' => $payment->version,
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->putJson('/api/payments/' . $payment->id, $data);
 
         $response->assertStatus(200)
@@ -204,7 +201,7 @@ class PaymentTest extends TestCase
             'supplier_id' => $this->supplier->id,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->deleteJson('/api/payments/' . $payment->id);
 
         $response->assertStatus(204);
@@ -226,7 +223,7 @@ class PaymentTest extends TestCase
             'payment_type' => 'advance',
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->getJson('/api/suppliers/' . $this->supplier->id . '/balance');
 
         $response->assertStatus(200)
@@ -239,7 +236,7 @@ class PaymentTest extends TestCase
 
     public function test_payment_validation_requires_required_fields(): void
     {
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/payments', []);
 
         $response->assertStatus(422)
@@ -260,7 +257,7 @@ class PaymentTest extends TestCase
             'payment_date' => now()->toDateString(),
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/payments', $data);
 
         $response->assertStatus(422)
@@ -276,7 +273,7 @@ class PaymentTest extends TestCase
             'payment_date' => now()->toDateString(),
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/payments', $data);
 
         $response->assertStatus(422)

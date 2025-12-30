@@ -12,6 +12,45 @@ class UserController extends Controller
 {
     /**
      * Display a listing of users
+     * 
+     * @OA\Get(
+     *     path="/users",
+     *     tags={"Users"},
+     *     summary="Get all users",
+     *     description="Retrieve a paginated list of users with role information",
+     *     operationId="getUsers",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="is_active",
+     *         in="query",
+     *         description="Filter by active status",
+     *         required=false,
+     *         @OA\Schema(type="boolean")
+     *     ),
+     *     @OA\Parameter(
+     *         name="role_id",
+     *         in="query",
+     *         description="Filter by role ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Search by name or email",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Results per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15)
+     *     ),
+     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function index(Request $request)
     {
@@ -48,6 +87,29 @@ class UserController extends Controller
 
     /**
      * Store a newly created user
+     * 
+     * @OA\Post(
+     *     path="/users",
+     *     tags={"Users"},
+     *     summary="Create new user",
+     *     description="Create a new user with role assignment",
+     *     operationId="createUser",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name","email","password","password_confirmation","role_id"},
+     *             @OA\Property(property="name", type="string", example="John Doe"),
+     *             @OA\Property(property="email", type="string", example="user@example.com"),
+     *             @OA\Property(property="password", type="string", example="password123"),
+     *             @OA\Property(property="password_confirmation", type="string", example="password123"),
+     *             @OA\Property(property="role_id", type="integer", example=2),
+     *             @OA\Property(property="is_active", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="User created"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
      */
     public function store(Request $request)
     {
@@ -85,6 +147,18 @@ class UserController extends Controller
 
     /**
      * Display the specified user
+     * 
+     * @OA\Get(
+     *     path="/users/{id}",
+     *     tags={"Users"},
+     *     summary="Get user by ID",
+     *     description="Retrieve a single user with role information",
+     *     operationId="getUserById",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(response=404, description="User not found")
+     * )
      */
     public function show(User $user)
     {
@@ -98,6 +172,29 @@ class UserController extends Controller
 
     /**
      * Update the specified user
+     * 
+     * @OA\Put(
+     *     path="/users/{id}",
+     *     tags={"Users"},
+     *     summary="Update user",
+     *     description="Update user information and role",
+     *     operationId="updateUser",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", example="Jane Smith"),
+     *             @OA\Property(property="email", type="string", example="jane.smith@example.com"),
+     *             @OA\Property(property="password", type="string", example="newpassword123"),
+     *             @OA\Property(property="password_confirmation", type="string", example="newpassword123"),
+     *             @OA\Property(property="role_id", type="integer", example=2),
+     *             @OA\Property(property="is_active", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="User updated"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
      */
     public function update(Request $request, User $user)
     {
@@ -134,6 +231,18 @@ class UserController extends Controller
 
     /**
      * Remove the specified user
+     * 
+     * @OA\Delete(
+     *     path="/users/{id}",
+     *     tags={"Users"},
+     *     summary="Delete user",
+     *     description="Soft delete a user",
+     *     operationId="deleteUser",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="User deleted"),
+     *     @OA\Response(response=404, description="User not found")
+     * )
      */
     public function destroy(User $user)
     {

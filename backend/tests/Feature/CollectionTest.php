@@ -34,7 +34,7 @@ class CollectionTest extends TestCase
 
         // Create authenticated user
         $this->user = User::factory()->create();
-        $this->token = auth()->login($this->user);
+        $this->token = auth('api')->login($this->user);
 
         // Create test data
         $this->supplier = Supplier::factory()->create();
@@ -51,10 +51,7 @@ class CollectionTest extends TestCase
         ]);
     }
 
-    protected function authenticatedHeaders(): array
-    {
-        return ['Authorization' => 'Bearer ' . $this->token];
-    }
+    // Using parent TestCase::authenticatedHeaders() method with $this->user parameter
 
     public function test_can_create_collection(): void
     {
@@ -68,7 +65,7 @@ class CollectionTest extends TestCase
             'notes' => 'Daily collection',
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/collections', $data);
 
         $response->assertStatus(201)
@@ -106,7 +103,7 @@ class CollectionTest extends TestCase
             'collection_date' => now()->toDateString(),
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/collections', $data);
 
         $response->assertStatus(201);
@@ -125,7 +122,7 @@ class CollectionTest extends TestCase
             'rate_id' => $this->rate->id,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->getJson('/api/collections');
 
         $response->assertStatus(200)
@@ -146,7 +143,7 @@ class CollectionTest extends TestCase
             'quantity' => 50,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->getJson('/api/collections/' . $collection->id);
 
         $response->assertStatus(200)
@@ -175,7 +172,7 @@ class CollectionTest extends TestCase
             'version' => $collection->version,
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->putJson('/api/collections/' . $collection->id, $data);
 
         $response->assertStatus(200)
@@ -197,7 +194,7 @@ class CollectionTest extends TestCase
             'rate_id' => $this->rate->id,
         ]);
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->deleteJson('/api/collections/' . $collection->id);
 
         $response->assertStatus(204);
@@ -209,7 +206,7 @@ class CollectionTest extends TestCase
 
     public function test_collection_validation_requires_required_fields(): void
     {
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/collections', []);
 
         $response->assertStatus(422)
@@ -234,7 +231,7 @@ class CollectionTest extends TestCase
             'collection_date' => now()->toDateString(),
         ];
 
-        $response = $this->withHeaders($this->authenticatedHeaders())
+        $response = $this->withHeaders($this->authenticatedHeaders($this->user))
             ->postJson('/api/collections', $data);
 
         $response->assertStatus(422)

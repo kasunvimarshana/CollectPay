@@ -68,14 +68,17 @@ export const HomeScreen: React.FC = () => {
             <Text style={styles.menuText}>Payments</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuIcon}>📈</Text>
-            <Text style={styles.menuText}>Reports</Text>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => navigateTo('UserList')}
+          >
+            <Text style={styles.menuIcon}>👤</Text>
+            <Text style={styles.menuText}>Users</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuIcon}>⚙️</Text>
-            <Text style={styles.menuText}>Settings</Text>
+            <Text style={styles.menuIcon}>📈</Text>
+            <Text style={styles.menuText}>Reports</Text>
           </TouchableOpacity>
         </View>
 

@@ -70,6 +70,40 @@ class PaymentController extends Controller
 
     /**
      * Store a newly created payment
+     * 
+     * @OA\Post(
+     *     path="/payments",
+     *     tags={"Payments"},
+     *     summary="Create new payment",
+     *     description="Record a new payment (advance, partial, full, or adjustment) for a supplier",
+     *     operationId="createPayment",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Payment data",
+     *         @OA\JsonContent(
+     *             required={"supplier_id","payment_date","amount","type"},
+     *             @OA\Property(property="supplier_id", type="integer", example=1, description="ID of the supplier"),
+     *             @OA\Property(property="payment_date", type="string", format="date", example="2025-12-29", description="Date of payment"),
+     *             @OA\Property(property="amount", type="number", format="float", example=5000.00, description="Payment amount"),
+     *             @OA\Property(property="type", type="string", enum={"advance","partial","full","adjustment"}, example="partial", description="Type of payment"),
+     *             @OA\Property(property="reference_number", type="string", nullable=true, example="PAY-2025-001", description="Payment reference number"),
+     *             @OA\Property(property="payment_method", type="string", nullable=true, example="bank_transfer", description="Payment method used"),
+     *             @OA\Property(property="notes", type="string", nullable=true, example="Payment for December collection", description="Additional notes")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Payment created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Payment created successfully"),
+     *             @OA\Property(property="data", type="object", description="Payment details")
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function store(Request $request)
     {
@@ -128,6 +162,32 @@ class PaymentController extends Controller
 
     /**
      * Display the specified payment
+     * 
+     * @OA\Get(
+     *     path="/payments/{id}",
+     *     tags={"Payments"},
+     *     summary="Get payment by ID",
+     *     description="Retrieve a specific payment with related supplier and user information",
+     *     operationId="getPaymentById",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Payment ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object", description="Payment details")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Payment not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function show(Payment $payment)
     {
@@ -141,6 +201,47 @@ class PaymentController extends Controller
 
     /**
      * Update the specified payment
+     * 
+     * @OA\Put(
+     *     path="/payments/{id}",
+     *     tags={"Payments"},
+     *     summary="Update payment",
+     *     description="Update payment details with version control for concurrency",
+     *     operationId="updatePayment",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Payment ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Updated payment data",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="supplier_id", type="integer", example=1),
+     *             @OA\Property(property="payment_date", type="string", format="date", example="2025-12-29"),
+     *             @OA\Property(property="amount", type="number", format="float", example=5500.00),
+     *             @OA\Property(property="type", type="string", enum={"advance","partial","full","adjustment"}, example="partial"),
+     *             @OA\Property(property="reference_number", type="string", nullable=true, example="PAY-2025-001-REV"),
+     *             @OA\Property(property="payment_method", type="string", nullable=true, example="cash"),
+     *             @OA\Property(property="notes", type="string", nullable=true, example="Updated payment notes")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Payment updated successfully"),
+     *             @OA\Property(property="data", type="object", description="Updated payment details")
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=404, description="Payment not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function update(Request $request, Payment $payment)
     {
@@ -187,6 +288,32 @@ class PaymentController extends Controller
 
     /**
      * Remove the specified payment
+     * 
+     * @OA\Delete(
+     *     path="/payments/{id}",
+     *     tags={"Payments"},
+     *     summary="Delete payment",
+     *     description="Remove a payment record from the system",
+     *     operationId="deletePayment",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Payment ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Payment deleted successfully")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Payment not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function destroy(Payment $payment)
     {
