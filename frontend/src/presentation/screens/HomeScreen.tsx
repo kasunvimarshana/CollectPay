@@ -98,7 +98,10 @@ export const HomeScreen: React.FC = () => {
           )}
 
           {/* Reports available to all authenticated users */}
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => navigateTo('Reports')}
+          >
             <Text style={styles.menuIcon}>📈</Text>
             <Text style={styles.menuText}>Reports</Text>
           </TouchableOpacity>
