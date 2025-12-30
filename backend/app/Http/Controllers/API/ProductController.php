@@ -11,6 +11,20 @@ class ProductController extends Controller
 {
     /**
      * Display a listing of products
+     * 
+     * @OA\Get(
+     *     path="/products",
+     *     tags={"Products"},
+     *     summary="Get all products",
+     *     description="Retrieve a paginated list of products with multi-unit support",
+     *     operationId="getProducts",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="is_active", in="query", required=false, @OA\Schema(type="boolean")),
+     *     @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=15)),
+     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function index(Request $request)
     {
@@ -42,6 +56,29 @@ class ProductController extends Controller
 
     /**
      * Store a newly created product
+     * 
+     * @OA\Post(
+     *     path="/products",
+     *     tags={"Products"},
+     *     summary="Create new product",
+     *     description="Create a new product with multi-unit support",
+     *     operationId="createProduct",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name","code","base_unit"},
+     *             @OA\Property(property="name", type="string", example="Tea Leaves"),
+     *             @OA\Property(property="code", type="string", example="PROD001"),
+     *             @OA\Property(property="base_unit", type="string", example="kg"),
+     *             @OA\Property(property="supported_units", type="array", @OA\Items(type="string"), example={"kg","g","lbs"}),
+     *             @OA\Property(property="description", type="string", example="High quality tea leaves"),
+     *             @OA\Property(property="is_active", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Product created"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
      */
     public function store(Request $request)
     {

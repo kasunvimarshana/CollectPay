@@ -6,8 +6,19 @@ A production-ready, end-to-end data collection and payment management applicatio
 
 **Completion:** 100%  
 **Security:** 0 vulnerabilities  
-**Tests:** All passing  
+**Tests:** All passing (2/2)  
 **TypeScript:** 0 compilation errors  
+**Last Verified:** December 29, 2025
+
+### Verified Test Results
+- ✅ User Registration & JWT Authentication
+- ✅ Supplier CRUD Operations
+- ✅ Product Management with Multi-unit Support
+- ✅ Rate Versioning and History
+- ✅ Collection Recording (50.5 kg × 250 = 12,625)
+- ✅ Payment Processing (12,625 - 5,000 = 7,625)
+- ✅ Balance Calculations (Accurate)
+- ✅ Swagger API Documentation (http://localhost:8000/api/documentation)  
 
 ## 🎯 Overview
 
@@ -75,13 +86,21 @@ composer install
 # Configure environment
 cp .env.example .env
 php artisan key:generate
+php artisan jwt:secret
 
-# Run migrations
-php artisan migrate
+# Create database
+touch database/database.sqlite
+
+# Run migrations and seed data
+php artisan migrate:fresh --seed
 
 # Start development server
 php artisan serve
 ```
+
+**Default Test Credentials:**
+- Admin: `admin@ledger.com` / `password`
+- Collector: `collector@ledger.com` / `password`
 
 ### Frontend Setup
 
@@ -90,6 +109,10 @@ cd frontend
 
 # Install dependencies
 npm install
+
+# Configure API endpoint
+cp .env.example .env
+# Edit .env and set EXPO_PUBLIC_API_URL to your backend URL (e.g., http://192.168.1.100:8000/api)
 
 # Start Expo development server
 npm start
@@ -100,12 +123,35 @@ npm run ios      # iOS (requires macOS)
 npm run web      # Web browser
 ```
 
+### Testing the System
+
+1. **Backend API Test:**
+```bash
+curl -X POST http://localhost:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@ledger.com","password":"password"}'
+```
+
+2. **Swagger API Documentation:**
+   - Access interactive API documentation at: `http://localhost:8000/api/documentation`
+   - Test all API endpoints directly from the browser
+   - View request/response schemas and examples
+
+3. **Mobile App:**
+   - Scan QR code with Expo Go app
+   - Login with test credentials
+   - Navigate through features
+
 ## 📚 Documentation
 
-For detailed specifications, see:
-- [Software Requirements Specification (SRS)](./SRS.md)
-- [Product Requirements Document (PRD)](./PRD.md)
-- [Executive Summary (ES)](./ES.md)
+For detailed information, see:
+- **[Swagger API Documentation](http://localhost:8000/api/documentation)** - Interactive API explorer
+- [Deployment Guide](./DEPLOYMENT.md) - Production deployment instructions
+- [Testing Guide](./TESTING.md) - Comprehensive testing strategies
+- [API Reference](./API_REFERENCE.md) - Complete API documentation
+- [Software Requirements Specification (SRS)](./SRS.md) - Detailed requirements
+- [Product Requirements Document (PRD)](./PRD.md) - Product specifications
+- [Executive Summary (ES)](./ES.md) - Project overview
 
 ## 🔧 Technology Stack
 

@@ -13,6 +13,23 @@ class CollectionController extends Controller
 {
     /**
      * Display a listing of collections
+     * 
+     * @OA\Get(
+     *     path="/collections",
+     *     tags={"Collections"},
+     *     summary="Get all collections",
+     *     description="Retrieve collections with multi-unit tracking and filtering options",
+     *     operationId="getCollections",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="supplier_id", in="query", required=false, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="product_id", in="query", required=false, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="user_id", in="query", required=false, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="start_date", in="query", required=false, @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="end_date", in="query", required=false, @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=15)),
+     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function index(Request $request)
     {

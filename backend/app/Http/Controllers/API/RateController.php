@@ -12,6 +12,22 @@ class RateController extends Controller
 {
     /**
      * Display a listing of rates
+     * 
+     * @OA\Get(
+     *     path="/rates",
+     *     tags={"Rates"},
+     *     summary="Get all rates",
+     *     description="Retrieve versioned product rates with historical preservation",
+     *     operationId="getRates",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="product_id", in="query", required=false, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="unit", in="query", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="is_active", in="query", required=false, @OA\Schema(type="boolean")),
+     *     @OA\Parameter(name="date", in="query", required=false, @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=15)),
+     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function index(Request $request)
     {

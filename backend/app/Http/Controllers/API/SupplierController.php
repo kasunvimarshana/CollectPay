@@ -11,6 +11,38 @@ class SupplierController extends Controller
 {
     /**
      * Display a listing of suppliers
+     * 
+     * @OA\Get(
+     *     path="/suppliers",
+     *     tags={"Suppliers"},
+     *     summary="Get all suppliers",
+     *     description="Retrieve a paginated list of suppliers with optional filtering",
+     *     operationId="getSuppliers",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="is_active",
+     *         in="query",
+     *         description="Filter by active status",
+     *         required=false,
+     *         @OA\Schema(type="boolean")
+     *     ),
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Search by name, code, or region",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Results per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15)
+     *     ),
+     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function index(Request $request)
     {
@@ -43,6 +75,31 @@ class SupplierController extends Controller
 
     /**
      * Store a newly created supplier
+     * 
+     * @OA\Post(
+     *     path="/suppliers",
+     *     tags={"Suppliers"},
+     *     summary="Create new supplier",
+     *     description="Create a new supplier with profile details",
+     *     operationId="createSupplier",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name","code"},
+     *             @OA\Property(property="name", type="string", example="ABC Tea Suppliers"),
+     *             @OA\Property(property="code", type="string", example="SUP001"),
+     *             @OA\Property(property="region", type="string", example="Central"),
+     *             @OA\Property(property="contact_person", type="string", example="John Doe"),
+     *             @OA\Property(property="phone", type="string", example="+94771234567"),
+     *             @OA\Property(property="email", type="string", example="supplier@example.com"),
+     *             @OA\Property(property="address", type="string", example="123 Main St"),
+     *             @OA\Property(property="is_active", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Supplier created"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
      */
     public function store(Request $request)
     {
