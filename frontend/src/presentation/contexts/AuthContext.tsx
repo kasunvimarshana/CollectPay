@@ -1,132 +1,123 @@
 /**
  * Authentication Context
- * Manages user authentication state and operations
+ * Manages authentication state across the application
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import AuthService from '../../application/services/AuthService';
 import { User } from '../../domain/entities/User';
-import { getHttpClient } from '../../data/datasources/HttpClient';
-import { RemoteUserDataSource } from '../../data/datasources/RemoteUserDataSource';
-import * as SecureStore from 'expo-secure-store';
+import { LoginCredentials, RegisterData } from '../../application/services/AuthService';
 
-interface AuthContextType {
+interface AuthContextData {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 interface AuthProviderProps {
   children: ReactNode;
-  apiBaseUrl: string;
 }
 
-export function AuthProvider({ children, apiBaseUrl }: AuthProviderProps) {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const httpClient = getHttpClient(apiBaseUrl);
-  const userDataSource = new RemoteUserDataSource(httpClient);
-
-  // Load saved auth token on mount
+  // Load stored user on mount
   useEffect(() => {
-    loadSavedAuth();
+    loadStoredUser();
   }, []);
 
-  const loadSavedAuth = async () => {
+  const loadStoredUser = async () => {
     try {
-      const savedToken = await SecureStore.getItemAsync('auth_token');
-      const savedUser = await SecureStore.getItemAsync('auth_user');
-
-      if (savedToken && savedUser) {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-        httpClient.setAuthToken(savedToken);
+      setIsLoading(true);
+      const isAuth = await AuthService.isAuthenticated();
+      
+      if (isAuth) {
+        const storedUser = await AuthService.getStoredUser();
+        if (storedUser) {
+          setUser(storedUser);
+          setIsAuthenticated(true);
+          // Optionally refresh user data from server
+          refreshUser();
+        }
       }
     } catch (error) {
-      console.error('Failed to load saved auth:', error);
+      console.error('Load stored user error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (credentials: LoginCredentials) => {
     try {
-      setIsLoading(true);
-      const response = await userDataSource.login(email, password);
-      
+      const response = await AuthService.login(credentials);
       setUser(response.user);
-      setToken(response.token);
-      httpClient.setAuthToken(response.token);
+      setIsAuthenticated(true);
+    } catch (error) {
+      throw error;
+    }
+  };
 
-      // Save to secure storage
-      await SecureStore.setItemAsync('auth_token', response.token);
-      await SecureStore.setItemAsync('auth_user', JSON.stringify(response.user));
-    } finally {
-      setIsLoading(false);
+  const register = async (data: RegisterData) => {
+    try {
+      const response = await AuthService.register(data);
+      setUser(response.user);
+      setIsAuthenticated(true);
+    } catch (error) {
+      throw error;
     }
   };
 
   const logout = async () => {
     try {
-      setIsLoading(true);
-      
-      if (token) {
-        await userDataSource.logout();
-      }
-
-      // Clear state
-      setUser(null);
-      setToken(null);
-      httpClient.setAuthToken(null);
-
-      // Clear secure storage
-      await SecureStore.deleteItemAsync('auth_token');
-      await SecureStore.deleteItemAsync('auth_user');
+      await AuthService.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      setIsLoading(false);
+      setUser(null);
+      setIsAuthenticated(false);
     }
   };
 
   const refreshUser = async () => {
-    if (!user?.id) {
-      return;
-    }
-
     try {
-      const updatedUser = await userDataSource.getById(user.id);
-      setUser(updatedUser);
-      await SecureStore.setItemAsync('auth_user', JSON.stringify(updatedUser));
+      const currentUser = await AuthService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      }
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      console.error('Refresh user error:', error);
     }
   };
 
-  const value: AuthContextType = {
-    user,
-    token,
-    isLoading,
-    isAuthenticated: !!user && !!token,
-    login,
-    logout,
-    refreshUser,
-  };
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated,
+        login,
+        register,
+        logout,
+        refreshUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextType {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};

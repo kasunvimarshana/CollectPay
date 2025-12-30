@@ -1,6 +1,5 @@
 /**
  * Login Screen
- * User authentication interface
  */
 
 import React, { useState } from 'react';
@@ -16,30 +15,33 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
-export function LoginScreen() {
+export const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const navigation = useNavigation();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      Alert.alert('Error', 'Please enter email and password');
       return;
     }
 
+    setIsLoading(true);
     try {
-      setIsSubmitting(true);
-      await login(email, password);
-    } catch (error) {
-      Alert.alert(
-        'Login Failed',
-        error instanceof Error ? error.message : 'Invalid email or password'
-      );
+      await login({ email, password });
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'Invalid credentials');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
+  };
+
+  const goToRegister = () => {
+    (navigation.navigate as any)('Register');
   };
 
   return (
@@ -48,47 +50,59 @@ export function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>LedgerFlow</Text>
+        <Text style={styles.title}>Ledger</Text>
         <Text style={styles.subtitle}>Data Collection & Payment Management</Text>
 
         <View style={styles.form}>
-          <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter your email"
+            placeholder="Email"
             value={email}
             onChangeText={setEmail}
-            autoCapitalize="none"
             keyboardType="email-address"
-            editable={!isSubmitting}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
 
-          <Text style={styles.label}>Password</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter your password"
+            placeholder="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            editable={!isSubmitting}
           />
 
           <TouchableOpacity
-            style={[styles.button, isSubmitting && styles.buttonDisabled]}
+            style={[styles.button, isLoading && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={isSubmitting}
+            disabled={isLoading}
           >
-            {isSubmitting ? (
+            {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>Login</Text>
             )}
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={goToRegister}
+          >
+            <Text style={styles.linkText}>
+              Don't have an account? <Text style={styles.linkTextBold}>Register</Text>
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.testCredentials}>
+            <Text style={styles.testCredentialsTitle}>Test Credentials:</Text>
+            <Text style={styles.testCredentialsText}>Admin: admin@ledger.com / password</Text>
+            <Text style={styles.testCredentialsText}>Collector: collector@ledger.com / password</Text>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -108,7 +122,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
     textAlign: 'center',
     marginBottom: 40,
@@ -116,34 +130,58 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
   },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
   input: {
     backgroundColor: '#fff',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+    fontSize: 16,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 16,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#007bff',
+    paddingVertical: 15,
     borderRadius: 8,
-    padding: 16,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    backgroundColor: '#ccc',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+  },
+  linkButton: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  linkText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  linkTextBold: {
+    color: '#007bff',
+    fontWeight: 'bold',
+  },
+  testCredentials: {
+    marginTop: 30,
+    padding: 15,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 8,
+  },
+  testCredentialsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  testCredentialsText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
   },
 });

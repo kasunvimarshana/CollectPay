@@ -1,32 +1,28 @@
 /**
  * Collection Entity
- * 
- * Domain layer entity representing a collection record.
  */
+
+import { Supplier } from './Supplier';
+import { Product, Rate } from './Product';
+import { User } from './User';
+
 export interface Collection {
-  id: string;
-  supplierId: string;
-  productId: string;
+  id: number;
+  supplier_id: number;
+  product_id: number;
+  user_id: number;
+  rate_id: number;
+  collection_date: string;
   quantity: number;
-  rate: number;
-  totalAmount: number;
-  collectionDate: string;
+  unit: string;
+  rate_applied: number;
+  total_amount: number;
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
   version: number;
-}
-
-export interface CreateCollectionDTO {
-  supplierId: number;
-  productId: number;
-  productRateId: number;
-  quantity: number;
-  collectionDate: Date;
-  notes?: string;
-}
-
-export interface UpdateCollectionDTO {
-  quantity?: number;
-  notes?: string;
+  supplier?: Supplier;
+  product?: Product;
+  user?: User;
+  rate?: Rate;
+  created_at: string;
+  updated_at: string;
 }

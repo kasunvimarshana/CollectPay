@@ -1,33 +1,25 @@
 /**
  * Payment Entity
- * 
- * Domain layer entity representing a payment record.
  */
-export type PaymentType = 'advance' | 'partial' | 'total';
+
+import { Supplier } from './Supplier';
+import { User } from './User';
+
+export type PaymentType = 'advance' | 'partial' | 'full' | 'adjustment';
 
 export interface Payment {
-  id: string;
-  supplierId: string;
+  id: number;
+  supplier_id: number;
+  user_id: number;
+  payment_date: string;
   amount: number;
-  paymentType: PaymentType;
-  paymentDate: string;
-  referenceNumber?: string;
+  type: PaymentType;
+  reference_number?: string;
+  payment_method?: string;
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
   version: number;
-}
-
-export interface CreatePaymentDTO {
-  supplierId: number;
-  amount: number;
-  paymentType: PaymentType;
-  paymentDate: Date;
-  referenceNumber?: string;
-  notes?: string;
-}
-
-export interface UpdatePaymentDTO {
-  amount?: number;
-  notes?: string;
+  supplier?: Supplier;
+  user?: User;
+  created_at: string;
+  updated_at: string;
 }

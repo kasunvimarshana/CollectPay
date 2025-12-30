@@ -1,35 +1,28 @@
 /**
  * Supplier Entity
- * 
- * Domain layer entity representing a supplier.
  */
+
 export interface Supplier {
-  id: string;
-  code: string;
-  name: string;
-  contactPerson?: string;
-  phone?: string;
-  address?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  version: number;
-}
-
-export interface CreateSupplierDTO {
+  id: number;
   name: string;
   code: string;
+  contact_person?: string;
   phone?: string;
   email?: string;
   address?: string;
-  notes?: string;
+  region?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface UpdateSupplierDTO {
-  name?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  notes?: string;
-  isActive?: boolean;
+export interface SupplierBalance {
+  supplier: Supplier;
+  total_collected: number;
+  total_paid: number;
+  balance: number;
+  period: {
+    start_date?: string;
+    end_date?: string;
+  };
 }

@@ -1,46 +1,29 @@
 /**
- * Product Entity
- * 
- * Domain layer entity representing a product with multi-unit support.
+ * Product and Rate Entities
  */
+
 export interface Product {
-  id: string;
-  code: string;
+  id: number;
   name: string;
+  code: string;
   description?: string;
+  base_unit: string;
+  supported_units: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Rate {
+  id: number;
+  product_id: number;
+  rate: number;
   unit: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  effective_from: string;
+  effective_to?: string;
+  is_active: boolean;
   version: number;
-}
-
-export interface ProductRate {
-  id: string;
-  productId: string;
-  rate: number;
-  effectiveFrom: string;
-  effectiveTo?: string;
-  createdAt: string;
-  version: number;
-}
-
-export interface CreateProductDTO {
-  name: string;
-  code: string;
-  unit: ProductUnit;
-  description?: string;
-}
-
-export interface UpdateProductDTO {
-  name?: string;
-  unit?: ProductUnit;
-  description?: string;
-  isActive?: boolean;
-}
-
-export interface CreateProductRateDTO {
-  productId: number;
-  rate: number;
-  effectiveFrom: Date;
+  product?: Product;
+  created_at: string;
+  updated_at: string;
 }

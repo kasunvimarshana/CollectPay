@@ -1,67 +1,125 @@
 /**
- * Home Screen / Dashboard
- * Main screen after authentication
+ * Home Screen
+ * Main dashboard for authenticated users
  */
 
 import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
   ScrollView,
-  SafeAreaView,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { canView } from '../../core/utils/permissions';
+import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 
-interface Props {
-  navigation: any;
-}
-
-export function HomeScreen({ navigation }: Props) {
+export const HomeScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { user, logout } = useAuth();
-
-  const menuItems = [
-    { title: 'Suppliers', icon: '👥', route: 'Suppliers', color: '#FF6B6B' },
-    { title: 'Products', icon: '📦', route: 'Products', color: '#4ECDC4' },
-    { title: 'Collections', icon: '📊', route: 'Collections', color: '#45B7D1' },
-    { title: 'Payments', icon: '💰', route: 'Payments', color: '#FFA07A' },
-    { title: 'Reports', icon: '📈', route: 'Reports', color: '#98D8C8' },
-    { title: 'Settings', icon: '⚙️', route: 'Settings', color: '#95E1D3' },
-  ];
 
   const handleLogout = async () => {
     await logout();
   };
 
+  const navigateTo = (screen: string) => {
+    (navigation.navigate as any)(screen);
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>LedgerFlow</Text>
-        <Text style={styles.subtitle}>Welcome, {user?.name}</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>Ledger Dashboard</Text>
+            <Text style={styles.subtitle}>Welcome, {user?.name || 'User'}</Text>
+            <Text style={styles.role}>Role: {user?.role?.display_name || 'N/A'}</Text>
+          </View>
+          <SyncStatusIndicator showDetails={true} />
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
-        <View style={styles.grid}>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.card, { backgroundColor: item.color }]}
-              onPress={() => navigation.navigate(item.route)}
+        <View style={styles.menuGrid}>
+          {canView(user, 'suppliers') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('SupplierList')}
             >
-              <Text style={styles.cardIcon}>{item.icon}</Text>
-              <Text style={styles.cardTitle}>{item.title}</Text>
+              <Text style={styles.menuIcon}>👥</Text>
+              <Text style={styles.menuText}>Suppliers</Text>
             </TouchableOpacity>
-          ))}
+          )}
+
+          {canView(user, 'products') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('ProductList')}
+            >
+              <Text style={styles.menuIcon}>📦</Text>
+              <Text style={styles.menuText}>Products</Text>
+            </TouchableOpacity>
+          )}
+
+          {canView(user, 'collections') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('CollectionList')}
+            >
+              <Text style={styles.menuIcon}>📊</Text>
+              <Text style={styles.menuText}>Collections</Text>
+            </TouchableOpacity>
+          )}
+
+          {canView(user, 'payments') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('PaymentList')}
+            >
+              <Text style={styles.menuIcon}>💰</Text>
+              <Text style={styles.menuText}>Payments</Text>
+            </TouchableOpacity>
+          )}
+
+          {canView(user, 'users') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('UserList')}
+            >
+              <Text style={styles.menuIcon}>👤</Text>
+              <Text style={styles.menuText}>Users</Text>
+            </TouchableOpacity>
+          )}
+
+          {canView(user, 'roles') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('RoleList')}
+            >
+              <Text style={styles.menuIcon}>🔐</Text>
+              <Text style={styles.menuText}>Roles</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Reports available to all authenticated users */}
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => navigateTo('Reports')}
+          >
+            <Text style={styles.menuIcon}>📈</Text>
+            <Text style={styles.menuText}>Reports</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -69,63 +127,73 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
+    backgroundColor: '#007bff',
     padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    paddingTop: 50,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#fff',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    marginTop: 4,
+    color: '#fff',
+    marginBottom: 4,
+  },
+  role: {
+    fontSize: 14,
+    color: '#e0e0e0',
   },
   content: {
     flex: 1,
+    padding: 20,
   },
-  grid: {
+  menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 10,
+    justifyContent: 'space-between',
   },
-  card: {
-    width: '46%',
-    margin: '2%',
+  menuItem: {
+    width: '48%',
+    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 120,
-    elevation: 3,
+    marginBottom: 15,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  cardIcon: {
+  menuIcon: {
     fontSize: 40,
     marginBottom: 10,
   },
-  cardTitle: {
-    fontSize: 16,
+  menuText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: '#333',
     textAlign: 'center',
   },
   logoutButton: {
-    margin: 20,
-    padding: 16,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#dc3545',
+    paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 40,
   },
-  logoutText: {
+  logoutButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
 });
