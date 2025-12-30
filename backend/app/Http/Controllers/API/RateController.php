@@ -25,6 +25,20 @@ class RateController extends Controller
      *     @OA\Parameter(name="is_active", in="query", required=false, @OA\Schema(type="boolean")),
      *     @OA\Parameter(name="date", in="query", required=false, @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=15)),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Field to sort by",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"rate","unit","effective_from","effective_to","version","created_at","updated_at"}, default="effective_from")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
      *     @OA\Response(response=200, description="Success"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -58,9 +72,20 @@ class RateController extends Controller
                 });
         }
         
+        // Sorting
+        $sortBy = $request->get('sort_by', 'effective_from');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSortFields = ['rate', 'unit', 'effective_from', 'effective_to', 'version', 'created_at', 'updated_at'];
+        
+        if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest('effective_from');
+        }
+        
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $rates = $query->latest('effective_from')->paginate($perPage);
+        $rates = $query->paginate($perPage);
         
         return response()->json([
             'success' => true,

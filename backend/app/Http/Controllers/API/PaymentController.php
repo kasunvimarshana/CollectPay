@@ -26,6 +26,20 @@ class PaymentController extends Controller
      *     @OA\Parameter(name="start_date", in="query", required=false, @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="end_date", in="query", required=false, @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=15)),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Field to sort by",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"payment_date","amount","type","created_at","updated_at"}, default="payment_date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
      *     @OA\Response(response=200, description="Success"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -58,9 +72,20 @@ class PaymentController extends Controller
             $query->where('payment_date', '<=', $request->end_date);
         }
         
+        // Sorting
+        $sortBy = $request->get('sort_by', 'payment_date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSortFields = ['payment_date', 'amount', 'type', 'created_at', 'updated_at'];
+        
+        if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest('payment_date');
+        }
+        
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $payments = $query->latest('payment_date')->paginate($perPage);
+        $payments = $query->paginate($perPage);
         
         return response()->json([
             'success' => true,

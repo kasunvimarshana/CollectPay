@@ -40,6 +40,20 @@ class SupplierController extends Controller
      *         required=false,
      *         @OA\Schema(type="integer", default=15)
      *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Field to sort by",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"name","code","region","created_at","updated_at"}, default="created_at")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
      *     @OA\Response(response=200, description="Success"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -63,9 +77,20 @@ class SupplierController extends Controller
             });
         }
         
+        // Sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSortFields = ['name', 'code', 'region', 'created_at', 'updated_at'];
+        
+        if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest();
+        }
+        
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $suppliers = $query->latest()->paginate($perPage);
+        $suppliers = $query->paginate($perPage);
         
         return response()->json([
             'success' => true,
@@ -398,6 +423,20 @@ class SupplierController extends Controller
      *         description="Results per page",
      *         @OA\Schema(type="integer", default=15)
      *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Field to sort by",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"collection_date","quantity","total_amount"}, default="collection_date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Success",
@@ -422,7 +461,18 @@ class SupplierController extends Controller
             $query->where('collection_date', '<=', $request->end_date);
         }
         
-        $collections = $query->latest('collection_date')->paginate($request->get('per_page', 15));
+        // Sorting
+        $sortBy = $request->get('sort_by', 'collection_date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSortFields = ['collection_date', 'quantity', 'total_amount'];
+        
+        if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest('collection_date');
+        }
+        
+        $collections = $query->paginate($request->get('per_page', 15));
 
         return response()->json([
             'success' => true,
@@ -468,6 +518,20 @@ class SupplierController extends Controller
      *         description="Results per page",
      *         @OA\Schema(type="integer", default=15)
      *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Field to sort by",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"payment_date","amount","type"}, default="payment_date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Success",
@@ -492,7 +556,18 @@ class SupplierController extends Controller
             $query->where('payment_date', '<=', $request->end_date);
         }
         
-        $payments = $query->latest('payment_date')->paginate($request->get('per_page', 15));
+        // Sorting
+        $sortBy = $request->get('sort_by', 'payment_date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSortFields = ['payment_date', 'amount', 'type'];
+        
+        if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest('payment_date');
+        }
+        
+        $payments = $query->paginate($request->get('per_page', 15));
 
         return response()->json([
             'success' => true,

@@ -48,6 +48,20 @@ class UserController extends Controller
      *         required=false,
      *         @OA\Schema(type="integer", default=15)
      *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Field to sort by",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"name","email","created_at","updated_at"}, default="created_at")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
      *     @OA\Response(response=200, description="Success"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -75,9 +89,20 @@ class UserController extends Controller
             });
         }
         
+        // Sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSortFields = ['name', 'email', 'created_at', 'updated_at'];
+        
+        if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest();
+        }
+        
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $users = $query->latest()->paginate($perPage);
+        $users = $query->paginate($perPage);
         
         return response()->json([
             'success' => true,

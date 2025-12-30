@@ -22,6 +22,20 @@ class ProductController extends Controller
      *     @OA\Parameter(name="is_active", in="query", required=false, @OA\Schema(type="boolean")),
      *     @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=15)),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Field to sort by",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"name","code","base_unit","created_at","updated_at"}, default="created_at")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_order",
+     *         in="query",
+     *         description="Sort order",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
+     *     ),
      *     @OA\Response(response=200, description="Success"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -44,9 +58,20 @@ class ProductController extends Controller
             });
         }
         
+        // Sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSortFields = ['name', 'code', 'base_unit', 'created_at', 'updated_at'];
+        
+        if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest();
+        }
+        
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $products = $query->latest()->paginate($perPage);
+        $products = $query->paginate($perPage);
         
         return response()->json([
             'success' => true,
