@@ -1,54 +1,48 @@
 <?php
 
-declare(strict_types=1);
+namespace App\Application\UseCases\User;
 
-namespace Application\UseCases\User;
-
-use Domain\Entities\User;
-use Domain\Repositories\UserRepositoryInterface;
-use Domain\Services\UuidGeneratorInterface;
-use Domain\ValueObjects\Email;
-use Application\DTOs\CreateUserDTO;
-use Illuminate\Support\Facades\Hash;
+use App\Domain\Entities\User;
+use App\Domain\Repositories\UserRepositoryInterface;
 
 /**
  * Create User Use Case
- * Handles the business logic for creating a new user
+ * 
+ * Implements business logic for creating a new user.
+ * Follows Single Responsibility Principle.
  */
-final class CreateUserUseCase
+class CreateUserUseCase
 {
     public function __construct(
-        private readonly UserRepositoryInterface $userRepository,
-        private readonly UuidGeneratorInterface $uuidGenerator
+        private readonly UserRepositoryInterface $userRepository
     ) {}
 
-    public function execute(CreateUserDTO $dto): User
-    {
-        // Check if email already exists
-        $email = Email::fromString($dto->email);
-        $existingUser = $this->userRepository->findByEmail($email);
-        if ($existingUser) {
-            throw new \DomainException("User with email '{$dto->email}' already exists");
+    public function execute(
+        string $name,
+        string $email,
+        string $password,
+        string $role = 'collector',
+        array $permissions = []
+    ): User {
+        // Validate email uniqueness
+        if ($this->userRepository->emailExists($email)) {
+            throw new \DomainException('Email already exists');
         }
 
         // Hash password
-        $passwordHash = Hash::make($dto->password);
+        $hashedPassword = password_hash($password, PASSWORD_ARGON2ID);
 
-        // Generate UUID for new user
-        $id = $this->uuidGenerator->generate();
-
-        // Create new user entity
-        $user = User::create(
-            $id,
-            $dto->name,
+        // Create user entity
+        $user = new User(
+            null,
+            $name,
             $email,
-            $passwordHash,
-            $dto->roles
+            $hashedPassword,
+            $role,
+            $permissions
         );
 
-        // Persist to repository
-        $this->userRepository->save($user);
-
-        return $user;
+        // Persist user
+        return $this->userRepository->save($user);
     }
 }

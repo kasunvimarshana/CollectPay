@@ -1,191 +1,141 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Domain\Entities;
-
-use Domain\ValueObjects\Quantity;
-use Domain\ValueObjects\Money;
-use DateTimeImmutable;
+namespace App\Domain\Entities;
 
 /**
  * Collection Entity
- * Represents a collection transaction from a supplier
+ * 
+ * Represents a collection record with multi-unit support and rate snapshot.
  */
-final class Collection
+class Collection
 {
-    private string $id;
-    private string $supplierId;
-    private string $productId;
-    private string $rateId;
-    private Quantity $quantity;
-    private Money $totalAmount;
-    private DateTimeImmutable $collectionDate;
-    private ?string $notes;
-    private string $collectedBy;
-    private DateTimeImmutable $createdAt;
-    private DateTimeImmutable $updatedAt;
-    private ?DateTimeImmutable $deletedAt;
+    private ?int $id;
+    private int $supplierId;
+    private int $productId;
+    private float $quantity;
+    private string $unit;
+    private float $rateApplied;
+    private float $totalValue;
+    private \DateTimeInterface $collectedAt;
+    private int $createdBy;
+    private \DateTimeInterface $createdAt;
+    private \DateTimeInterface $updatedAt;
 
-    private function __construct(
-        string $id,
-        string $supplierId,
-        string $productId,
-        string $rateId,
-        Quantity $quantity,
-        Money $totalAmount,
-        DateTimeImmutable $collectionDate,
-        string $collectedBy,
-        ?string $notes = null,
-        ?DateTimeImmutable $createdAt = null,
-        ?DateTimeImmutable $updatedAt = null,
-        ?DateTimeImmutable $deletedAt = null
+    public function __construct(
+        ?int $id,
+        int $supplierId,
+        int $productId,
+        float $quantity,
+        string $unit,
+        float $rateApplied,
+        \DateTimeInterface $collectedAt,
+        int $createdBy,
+        ?\DateTimeInterface $createdAt = null,
+        ?\DateTimeInterface $updatedAt = null
     ) {
         $this->id = $id;
         $this->supplierId = $supplierId;
         $this->productId = $productId;
-        $this->rateId = $rateId;
-        $this->quantity = $quantity;
-        $this->totalAmount = $totalAmount;
-        $this->collectionDate = $collectionDate;
-        $this->collectedBy = $collectedBy;
-        $this->notes = $notes;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->updatedAt = $updatedAt ?? new DateTimeImmutable();
-        $this->deletedAt = $deletedAt;
+        $this->setQuantity($quantity);
+        $this->setUnit($unit);
+        $this->setRateApplied($rateApplied);
+        $this->totalValue = $this->calculateTotalValue();
+        $this->collectedAt = $collectedAt;
+        $this->createdBy = $createdBy;
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->updatedAt = $updatedAt ?? new \DateTimeImmutable();
     }
 
-    public static function create(
-        string $id,
-        string $supplierId,
-        string $productId,
-        string $rateId,
-        Quantity $quantity,
-        Money $totalAmount,
-        DateTimeImmutable $collectionDate,
-        string $collectedBy,
-        ?string $notes = null
-    ): self {
-        return new self(
-            $id,
-            $supplierId,
-            $productId,
-            $rateId,
-            $quantity,
-            $totalAmount,
-            $collectionDate,
-            $collectedBy,
-            $notes
-        );
-    }
-
-    public static function reconstitute(
-        string $id,
-        string $supplierId,
-        string $productId,
-        string $rateId,
-        Quantity $quantity,
-        Money $totalAmount,
-        DateTimeImmutable $collectionDate,
-        string $collectedBy,
-        ?string $notes,
-        DateTimeImmutable $createdAt,
-        DateTimeImmutable $updatedAt,
-        ?DateTimeImmutable $deletedAt = null
-    ): self {
-        return new self(
-            $id,
-            $supplierId,
-            $productId,
-            $rateId,
-            $quantity,
-            $totalAmount,
-            $collectionDate,
-            $collectedBy,
-            $notes,
-            $createdAt,
-            $updatedAt,
-            $deletedAt
-        );
-    }
-
-    // Getters
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getSupplierId(): string
+    public function getSupplierId(): int
     {
         return $this->supplierId;
     }
 
-    public function getProductId(): string
+    public function getProductId(): int
     {
         return $this->productId;
     }
 
-    public function getRateId(): string
-    {
-        return $this->rateId;
-    }
-
-    public function getQuantity(): Quantity
+    public function getQuantity(): float
     {
         return $this->quantity;
     }
 
-    public function getTotalAmount(): Money
+    public function setQuantity(float $quantity): void
     {
-        return $this->totalAmount;
+        if ($quantity <= 0) {
+            throw new \InvalidArgumentException('Quantity must be positive');
+        }
+        $this->quantity = $quantity;
+        $this->totalValue = $this->calculateTotalValue();
     }
 
-    public function getCollectionDate(): DateTimeImmutable
+    public function getUnit(): string
     {
-        return $this->collectionDate;
+        return $this->unit;
     }
 
-    public function getCollectedBy(): string
+    public function setUnit(string $unit): void
     {
-        return $this->collectedBy;
+        $validUnits = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'unit'];
+        if (!in_array($unit, $validUnits)) {
+            throw new \InvalidArgumentException('Invalid unit');
+        }
+        $this->unit = $unit;
     }
 
-    public function getNotes(): ?string
+    public function getRateApplied(): float
     {
-        return $this->notes;
+        return $this->rateApplied;
     }
 
-    public function getCreatedAt(): DateTimeImmutable
+    public function setRateApplied(float $rate): void
+    {
+        if ($rate < 0) {
+            throw new \InvalidArgumentException('Rate cannot be negative');
+        }
+        $this->rateApplied = $rate;
+        $this->totalValue = $this->calculateTotalValue();
+    }
+
+    public function getTotalValue(): float
+    {
+        return $this->totalValue;
+    }
+
+    private function calculateTotalValue(): float
+    {
+        return round($this->quantity * $this->rateApplied, 2);
+    }
+
+    public function getCollectedAt(): \DateTimeInterface
+    {
+        return $this->collectedAt;
+    }
+
+    public function getCreatedBy(): int
+    {
+        return $this->createdBy;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): DateTimeImmutable
+    public function getUpdatedAt(): \DateTimeInterface
     {
         return $this->updatedAt;
     }
 
-    public function getDeletedAt(): ?DateTimeImmutable
+    public function touch(): void
     {
-        return $this->deletedAt;
-    }
-
-    // Business logic
-    public function updateNotes(string $notes): void
-    {
-        $this->notes = $notes;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function delete(): void
-    {
-        $this->deletedAt = new DateTimeImmutable();
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function isDeleted(): bool
-    {
-        return $this->deletedAt !== null;
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function toArray(): array
@@ -194,15 +144,14 @@ final class Collection
             'id' => $this->id,
             'supplier_id' => $this->supplierId,
             'product_id' => $this->productId,
-            'rate_id' => $this->rateId,
-            'quantity' => $this->quantity->toArray(),
-            'total_amount' => $this->totalAmount->toArray(),
-            'collection_date' => $this->collectionDate->format('Y-m-d H:i:s'),
-            'collected_by' => $this->collectedBy,
-            'notes' => $this->notes,
+            'quantity' => $this->quantity,
+            'unit' => $this->unit,
+            'rate_applied' => $this->rateApplied,
+            'total_value' => $this->totalValue,
+            'collected_at' => $this->collectedAt->format('Y-m-d H:i:s'),
+            'created_by' => $this->createdBy,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
-            'deleted_at' => $this->deletedAt?->format('Y-m-d H:i:s'),
         ];
     }
 }

@@ -1,25 +1,21 @@
 <?php
 
-declare(strict_types=1);
+namespace App\Domain\Repositories;
 
-namespace Domain\Repositories;
-
-use Domain\Entities\Supplier;
+use App\Domain\Entities\Supplier;
 
 /**
  * Supplier Repository Interface
  */
 interface SupplierRepositoryInterface
 {
-    public function save(Supplier $supplier): void;
-    
-    public function findById(string $id): ?Supplier;
-    
-    public function findByCode(string $code): ?Supplier;
-    
-    public function findAll(int $page = 1, int $perPage = 20): array;
-    
-    public function delete(string $id): void;
-    
-    public function exists(string $id): bool;
+    public function findById(int $id): ?Supplier;
+
+    public function findAll(int $page = 1, int $perPage = 15): array;
+
+    public function save(Supplier $supplier): Supplier;
+
+    public function delete(int $id): bool;
+
+    public function search(string $query): array;
 }

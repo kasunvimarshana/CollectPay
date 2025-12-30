@@ -1,49 +1,33 @@
 <?php
 
-declare(strict_types=1);
+namespace App\Application\UseCases\Supplier;
 
-namespace Application\UseCases\Supplier;
-
-use Domain\Entities\Supplier;
-use Domain\Repositories\SupplierRepositoryInterface;
-use Domain\Services\UuidGeneratorInterface;
-use Application\DTOs\CreateSupplierDTO;
+use App\Domain\Entities\Supplier;
+use App\Domain\Repositories\SupplierRepositoryInterface;
 
 /**
  * Create Supplier Use Case
- * Handles the business logic for creating a new supplier
  */
-final class CreateSupplierUseCase
+class CreateSupplierUseCase
 {
     public function __construct(
-        private readonly SupplierRepositoryInterface $supplierRepository,
-        private readonly UuidGeneratorInterface $uuidGenerator
+        private readonly SupplierRepositoryInterface $supplierRepository
     ) {}
 
-    public function execute(CreateSupplierDTO $dto): Supplier
-    {
-        // Check if supplier code already exists
-        $existingSupplier = $this->supplierRepository->findByCode($dto->code);
-        if ($existingSupplier) {
-            throw new \DomainException("Supplier with code '{$dto->code}' already exists");
-        }
-
-        // Generate UUID for new supplier
-        $id = $this->uuidGenerator->generate();
-
-        // Create new supplier entity
-        $supplier = Supplier::create(
-            $id,
-            $dto->name,
-            $dto->code,
-            $dto->address,
-            $dto->phone,
-            $dto->email
+    public function execute(
+        string $name,
+        string $contact,
+        string $address,
+        array $metadata = []
+    ): Supplier {
+        $supplier = new Supplier(
+            null,
+            $name,
+            $contact,
+            $address,
+            $metadata
         );
 
-        // Persist to repository
-        $this->supplierRepository->save($supplier);
-
-        return $supplier;
+        return $this->supplierRepository->save($supplier);
     }
 }

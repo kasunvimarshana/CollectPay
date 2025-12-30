@@ -1,25 +1,23 @@
 <?php
 
-declare(strict_types=1);
+namespace App\Domain\Repositories;
 
-namespace Domain\Repositories;
-
-use Domain\Entities\Product;
+use App\Domain\Entities\Product;
 
 /**
  * Product Repository Interface
  */
 interface ProductRepositoryInterface
 {
-    public function save(Product $product): void;
-    
-    public function findById(string $id): ?Product;
-    
-    public function findByCode(string $code): ?Product;
-    
-    public function findAll(int $page = 1, int $perPage = 20): array;
-    
-    public function delete(string $id): void;
-    
-    public function exists(string $id): bool;
+    public function findById(int $id): ?Product;
+
+    public function findAll(int $page = 1, int $perPage = 15): array;
+
+    public function save(Product $product): Product;
+
+    public function delete(int $id): bool;
+
+    public function getRateHistory(int $productId): array;
+
+    public function saveRateVersion(int $productId, float $rate, string $unit, \DateTimeInterface $effectiveFrom): bool;
 }

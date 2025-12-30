@@ -1,67 +1,48 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Domain\ValueObjects;
-
-use InvalidArgumentException;
+namespace App\Domain\ValueObjects;
 
 /**
  * Money Value Object
- * Represents monetary amounts with precision
+ * 
+ * Immutable value object representing monetary amounts.
+ * Ensures consistency in money calculations.
  */
 final class Money
 {
-    private float $amount;
-    private string $currency;
-
-    private function __construct(float $amount, string $currency = 'USD')
-    {
-        $this->validate($amount, $currency);
-        $this->amount = $amount;
-        $this->currency = strtoupper($currency);
-    }
-
-    public static function fromFloat(float $amount, string $currency = 'USD'): self
-    {
-        return new self($amount, $currency);
-    }
-
-    public static function zero(string $currency = 'USD'): self
-    {
-        return new self(0.0, $currency);
-    }
-
-    private function validate(float $amount, string $currency): void
-    {
+    private function __construct(
+        private readonly float $amount,
+        private readonly string $currency = 'USD'
+    ) {
         if ($amount < 0) {
-            throw new InvalidArgumentException('Money amount cannot be negative');
-        }
-
-        if (strlen($currency) !== 3) {
-            throw new InvalidArgumentException('Currency must be 3-letter ISO code');
+            throw new \InvalidArgumentException('Amount cannot be negative');
         }
     }
 
-    public function getAmount(): float
+    public static function from(float $amount, string $currency = 'USD'): self
+    {
+        return new self(round($amount, 2), strtoupper($currency));
+    }
+
+    public function amount(): float
     {
         return $this->amount;
     }
 
-    public function getCurrency(): string
+    public function currency(): string
     {
         return $this->currency;
     }
 
-    public function add(self $other): self
+    public function add(Money $other): self
     {
-        $this->ensureSameCurrency($other);
+        $this->assertSameCurrency($other);
         return new self($this->amount + $other->amount, $this->currency);
     }
 
-    public function subtract(self $other): self
+    public function subtract(Money $other): self
     {
-        $this->ensureSameCurrency($other);
+        $this->assertSameCurrency($other);
         return new self($this->amount - $other->amount, $this->currency);
     }
 
@@ -70,35 +51,40 @@ final class Money
         return new self($this->amount * $multiplier, $this->currency);
     }
 
-    public function isGreaterThan(self $other): bool
+    public function isGreaterThan(Money $other): bool
     {
-        $this->ensureSameCurrency($other);
+        $this->assertSameCurrency($other);
         return $this->amount > $other->amount;
     }
 
-    public function isLessThan(self $other): bool
+    public function isLessThan(Money $other): bool
     {
-        $this->ensureSameCurrency($other);
+        $this->assertSameCurrency($other);
         return $this->amount < $other->amount;
     }
 
-    public function equals(self $other): bool
+    public function equals(Money $other): bool
     {
-        return $this->amount === $other->amount && $this->currency === $other->currency;
+        return $this->amount === $other->amount 
+            && $this->currency === $other->currency;
     }
 
-    private function ensureSameCurrency(self $other): void
+    private function assertSameCurrency(Money $other): void
     {
         if ($this->currency !== $other->currency) {
-            throw new InvalidArgumentException('Cannot operate on different currencies');
+            throw new \InvalidArgumentException(
+                'Cannot operate on different currencies'
+            );
         }
     }
 
-    public function toArray(): array
+    public function format(): string
     {
-        return [
-            'amount' => $this->amount,
-            'currency' => $this->currency,
-        ];
+        return sprintf('%s %.2f', $this->currency, $this->amount);
+    }
+
+    public function __toString(): string
+    {
+        return $this->format();
     }
 }

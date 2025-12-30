@@ -1,14 +1,13 @@
+import { Collection, CreateCollectionDTO, UpdateCollectionDTO } from '../entities/Collection';
+
 /**
- * Repository Interface for Collections
+ * Collection Repository Interface
  */
-
-import { Collection } from '../entities/Collection';
-
 export interface CollectionRepository {
-  findAll(): Promise<Collection[]>;
-  findById(id: string): Promise<Collection | null>;
-  findBySupplierId(supplierId: string): Promise<Collection[]>;
-  create(collection: Collection): Promise<Collection>;
-  update(collection: Collection): Promise<Collection>;
-  delete(id: string): Promise<void>;
+  getAll(page?: number, perPage?: number): Promise<Collection[]>;
+  getById(id: number): Promise<Collection | null>;
+  getBySupplier(supplierId: number): Promise<Collection[]>;
+  create(data: CreateCollectionDTO): Promise<Collection>;
+  update(id: number, data: UpdateCollectionDTO): Promise<Collection>;
+  delete(id: number): Promise<boolean>;
 }

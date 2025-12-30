@@ -1,34 +1,25 @@
 <?php
 
-declare(strict_types=1);
+namespace App\Domain\Repositories;
 
-namespace Domain\Repositories;
-
-use Domain\Entities\Collection;
-use DateTimeImmutable;
+use App\Domain\Entities\Collection;
 
 /**
  * Collection Repository Interface
  */
 interface CollectionRepositoryInterface
 {
-    public function save(Collection $collection): void;
-    
-    public function findById(string $id): ?Collection;
-    
-    public function findBySupplierId(
-        string $supplierId,
-        int $page = 1,
-        int $perPage = 20
-    ): array;
-    
-    public function findBySupplierAndDateRange(
-        string $supplierId,
-        DateTimeImmutable $startDate,
-        DateTimeImmutable $endDate
-    ): array;
-    
-    public function findAll(int $page = 1, int $perPage = 20): array;
-    
-    public function delete(string $id): void;
+    public function findById(int $id): ?Collection;
+
+    public function findAll(int $page = 1, int $perPage = 15): array;
+
+    public function findBySupplier(int $supplierId, ?int $page = 1, ?int $perPage = 15): array;
+
+    public function findByProduct(int $productId, ?int $page = 1, ?int $perPage = 15): array;
+
+    public function save(Collection $collection): Collection;
+
+    public function delete(int $id): bool;
+
+    public function getTotalCollectionValueBySupplier(int $supplierId): float;
 }

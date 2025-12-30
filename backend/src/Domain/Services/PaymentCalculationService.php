@@ -1,84 +1,82 @@
 <?php
 
-declare(strict_types=1);
+namespace App\Domain\Services;
 
-namespace Domain\Services;
-
-use Domain\ValueObjects\Money;
-use Domain\Entities\Collection;
-use Domain\Entities\Payment;
+use App\Domain\Entities\Collection;
+use App\Domain\Entities\Payment;
+use App\Domain\ValueObjects\Money;
 
 /**
  * Payment Calculation Service
- * Handles business logic for payment calculations
+ * 
+ * Domain service for payment-related calculations.
  */
-final class PaymentCalculationService
+class PaymentCalculationService
 {
     /**
-     * Calculate total amount from collections
-     *
+     * Calculate total collection value
+     * 
      * @param Collection[] $collections
-     * @return Money
      */
-    public function calculateTotalFromCollections(array $collections): Money
+    public function calculateTotalCollections(array $collections, string $currency = 'USD'): Money
     {
-        if (empty($collections)) {
-            return Money::zero();
-        }
-
-        $total = Money::zero($collections[0]->getTotalAmount()->getCurrency());
+        $total = Money::from(0, $currency);
 
         foreach ($collections as $collection) {
-            $total = $total->add($collection->getTotalAmount());
+            $collectionMoney = Money::from($collection->getTotalValue(), $currency);
+            $total = $total->add($collectionMoney);
         }
 
         return $total;
     }
 
     /**
-     * Calculate total payments made
-     *
+     * Calculate total payments
+     * 
      * @param Payment[] $payments
-     * @return Money
      */
-    public function calculateTotalPayments(array $payments): Money
+    public function calculateTotalPayments(array $payments, string $currency = 'USD'): Money
     {
-        if (empty($payments)) {
-            return Money::zero();
-        }
-
-        $total = Money::zero($payments[0]->getAmount()->getCurrency());
+        $total = Money::from(0, $currency);
 
         foreach ($payments as $payment) {
-            if (!$payment->isDeleted()) {
-                $total = $total->add($payment->getAmount());
-            }
+            $paymentMoney = Money::from($payment->getAmount(), $currency);
+            $total = $total->add($paymentMoney);
         }
 
         return $total;
     }
 
     /**
-     * Calculate balance owed (collections minus payments)
-     *
+     * Calculate balance (collections - payments)
+     * 
      * @param Collection[] $collections
      * @param Payment[] $payments
-     * @return Money
      */
-    public function calculateBalanceOwed(array $collections, array $payments): Money
-    {
-        $totalCollections = $this->calculateTotalFromCollections($collections);
-        $totalPayments = $this->calculateTotalPayments($payments);
+    public function calculateBalance(
+        array $collections,
+        array $payments,
+        string $currency = 'USD'
+    ): Money {
+        $totalCollections = $this->calculateTotalCollections($collections, $currency);
+        $totalPayments = $this->calculateTotalPayments($payments, $currency);
 
         return $totalCollections->subtract($totalPayments);
     }
 
     /**
-     * Determine if supplier has outstanding balance
+     * Determine payment status
      */
-    public function hasOutstandingBalance(array $collections, array $payments): bool
+    public function determinePaymentStatus(Money $balance): string
     {
-        $balance = $this->calculateBalanceOwed($collections, $payments);
-        return $balance->getAmount() > 0.01; // Account for floating point precision
+        $zero = Money::from(0, $balance->currency());
+
+        if ($balance->equals($zero)) {
+            return 'settled';
+        } elseif ($balance->isGreaterThan($zero)) {
+            return 'due';
+        } else {
+            return 'overpaid';
+        }
     }
 }

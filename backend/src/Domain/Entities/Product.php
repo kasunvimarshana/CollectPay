@@ -1,93 +1,38 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Domain\Entities;
-
-use Domain\ValueObjects\Money;
-use Domain\ValueObjects\Unit;
-use DateTimeImmutable;
+namespace App\Domain\Entities;
 
 /**
  * Product Entity
- * Represents a product with versioned rates
+ * 
+ * Represents a product with rate versioning support.
  */
-final class Product
+class Product
 {
-    private string $id;
+    private ?int $id;
     private string $name;
-    private string $code;
-    private ?string $description;
-    private Unit $defaultUnit;
-    private bool $isActive;
-    private DateTimeImmutable $createdAt;
-    private DateTimeImmutable $updatedAt;
-    private ?DateTimeImmutable $deletedAt;
+    private string $unit;
+    private float $currentRate;
+    private \DateTimeInterface $createdAt;
+    private \DateTimeInterface $updatedAt;
 
-    private function __construct(
-        string $id,
+    public function __construct(
+        ?int $id,
         string $name,
-        string $code,
-        ?string $description,
-        Unit $defaultUnit,
-        bool $isActive = true,
-        ?DateTimeImmutable $createdAt = null,
-        ?DateTimeImmutable $updatedAt = null,
-        ?DateTimeImmutable $deletedAt = null
+        string $unit,
+        float $currentRate,
+        ?\DateTimeInterface $createdAt = null,
+        ?\DateTimeInterface $updatedAt = null
     ) {
         $this->id = $id;
-        $this->name = $name;
-        $this->code = $code;
-        $this->description = $description;
-        $this->defaultUnit = $defaultUnit;
-        $this->isActive = $isActive;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->updatedAt = $updatedAt ?? new DateTimeImmutable();
-        $this->deletedAt = $deletedAt;
+        $this->setName($name);
+        $this->setUnit($unit);
+        $this->setCurrentRate($currentRate);
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->updatedAt = $updatedAt ?? new \DateTimeImmutable();
     }
 
-    public static function create(
-        string $id,
-        string $name,
-        string $code,
-        Unit $defaultUnit,
-        ?string $description = null
-    ): self {
-        return new self(
-            $id,
-            $name,
-            $code,
-            $description,
-            $defaultUnit
-        );
-    }
-
-    public static function reconstitute(
-        string $id,
-        string $name,
-        string $code,
-        ?string $description,
-        Unit $defaultUnit,
-        bool $isActive,
-        DateTimeImmutable $createdAt,
-        DateTimeImmutable $updatedAt,
-        ?DateTimeImmutable $deletedAt = null
-    ): self {
-        return new self(
-            $id,
-            $name,
-            $code,
-            $description,
-            $defaultUnit,
-            $isActive,
-            $createdAt,
-            $updatedAt,
-            $deletedAt
-        );
-    }
-
-    // Getters
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -97,73 +42,54 @@ final class Product
         return $this->name;
     }
 
-    public function getCode(): string
+    public function setName(string $name): void
     {
-        return $this->code;
+        if (empty($name)) {
+            throw new \InvalidArgumentException('Product name cannot be empty');
+        }
+        $this->name = $name;
     }
 
-    public function getDescription(): ?string
+    public function getUnit(): string
     {
-        return $this->description;
+        return $this->unit;
     }
 
-    public function getDefaultUnit(): Unit
+    public function setUnit(string $unit): void
     {
-        return $this->defaultUnit;
+        $validUnits = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'unit'];
+        if (!in_array($unit, $validUnits)) {
+            throw new \InvalidArgumentException('Invalid unit');
+        }
+        $this->unit = $unit;
     }
 
-    public function isActive(): bool
+    public function getCurrentRate(): float
     {
-        return $this->isActive;
+        return $this->currentRate;
     }
 
-    public function getCreatedAt(): DateTimeImmutable
+    public function setCurrentRate(float $rate): void
+    {
+        if ($rate < 0) {
+            throw new \InvalidArgumentException('Rate cannot be negative');
+        }
+        $this->currentRate = $rate;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): DateTimeImmutable
+    public function getUpdatedAt(): \DateTimeInterface
     {
         return $this->updatedAt;
     }
 
-    public function getDeletedAt(): ?DateTimeImmutable
+    public function touch(): void
     {
-        return $this->deletedAt;
-    }
-
-    // Business logic
-    public function updateDetails(
-        string $name,
-        ?string $description = null
-    ): void {
-        $this->name = $name;
-        $this->description = $description;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function activate(): void
-    {
-        $this->isActive = true;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function deactivate(): void
-    {
-        $this->isActive = false;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function delete(): void
-    {
-        $this->deletedAt = new DateTimeImmutable();
-        $this->isActive = false;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function isDeleted(): bool
-    {
-        return $this->deletedAt !== null;
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function toArray(): array
@@ -171,13 +97,10 @@ final class Product
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'code' => $this->code,
-            'description' => $this->description,
-            'default_unit' => $this->defaultUnit->toString(),
-            'is_active' => $this->isActive,
+            'unit' => $this->unit,
+            'current_rate' => $this->currentRate,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
-            'deleted_at' => $this->deletedAt?->format('Y-m-d H:i:s'),
         ];
     }
 }

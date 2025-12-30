@@ -1,93 +1,45 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Domain\Entities;
-
-use Domain\ValueObjects\UserId;
-use Domain\ValueObjects\Email;
-use DateTimeImmutable;
+namespace App\Domain\Entities;
 
 /**
  * User Entity
- * Represents a user in the system with roles and permissions
+ * 
+ * Core business entity representing a user in the system.
+ * This entity is framework-agnostic and contains only business logic.
  */
-final class User
+class User
 {
-    private UserId $id;
+    private ?int $id;
     private string $name;
-    private Email $email;
-    private string $passwordHash;
-    private array $roles;
-    private bool $isActive;
-    private DateTimeImmutable $createdAt;
-    private DateTimeImmutable $updatedAt;
-    private ?DateTimeImmutable $deletedAt;
+    private string $email;
+    private string $password;
+    private string $role;
+    private array $permissions;
+    private \DateTimeInterface $createdAt;
+    private \DateTimeInterface $updatedAt;
 
-    private function __construct(
-        UserId $id,
+    public function __construct(
+        ?int $id,
         string $name,
-        Email $email,
-        string $passwordHash,
-        array $roles = ['user'],
-        bool $isActive = true,
-        ?DateTimeImmutable $createdAt = null,
-        ?DateTimeImmutable $updatedAt = null,
-        ?DateTimeImmutable $deletedAt = null
+        string $email,
+        string $password,
+        string $role = 'collector',
+        array $permissions = [],
+        ?\DateTimeInterface $createdAt = null,
+        ?\DateTimeInterface $updatedAt = null
     ) {
         $this->id = $id;
-        $this->name = $name;
-        $this->email = $email;
-        $this->passwordHash = $passwordHash;
-        $this->roles = $roles;
-        $this->isActive = $isActive;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->updatedAt = $updatedAt ?? new DateTimeImmutable();
-        $this->deletedAt = $deletedAt;
+        $this->setName($name);
+        $this->setEmail($email);
+        $this->password = $password;
+        $this->setRole($role);
+        $this->permissions = $permissions;
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->updatedAt = $updatedAt ?? new \DateTimeImmutable();
     }
 
-    public static function create(
-        string $id,
-        string $name,
-        Email $email,
-        string $passwordHash,
-        array $roles = ['user']
-    ): self {
-        return new self(
-            UserId::fromString($id),
-            $name,
-            $email,
-            $passwordHash,
-            $roles
-        );
-    }
-
-    public static function reconstitute(
-        UserId $id,
-        string $name,
-        Email $email,
-        string $passwordHash,
-        array $roles,
-        bool $isActive,
-        DateTimeImmutable $createdAt,
-        DateTimeImmutable $updatedAt,
-        ?DateTimeImmutable $deletedAt = null
-    ): self {
-        return new self(
-            $id,
-            $name,
-            $email,
-            $passwordHash,
-            $roles,
-            $isActive,
-            $createdAt,
-            $updatedAt,
-            $deletedAt
-        );
-    }
-
-    // Getters
-    public function getId(): UserId
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -97,108 +49,117 @@ final class User
         return $this->name;
     }
 
-    public function getEmail(): Email
+    public function setName(string $name): void
+    {
+        if (empty($name)) {
+            throw new \InvalidArgumentException('Name cannot be empty');
+        }
+        $this->name = $name;
+    }
+
+    public function getEmail(): string
     {
         return $this->email;
     }
 
-    public function getPasswordHash(): string
+    public function setEmail(string $email): void
     {
-        return $this->passwordHash;
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException('Invalid email format');
+        }
+        $this->email = $email;
     }
 
-    public function getRoles(): array
+    public function getPassword(): string
     {
-        return $this->roles;
+        return $this->password;
     }
 
-    public function isActive(): bool
+    public function setPassword(string $password): void
     {
-        return $this->isActive;
+        // Password should already be hashed before calling this
+        $this->password = $password;
     }
 
-    public function getCreatedAt(): DateTimeImmutable
+    public function getRole(): string
+    {
+        return $this->role;
+    }
+
+    public function setRole(string $role): void
+    {
+        $validRoles = ['admin', 'manager', 'collector'];
+        if (!in_array($role, $validRoles)) {
+            throw new \InvalidArgumentException('Invalid role');
+        }
+        $this->role = $role;
+    }
+
+    public function getPermissions(): array
+    {
+        return $this->permissions;
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        return in_array($permission, $this->permissions);
+    }
+
+    public function grantPermission(string $permission): void
+    {
+        if (!in_array($permission, $this->permissions)) {
+            $this->permissions[] = $permission;
+        }
+    }
+
+    public function revokePermission(string $permission): void
+    {
+        $this->permissions = array_filter(
+            $this->permissions,
+            fn($p) => $p !== $permission
+        );
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === 'manager';
+    }
+
+    public function isCollector(): bool
+    {
+        return $this->role === 'collector';
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): DateTimeImmutable
+    public function getUpdatedAt(): \DateTimeInterface
     {
         return $this->updatedAt;
     }
 
-    public function getDeletedAt(): ?DateTimeImmutable
+    public function touch(): void
     {
-        return $this->deletedAt;
-    }
-
-    // Business logic methods
-    public function updateName(string $name): void
-    {
-        $this->name = $name;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function updateEmail(Email $email): void
-    {
-        $this->email = $email;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function addRole(string $role): void
-    {
-        if (!in_array($role, $this->roles, true)) {
-            $this->roles[] = $role;
-            $this->updatedAt = new DateTimeImmutable();
-        }
-    }
-
-    public function removeRole(string $role): void
-    {
-        $this->roles = array_values(array_filter($this->roles, fn($r) => $r !== $role));
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function hasRole(string $role): bool
-    {
-        return in_array($role, $this->roles, true);
-    }
-
-    public function activate(): void
-    {
-        $this->isActive = true;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function deactivate(): void
-    {
-        $this->isActive = false;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function delete(): void
-    {
-        $this->deletedAt = new DateTimeImmutable();
-        $this->isActive = false;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function isDeleted(): bool
-    {
-        return $this->deletedAt !== null;
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function toArray(): array
     {
         return [
-            'id' => $this->id->toString(),
+            'id' => $this->id,
             'name' => $this->name,
-            'email' => $this->email->toString(),
-            'roles' => $this->roles,
-            'is_active' => $this->isActive,
+            'email' => $this->email,
+            'role' => $this->role,
+            'permissions' => $this->permissions,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
-            'deleted_at' => $this->deletedAt?->format('Y-m-d H:i:s'),
         ];
     }
 }

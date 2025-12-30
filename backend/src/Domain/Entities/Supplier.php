@@ -1,99 +1,41 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Domain\Entities;
-
-use Domain\ValueObjects\Money;
-use DateTimeImmutable;
+namespace App\Domain\Entities;
 
 /**
  * Supplier Entity
- * Represents a supplier from whom collections are made
+ * 
+ * Represents a supplier in the system who provides products.
  */
-final class Supplier
+class Supplier
 {
-    private string $id;
+    private ?int $id;
     private string $name;
-    private string $code;
-    private ?string $address;
-    private ?string $phone;
-    private ?string $email;
-    private bool $isActive;
-    private DateTimeImmutable $createdAt;
-    private DateTimeImmutable $updatedAt;
-    private ?DateTimeImmutable $deletedAt;
+    private string $contact;
+    private string $address;
+    private array $metadata;
+    private \DateTimeInterface $createdAt;
+    private \DateTimeInterface $updatedAt;
 
-    private function __construct(
-        string $id,
+    public function __construct(
+        ?int $id,
         string $name,
-        string $code,
-        ?string $address = null,
-        ?string $phone = null,
-        ?string $email = null,
-        bool $isActive = true,
-        ?DateTimeImmutable $createdAt = null,
-        ?DateTimeImmutable $updatedAt = null,
-        ?DateTimeImmutable $deletedAt = null
+        string $contact,
+        string $address,
+        array $metadata = [],
+        ?\DateTimeInterface $createdAt = null,
+        ?\DateTimeInterface $updatedAt = null
     ) {
         $this->id = $id;
-        $this->name = $name;
-        $this->code = $code;
+        $this->setName($name);
+        $this->setContact($contact);
         $this->address = $address;
-        $this->phone = $phone;
-        $this->email = $email;
-        $this->isActive = $isActive;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->updatedAt = $updatedAt ?? new DateTimeImmutable();
-        $this->deletedAt = $deletedAt;
+        $this->metadata = $metadata;
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->updatedAt = $updatedAt ?? new \DateTimeImmutable();
     }
 
-    public static function create(
-        string $id,
-        string $name,
-        string $code,
-        ?string $address = null,
-        ?string $phone = null,
-        ?string $email = null
-    ): self {
-        return new self(
-            $id,
-            $name,
-            $code,
-            $address,
-            $phone,
-            $email
-        );
-    }
-
-    public static function reconstitute(
-        string $id,
-        string $name,
-        string $code,
-        ?string $address,
-        ?string $phone,
-        ?string $email,
-        bool $isActive,
-        DateTimeImmutable $createdAt,
-        DateTimeImmutable $updatedAt,
-        ?DateTimeImmutable $deletedAt = null
-    ): self {
-        return new self(
-            $id,
-            $name,
-            $code,
-            $address,
-            $phone,
-            $email,
-            $isActive,
-            $createdAt,
-            $updatedAt,
-            $deletedAt
-        );
-    }
-
-    // Getters
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -103,82 +45,60 @@ final class Supplier
         return $this->name;
     }
 
-    public function getCode(): string
+    public function setName(string $name): void
     {
-        return $this->code;
+        if (empty($name)) {
+            throw new \InvalidArgumentException('Supplier name cannot be empty');
+        }
+        $this->name = $name;
     }
 
-    public function getAddress(): ?string
+    public function getContact(): string
+    {
+        return $this->contact;
+    }
+
+    public function setContact(string $contact): void
+    {
+        if (empty($contact)) {
+            throw new \InvalidArgumentException('Contact cannot be empty');
+        }
+        $this->contact = $contact;
+    }
+
+    public function getAddress(): string
     {
         return $this->address;
     }
 
-    public function getPhone(): ?string
+    public function setAddress(string $address): void
     {
-        return $this->phone;
+        $this->address = $address;
     }
 
-    public function getEmail(): ?string
+    public function getMetadata(): array
     {
-        return $this->email;
+        return $this->metadata;
     }
 
-    public function isActive(): bool
+    public function setMetadata(array $metadata): void
     {
-        return $this->isActive;
+        $this->metadata = $metadata;
     }
 
-    public function getCreatedAt(): DateTimeImmutable
+    public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): DateTimeImmutable
+    public function getUpdatedAt(): \DateTimeInterface
     {
         return $this->updatedAt;
     }
 
-    public function getDeletedAt(): ?DateTimeImmutable
+    public function touch(): void
     {
-        return $this->deletedAt;
-    }
-
-    // Business logic
-    public function updateDetails(
-        string $name,
-        ?string $address = null,
-        ?string $phone = null,
-        ?string $email = null
-    ): void {
-        $this->name = $name;
-        $this->address = $address;
-        $this->phone = $phone;
-        $this->email = $email;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function activate(): void
-    {
-        $this->isActive = true;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function deactivate(): void
-    {
-        $this->isActive = false;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function delete(): void
-    {
-        $this->deletedAt = new DateTimeImmutable();
-        $this->isActive = false;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function isDeleted(): bool
-    {
-        return $this->deletedAt !== null;
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function toArray(): array
@@ -186,14 +106,11 @@ final class Supplier
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'code' => $this->code,
+            'contact' => $this->contact,
             'address' => $this->address,
-            'phone' => $this->phone,
-            'email' => $this->email,
-            'is_active' => $this->isActive,
+            'metadata' => $this->metadata,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
-            'deleted_at' => $this->deletedAt?->format('Y-m-d H:i:s'),
         ];
     }
 }

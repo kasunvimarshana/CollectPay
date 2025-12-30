@@ -1,27 +1,44 @@
 <?php
 
-declare(strict_types=1);
+namespace App\Domain\Repositories;
 
-namespace Domain\Repositories;
-
-use Domain\Entities\User;
-use Domain\ValueObjects\UserId;
-use Domain\ValueObjects\Email;
+use App\Domain\Entities\User;
 
 /**
  * User Repository Interface
+ * 
+ * Defines the contract for user persistence operations.
+ * Implementations should handle data storage/retrieval.
  */
 interface UserRepositoryInterface
 {
-    public function save(User $user): void;
-    
-    public function findById(UserId $id): ?User;
-    
-    public function findByEmail(Email $email): ?User;
-    
-    public function findAll(int $page = 1, int $perPage = 20): array;
-    
-    public function delete(UserId $id): void;
-    
-    public function exists(UserId $id): bool;
+    /**
+     * Find user by ID
+     */
+    public function findById(int $id): ?User;
+
+    /**
+     * Find user by email
+     */
+    public function findByEmail(string $email): ?User;
+
+    /**
+     * Get all users with pagination
+     */
+    public function findAll(int $page = 1, int $perPage = 15): array;
+
+    /**
+     * Save a user (create or update)
+     */
+    public function save(User $user): User;
+
+    /**
+     * Delete a user
+     */
+    public function delete(int $id): bool;
+
+    /**
+     * Check if email exists
+     */
+    public function emailExists(string $email, ?int $excludeId = null): bool;
 }

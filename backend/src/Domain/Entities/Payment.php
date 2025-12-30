@@ -1,153 +1,81 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Domain\Entities;
-
-use Domain\ValueObjects\Money;
-use DateTimeImmutable;
+namespace App\Domain\Entities;
 
 /**
  * Payment Entity
- * Represents a payment to a supplier (advance, partial, or final)
+ * 
+ * Represents a payment transaction (advance, partial, or final).
  */
-final class Payment
+class Payment
 {
-    public const TYPE_ADVANCE = 'advance';
-    public const TYPE_PARTIAL = 'partial';
-    public const TYPE_FINAL = 'final';
-
-    private string $id;
-    private string $supplierId;
-    private string $type;
-    private Money $amount;
-    private DateTimeImmutable $paymentDate;
-    private string $paidBy;
-    private ?string $referenceNumber;
+    private ?int $id;
+    private int $supplierId;
+    private float $amount;
+    private string $paymentType;
     private ?string $notes;
-    private DateTimeImmutable $createdAt;
-    private DateTimeImmutable $updatedAt;
-    private ?DateTimeImmutable $deletedAt;
+    private \DateTimeInterface $paidAt;
+    private int $createdBy;
+    private \DateTimeInterface $createdAt;
+    private \DateTimeInterface $updatedAt;
 
-    private function __construct(
-        string $id,
-        string $supplierId,
-        string $type,
-        Money $amount,
-        DateTimeImmutable $paymentDate,
-        string $paidBy,
-        ?string $referenceNumber = null,
-        ?string $notes = null,
-        ?DateTimeImmutable $createdAt = null,
-        ?DateTimeImmutable $updatedAt = null,
-        ?DateTimeImmutable $deletedAt = null
+    public function __construct(
+        ?int $id,
+        int $supplierId,
+        float $amount,
+        string $paymentType,
+        ?string $notes,
+        \DateTimeInterface $paidAt,
+        int $createdBy,
+        ?\DateTimeInterface $createdAt = null,
+        ?\DateTimeInterface $updatedAt = null
     ) {
-        $this->validateType($type);
         $this->id = $id;
         $this->supplierId = $supplierId;
-        $this->type = $type;
-        $this->amount = $amount;
-        $this->paymentDate = $paymentDate;
-        $this->paidBy = $paidBy;
-        $this->referenceNumber = $referenceNumber;
+        $this->setAmount($amount);
+        $this->setPaymentType($paymentType);
         $this->notes = $notes;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->updatedAt = $updatedAt ?? new DateTimeImmutable();
-        $this->deletedAt = $deletedAt;
+        $this->paidAt = $paidAt;
+        $this->createdBy = $createdBy;
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->updatedAt = $updatedAt ?? new \DateTimeImmutable();
     }
 
-    public static function create(
-        string $id,
-        string $supplierId,
-        string $type,
-        Money $amount,
-        DateTimeImmutable $paymentDate,
-        string $paidBy,
-        ?string $referenceNumber = null,
-        ?string $notes = null
-    ): self {
-        return new self(
-            $id,
-            $supplierId,
-            $type,
-            $amount,
-            $paymentDate,
-            $paidBy,
-            $referenceNumber,
-            $notes
-        );
-    }
-
-    public static function reconstitute(
-        string $id,
-        string $supplierId,
-        string $type,
-        Money $amount,
-        DateTimeImmutable $paymentDate,
-        string $paidBy,
-        ?string $referenceNumber,
-        ?string $notes,
-        DateTimeImmutable $createdAt,
-        DateTimeImmutable $updatedAt,
-        ?DateTimeImmutable $deletedAt = null
-    ): self {
-        return new self(
-            $id,
-            $supplierId,
-            $type,
-            $amount,
-            $paymentDate,
-            $paidBy,
-            $referenceNumber,
-            $notes,
-            $createdAt,
-            $updatedAt,
-            $deletedAt
-        );
-    }
-
-    private function validateType(string $type): void
-    {
-        $validTypes = [self::TYPE_ADVANCE, self::TYPE_PARTIAL, self::TYPE_FINAL];
-        if (!in_array($type, $validTypes, true)) {
-            throw new \InvalidArgumentException("Invalid payment type: {$type}");
-        }
-    }
-
-    // Getters
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getSupplierId(): string
+    public function getSupplierId(): int
     {
         return $this->supplierId;
     }
 
-    public function getType(): string
-    {
-        return $this->type;
-    }
-
-    public function getAmount(): Money
+    public function getAmount(): float
     {
         return $this->amount;
     }
 
-    public function getPaymentDate(): DateTimeImmutable
+    public function setAmount(float $amount): void
     {
-        return $this->paymentDate;
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Amount must be positive');
+        }
+        $this->amount = round($amount, 2);
     }
 
-    public function getPaidBy(): string
+    public function getPaymentType(): string
     {
-        return $this->paidBy;
+        return $this->paymentType;
     }
 
-    public function getReferenceNumber(): ?string
+    public function setPaymentType(string $type): void
     {
-        return $this->referenceNumber;
+        $validTypes = ['advance', 'partial', 'final'];
+        if (!in_array($type, $validTypes)) {
+            throw new \InvalidArgumentException('Invalid payment type');
+        }
+        $this->paymentType = $type;
     }
 
     public function getNotes(): ?string
@@ -155,52 +83,49 @@ final class Payment
         return $this->notes;
     }
 
-    public function getCreatedAt(): DateTimeImmutable
+    public function setNotes(?string $notes): void
+    {
+        $this->notes = $notes;
+    }
+
+    public function getPaidAt(): \DateTimeInterface
+    {
+        return $this->paidAt;
+    }
+
+    public function getCreatedBy(): int
+    {
+        return $this->createdBy;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): DateTimeImmutable
+    public function getUpdatedAt(): \DateTimeInterface
     {
         return $this->updatedAt;
     }
 
-    public function getDeletedAt(): ?DateTimeImmutable
+    public function touch(): void
     {
-        return $this->deletedAt;
-    }
-
-    // Business logic
-    public function updateNotes(string $notes): void
-    {
-        $this->notes = $notes;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function delete(): void
-    {
-        $this->deletedAt = new DateTimeImmutable();
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function isDeleted(): bool
-    {
-        return $this->deletedAt !== null;
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function isAdvance(): bool
     {
-        return $this->type === self::TYPE_ADVANCE;
+        return $this->paymentType === 'advance';
     }
 
     public function isPartial(): bool
     {
-        return $this->type === self::TYPE_PARTIAL;
+        return $this->paymentType === 'partial';
     }
 
     public function isFinal(): bool
     {
-        return $this->type === self::TYPE_FINAL;
+        return $this->paymentType === 'final';
     }
 
     public function toArray(): array
@@ -208,15 +133,13 @@ final class Payment
         return [
             'id' => $this->id,
             'supplier_id' => $this->supplierId,
-            'type' => $this->type,
-            'amount' => $this->amount->toArray(),
-            'payment_date' => $this->paymentDate->format('Y-m-d H:i:s'),
-            'paid_by' => $this->paidBy,
-            'reference_number' => $this->referenceNumber,
+            'amount' => $this->amount,
+            'payment_type' => $this->paymentType,
             'notes' => $this->notes,
+            'paid_at' => $this->paidAt->format('Y-m-d H:i:s'),
+            'created_by' => $this->createdBy,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
-            'deleted_at' => $this->deletedAt?->format('Y-m-d H:i:s'),
         ];
     }
 }

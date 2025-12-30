@@ -1,89 +1,101 @@
 <?php
 
-declare(strict_types=1);
-
-namespace Domain\ValueObjects;
-
-use InvalidArgumentException;
+namespace App\Domain\ValueObjects;
 
 /**
  * Quantity Value Object
- * Represents a quantity with a specific unit of measurement
+ * 
+ * Represents quantities with unit conversion support.
  */
 final class Quantity
 {
-    private float $value;
-    private Unit $unit;
+    // Base unit conversions to grams
+    private const UNIT_CONVERSIONS = [
+        'g' => 1.0,
+        'kg' => 1000.0,
+        'lb' => 453.592,
+        'oz' => 28.3495,
+        'ml' => 1.0,
+        'l' => 1000.0,
+        'unit' => 1.0,
+    ];
 
-    private function __construct(float $value, Unit $unit)
-    {
-        $this->validate($value);
-        $this->value = $value;
-        $this->unit = $unit;
+    private function __construct(
+        private readonly float $value,
+        private readonly string $unit
+    ) {
+        if ($value <= 0) {
+            throw new \InvalidArgumentException('Quantity must be positive');
+        }
+        
+        if (!isset(self::UNIT_CONVERSIONS[$unit])) {
+            throw new \InvalidArgumentException('Invalid unit');
+        }
     }
 
-    public static function create(float $value, Unit $unit): self
+    public static function from(float $value, string $unit): self
     {
         return new self($value, $unit);
     }
 
-    private function validate(float $value): void
-    {
-        if ($value < 0) {
-            throw new InvalidArgumentException('Quantity cannot be negative');
-        }
-    }
-
-    public function getValue(): float
+    public function value(): float
     {
         return $this->value;
     }
 
-    public function getUnit(): Unit
+    public function unit(): string
     {
         return $this->unit;
     }
 
-    public function add(self $other): self
+    /**
+     * Convert to base unit (grams/ml)
+     */
+    public function toBaseUnit(): float
     {
-        $this->ensureSameUnit($other);
-        return new self($this->value + $other->value, $this->unit);
+        return $this->value * self::UNIT_CONVERSIONS[$this->unit];
     }
 
-    public function subtract(self $other): self
+    /**
+     * Convert to another unit
+     */
+    public function convertTo(string $targetUnit): self
     {
-        $this->ensureSameUnit($other);
-        return new self($this->value - $other->value, $this->unit);
-    }
+        if (!isset(self::UNIT_CONVERSIONS[$targetUnit])) {
+            throw new \InvalidArgumentException('Invalid target unit');
+        }
 
-    public function multiply(float $multiplier): self
-    {
-        return new self($this->value * $multiplier, $this->unit);
-    }
+        $baseValue = $this->toBaseUnit();
+        $convertedValue = $baseValue / self::UNIT_CONVERSIONS[$targetUnit];
 
-    public function convertTo(Unit $targetUnit): self
-    {
-        $convertedValue = $this->unit->convertTo($this->value, $targetUnit);
         return new self($convertedValue, $targetUnit);
     }
 
-    public function equals(self $other): bool
+    /**
+     * Add quantities (converts to same unit)
+     */
+    public function add(Quantity $other): self
     {
-        return $this->value === $other->value && $this->unit->equals($other->unit);
+        $thisBase = $this->toBaseUnit();
+        $otherBase = $other->toBaseUnit();
+        $totalBase = $thisBase + $otherBase;
+        
+        $result = $totalBase / self::UNIT_CONVERSIONS[$this->unit];
+        return new self($result, $this->unit);
     }
 
-    private function ensureSameUnit(self $other): void
+    public function equals(Quantity $other): bool
     {
-        if (!$this->unit->equals($other->unit)) {
-            throw new InvalidArgumentException('Cannot operate on different units');
-        }
+        return abs($this->toBaseUnit() - $other->toBaseUnit()) < 0.001;
     }
 
-    public function toArray(): array
+    public function format(): string
     {
-        return [
-            'value' => $this->value,
-            'unit' => $this->unit->toString(),
-        ];
+        return sprintf('%.2f %s', $this->value, $this->unit);
+    }
+
+    public function __toString(): string
+    {
+        return $this->format();
     }
 }

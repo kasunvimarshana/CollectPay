@@ -1,14 +1,13 @@
+import { Payment, CreatePaymentDTO, PaymentBalance } from '../entities/Payment';
+
 /**
- * Repository Interface for Payments
+ * Payment Repository Interface
  */
-
-import { Payment } from '../entities/Payment';
-
 export interface PaymentRepository {
-  findAll(): Promise<Payment[]>;
-  findById(id: string): Promise<Payment | null>;
-  findBySupplierId(supplierId: string): Promise<Payment[]>;
-  create(payment: Payment): Promise<Payment>;
-  update(payment: Payment): Promise<Payment>;
-  delete(id: string): Promise<void>;
+  getAll(page?: number, perPage?: number): Promise<Payment[]>;
+  getById(id: number): Promise<Payment | null>;
+  getBySupplier(supplierId: number): Promise<Payment[]>;
+  create(data: CreatePaymentDTO): Promise<Payment>;
+  delete(id: number): Promise<boolean>;
+  getBalance(supplierId: number): Promise<PaymentBalance>;
 }
