@@ -1,380 +1,337 @@
-# TrackVault - Data Collection and Payment Management Application
+# Field Ledger - Data Collection & Payment Management System
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+A production-ready, enterprise-grade application for managing product collections, suppliers, and payments with offline support. Built with Clean Architecture, following SOLID principles, DRY, and KISS methodologies.
 
-## Overview
+## 🎯 Project Overview
 
-TrackVault is a production-ready, end-to-end data collection and payment management application built with:
-- **Backend**: Laravel (PHP) with JWT Authentication
-- **Frontend**: React Native (Expo) with TypeScript
-- **Architecture**: Clean Architecture, SOLID principles, DRY, KISS
+Field Ledger is an end-to-end data collection and payment management system designed for businesses that need precise tracking of collections, multi-unit quantity management, rate versioning, and automated payment calculations. Perfect for agricultural workflows (tea leaves, produce collection), logistics, and any business requiring accurate supplier payment management.
 
-## Features
+### Key Features
 
-### Core Functionality
-- ✅ **User Management**: Complete CRUD with RBAC/ABAC authorization
-- ✅ **Supplier Management**: Detailed profiles with multi-unit quantity tracking
-- ✅ **Product Management**: Time-based and versioned rate management
-- ✅ **Collection Tracking**: Multi-unit quantity recording with automatic calculations
-- ✅ **Payment Management**: Advance, partial, and final payments with automated calculations
-- ✅ **Audit Trail**: Comprehensive logging of all operations
+- ✅ **Multi-Unit Quantity Tracking** - Support for kg, g, liters, ml, and custom units with automatic conversion
+- ✅ **Rate Versioning** - Historical rate preservation with time-based queries
+- ✅ **Automated Payment Calculations** - Automatic calculation of amounts, balances, and settlements
+- ✅ **Offline-First Architecture** - Full offline support with conflict-aware synchronization
+- ✅ **Multi-User/Multi-Device** - Concurrent operations with data integrity guarantees
+- ✅ **Complete Audit Trail** - Immutable audit logs for all operations
+- ✅ **RBAC/ABAC Security** - Role-based and attribute-based access control
+- ✅ **Clean Architecture** - Maintainable, scalable, and testable codebase
 
-### Security
-- 🔒 JWT token-based authentication
-- 🔒 Encrypted data at rest and in transit
-- 🔒 Role-Based Access Control (RBAC)
-- 🔒 Attribute-Based Access Control (ABAC)
-- 🔒 Secure password hashing
-- 🔒 SQL injection prevention
-- 🔒 XSS and CSRF protection
+## 🏗️ Architecture
 
-### Data Integrity
-- ✓ Multi-user concurrent operations support
-- ✓ Optimistic locking with version control
-- ✓ Server-side validation and conflict resolution
-- ✓ Transactional database operations
-- ✓ Audit trail for all changes
-- ✓ No data duplication or corruption
+### Technology Stack
 
-### Multi-Device Support
-- 📱 Centralized server state
-- 📱 Consistent data across devices
-- 📱 Offline-first architecture with sync
-- 📱 Conflict detection and resolution
+**Backend:**
+- Laravel 12 (PHP 8.3+)
+- PostgreSQL/MySQL/SQLite (UUID primary keys)
+- Clean Architecture with Domain-Driven Design
 
-## Project Structure
+**Frontend:**
+- React Native (Expo)
+- SQLite for offline storage
+- Clean Architecture layers
+
+### Project Structure
 
 ```
-TrackVault/
-├── backend/                    # Laravel Backend
-│   ├── app/
-│   │   ├── Domain/            # Domain Layer
-│   │   ├── Application/       # Application Layer
-│   │   ├── Infrastructure/    # Infrastructure Layer
-│   │   ├── Interfaces/        # Interface Layer (Controllers)
-│   │   └── Models/            # Eloquent Models
-│   ├── database/
-│   │   ├── migrations/        # Database migrations
-│   │   └── seeders/          # Database seeders
-│   └── routes/
-│       └── api.php           # API routes
-│
-├── frontend/                  # React Native Frontend
+fieldledger/
+├── backend/                        # Laravel Backend
 │   ├── src/
-│   │   ├── domain/           # Domain Layer
-│   │   ├── application/      # Application Layer
-│   │   ├── infrastructure/   # Infrastructure Layer
-│   │   ├── presentation/     # Presentation Layer
-│   │   └── shared/           # Shared utilities
-│   └── App.tsx               # Root component
-│
-└── docs/                      # Documentation
-    ├── ARCHITECTURE.md        # System architecture
-    ├── API.md                # API documentation
-    └── DEPLOYMENT.md         # Deployment guide
+│   │   ├── Domain/                # Enterprise Business Rules
+│   │   │   ├── Entities/          # Core business objects
+│   │   │   ├── ValueObjects/      # Immutable values
+│   │   │   ├── Repositories/      # Repository interfaces
+│   │   │   └── Services/          # Domain services
+│   │   ├── Application/           # Application Business Rules
+│   │   ├── Infrastructure/        # Frameworks & Drivers
+│   │   └── Presentation/          # Interface Adapters
+│   ├── database/migrations/       # Database schema
+│   └── tests/                     # Tests
+├── frontend/                      # React Native Frontend
+├── ARCHITECTURE.md                # Architecture documentation
+├── IMPLEMENTATION_SUMMARY.md      # Implementation status
+└── README.md                      # This file
 ```
 
-## Quick Start
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- **Backend**: PHP 8.1+, Composer, MySQL/PostgreSQL
-- **Frontend**: Node.js 18+, npm/yarn, Expo CLI
-- **Tools**: Git
+- PHP 8.3 or higher
+- Composer
+- Node.js 20+ and npm
+- SQLite/MySQL/PostgreSQL
+- Git
 
 ### Backend Setup
 
-```bash
-# Navigate to backend directory
-cd backend
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/kasunvimarshana/fieldledger.git
+   cd fieldledger/backend
+   ```
 
-# Install dependencies
-composer install
+2. **Install dependencies**
+   ```bash
+   composer install
+   ```
 
-# Copy environment file
-cp .env.example .env
+3. **Configure environment**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-# Generate application key
-php artisan key:generate
+4. **Set up database**
+   ```bash
+   # Update .env with your database credentials
+   # For SQLite (development):
+   touch database/database.sqlite
+   
+   # Run migrations
+   php artisan migrate
+   ```
 
-# Generate JWT secret
-php artisan jwt:secret
-
-# Run migrations
-php artisan migrate
-
-# Seed database (optional)
-php artisan db:seed
-
-# Start development server
-php artisan serve
-```
-
-Backend will be available at `http://localhost:8000`
+5. **Start development server**
+   ```bash
+   php artisan serve
+   ```
 
 ### Frontend Setup
 
-```bash
-# Navigate to frontend directory
-cd frontend
+1. **Navigate to frontend**
+   ```bash
+   cd frontend
+   ```
 
-# Install dependencies
-npm install
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# Start Expo development server
-npx expo start
+3. **Start Expo**
+   ```bash
+   npm start
+   ```
 
-# Or use specific platform
-npx expo start --android  # For Android
-npx expo start --ios      # For iOS (macOS only)
-npx expo start --web      # For Web
-```
+## 📊 Domain Model
 
-## Environment Variables
+### Entities
 
-### Backend (.env)
+- **User** - System users with roles and permissions
+- **Supplier** - Entities from whom collections are made
+- **Product** - Collectible items with versioned rates
+- **Collection** - Collection transactions with historical rates
+- **Payment** - Payment transactions (advance, partial, full)
 
-```env
-APP_NAME=TrackVault
-APP_ENV=local
-APP_KEY=base64:...
-APP_DEBUG=true
-APP_URL=http://localhost:8000
+### Value Objects
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=trackvault
-DB_USERNAME=root
-DB_PASSWORD=
+- **Money** - Monetary values with currency
+- **Quantity** - Measured quantities with units
+- **Unit** - Measurement units with conversions
+- **Rate** - Price per unit with effective dates
+- **Email** - Validated email addresses
+- **PhoneNumber** - Validated phone numbers
 
-JWT_SECRET=...
-JWT_TTL=60
-JWT_REFRESH_TTL=20160
-```
+### Business Rules
 
-### Frontend (.env)
+1. **Rate Versioning**
+   - Products can have multiple rates over time
+   - Collections preserve the rate applicable at collection time
+   - Historical rates remain immutable
 
-```env
-EXPO_PUBLIC_API_URL=http://localhost:8000/api
-```
+2. **Multi-Unit Support**
+   - Automatic unit conversion (kg ↔ g, l ↔ ml)
+   - Type-safe quantity operations
+   - Consistent calculations across units
 
-## API Documentation
+3. **Payment Calculation**
+   - Total = Σ(collections) - Σ(payments)
+   - Support for advance, partial, and full payments
+   - Balance tracking per supplier
 
-### Authentication
+4. **Data Integrity**
+   - UUID primary keys for distributed systems
+   - Foreign key constraints
+   - Audit trail for all operations
+   - Optimistic locking for concurrency
 
-```
-POST /api/register          # Register new user
-POST /api/login             # Login
-GET  /api/me                # Get current user
-POST /api/logout            # Logout
-POST /api/refresh           # Refresh token
-POST /api/change-password   # Change password
-```
+## 🔒 Security
 
-### Suppliers
+- **Authentication**: Laravel Sanctum (planned)
+- **Authorization**: RBAC and ABAC
+- **Encryption**: Data at rest and in transit
+- **Audit Trail**: Complete change history
+- **Input Validation**: Comprehensive validation at all layers
+- **SQL Injection Prevention**: Parameterized queries
 
-```
-GET    /api/suppliers              # List suppliers
-POST   /api/suppliers              # Create supplier
-GET    /api/suppliers/{id}         # Get supplier
-PUT    /api/suppliers/{id}         # Update supplier
-DELETE /api/suppliers/{id}         # Delete supplier
-GET    /api/suppliers/{id}/collections  # Get supplier collections
-GET    /api/suppliers/{id}/payments     # Get supplier payments
-GET    /api/suppliers/{id}/balance      # Get supplier balance
-```
+## 📖 API Documentation
 
-### Products
+API endpoints will be documented using OpenAPI/Swagger (planned).
 
-```
-GET    /api/products                # List products
-POST   /api/products                # Create product
-GET    /api/products/{id}           # Get product
-PUT    /api/products/{id}           # Update product
-DELETE /api/products/{id}           # Delete product
-GET    /api/products/{id}/rates     # Get product rates
-POST   /api/products/{id}/rates     # Add product rate
-GET    /api/products/{id}/current-rate  # Get current rate
-```
-
-### Collections
+### Planned Endpoints
 
 ```
-GET    /api/collections             # List collections
-POST   /api/collections             # Create collection
-GET    /api/collections/{id}        # Get collection
-PUT    /api/collections/{id}        # Update collection
-DELETE /api/collections/{id}        # Delete collection
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/users
+POST   /api/users
+GET    /api/suppliers
+POST   /api/suppliers
+GET    /api/products
+POST   /api/products
+GET    /api/collections
+POST   /api/collections
+GET    /api/payments
+POST   /api/payments
+POST   /api/sync
 ```
 
-### Payments
-
-```
-GET    /api/payments                # List payments
-POST   /api/payments                # Create payment
-GET    /api/payments/{id}           # Get payment
-PUT    /api/payments/{id}           # Update payment
-DELETE /api/payments/{id}           # Delete payment
-POST   /api/payments/calculate      # Calculate payment
-```
-
-## Use Case: Tea Leaves Collection
-
-### Scenario
-
-A tea collection business needs to:
-1. Track daily tea leaf collections from multiple suppliers
-2. Record quantities in multiple units (kg, g)
-3. Apply different rates per unit
-4. Manage advance and partial payments
-5. Calculate accurate monthly settlements
-6. Support multiple collectors working simultaneously
-
-### Workflow
-
-1. **Collection Phase**
-   - Collectors visit suppliers daily
-   - Record quantity collected (e.g., 50 kg, 500 g)
-   - System applies current rate automatically
-   - Calculates total amount
-
-2. **Payment Phase**
-   - Record advance payments
-   - Track partial payments
-   - System calculates remaining balance
-
-3. **Settlement Phase**
-   - Review total collections
-   - Verify rates applied
-   - Calculate final payment
-   - Generate reports
-
-## Architecture Highlights
-
-### Clean Architecture Layers
-
-1. **Domain Layer**: Business entities and rules
-2. **Application Layer**: Use cases and services
-3. **Infrastructure Layer**: External interfaces (DB, API)
-4. **Presentation Layer**: UI components
-
-### Design Principles
-
-- **SOLID**: Single responsibility, Open/closed, Liskov substitution, Interface segregation, Dependency inversion
-- **DRY**: Don't Repeat Yourself - reusable components
-- **KISS**: Keep It Simple, Stupid - minimal complexity
-
-### Security Best Practices
-
-- Encrypted data transmission (HTTPS)
-- Encrypted data storage
-- Secure authentication (JWT)
-- Authorization checks at API level
-- Input validation and sanitization
-- SQL injection prevention
-- XSS protection
-
-## Testing
-
-### Backend Tests
+## 🧪 Testing
 
 ```bash
-cd backend
-
 # Run all tests
 php artisan test
 
-# Run specific test
-php artisan test --filter=UserTest
+# Run specific test suite
+php artisan test --testsuite=Unit
+php artisan test --testsuite=Feature
 ```
 
-### Frontend Tests
+## 📈 Offline Synchronization
 
-```bash
-cd frontend
+The system supports offline-first operations:
 
-# Run tests
-npm test
+1. **Local Queue**: Operations stored locally when offline
+2. **Sync on Reconnect**: Automatic synchronization when online
+3. **Conflict Detection**: Timestamp-based conflict detection
+4. **Conflict Resolution**: Server as authoritative source
+5. **Audit Trail**: All sync operations logged
 
-# Run with coverage
-npm test -- --coverage
-```
+## 🎨 Design Principles
 
-## Deployment
+### SOLID Principles
 
-### Backend Deployment
+- **Single Responsibility**: Each class has one reason to change
+- **Open/Closed**: Open for extension, closed for modification
+- **Liskov Substitution**: Subtypes are substitutable
+- **Interface Segregation**: Focused interfaces
+- **Dependency Inversion**: Depend on abstractions
 
-1. Configure production environment
-2. Set up database
-3. Run migrations
-4. Configure web server (Apache/Nginx)
-5. Set up SSL certificate
-6. Configure cron jobs
+### Clean Architecture
 
-### Frontend Deployment
+- **Independent of Frameworks**: Business logic doesn't depend on Laravel
+- **Testable**: Business logic can be tested without UI, DB, or external services
+- **Independent of UI**: UI can change without changing business logic
+- **Independent of Database**: Business logic doesn't know about the database
+- **Independent of External Services**: Business logic doesn't depend on external APIs
 
-#### Expo EAS Build
+### Additional Principles
 
-```bash
-# Install EAS CLI
-npm install -g eas-cli
+- **DRY** (Don't Repeat Yourself): No code duplication
+- **KISS** (Keep It Simple, Stupid): Simple solutions preferred
+- **YAGNI** (You Aren't Gonna Need It): Implement only what's needed
+- **Separation of Concerns**: Each module handles one aspect
 
-# Login to Expo
-eas login
+## 📝 Use Cases
 
-# Configure project
-eas build:configure
+### Tea Leaves Collection Example
 
-# Build for Android
-eas build --platform android
+1. **Daily Collections**
+   - Collector visits suppliers
+   - Records quantity (kg) collected
+   - System applies current rate
+   - Calculates amount owed
 
-# Build for iOS
-eas build --platform ios
-```
+2. **Advance Payments**
+   - Supplier receives advance payment
+   - Recorded in system
+   - Reduces balance owed
 
-## Contributing
+3. **Monthly Settlement**
+   - View total collections
+   - View total payments
+   - Calculate balance
+   - Make final payment
+
+### Multi-Unit Tracking Example
+
+1. Collect 5.5 kg from Supplier A
+2. Collect 750 g from Supplier B
+3. System converts to base unit
+4. Calculates using appropriate rates
+5. Provides accurate totals
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these guidelines:
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
+2. Create a feature branch
+3. Follow existing code style and architecture
+4. Write tests for new features
+5. Submit a pull request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Support
+## 👥 Team
 
-For support, email support@trackvault.com or open an issue in the repository.
+- **Kasun Vimarshana** - Initial work - [@kasunvimarshana](https://github.com/kasunvimarshana)
 
-## Acknowledgments
+## 📚 Documentation
 
-- Laravel Framework
-- React Native & Expo
-- JWT Authentication
-- Clean Architecture principles
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Detailed architecture documentation
+- [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Implementation status
+- [SRS.md](./SRS.md) - Software Requirements Specification
+- [PRD.md](./PRD.md) - Product Requirements Document
 
-## Roadmap
+## 🔮 Roadmap
 
-- [ ] Real-time notifications
-- [ ] Advanced reporting & analytics
-- [ ] Biometric authentication
-- [ ] Payment gateway integration
-- [ ] Multi-language support
-- [ ] Export to Excel/PDF
-- [ ] Mobile offline mode enhancement
-- [ ] Web dashboard
+### Phase 1: Foundation ✅
+- Clean Architecture structure
+- Domain entities and value objects
+- Database schema
+- Eloquent models
 
-## Authors
+### Phase 2: Core Implementation (In Progress)
+- Repository implementations
+- Use cases
+- API endpoints
+- Authentication
 
-- **Kasun Vimarshana** - *Initial work*
+### Phase 3: Frontend
+- React Native UI
+- Offline database
+- Sync mechanism
+- User experience
 
-## Version
+### Phase 4: Advanced Features
+- Real-time notifications
+- Advanced reporting
+- Analytics dashboard
+- Performance optimization
 
-Current Version: 1.0.0
+### Phase 5: Production Ready
+- Comprehensive testing
+- Security hardening
+- Documentation completion
+- Deployment automation
+
+## 📞 Support
+
+For support, email kasunvimarshana@example.com or open an issue on GitHub.
+
+## 🙏 Acknowledgments
+
+- Clean Architecture by Robert C. Martin
+- Domain-Driven Design by Eric Evans
+- Laravel Community
+- React Native Community
 
 ---
 
-**TrackVault** - Reliable Data Collection and Payment Management
+**Status**: Foundation Complete - Active Development
+**Version**: 1.0.0
+**Last Updated**: 2025-12-28

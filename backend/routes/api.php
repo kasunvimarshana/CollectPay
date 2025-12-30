@@ -1,7 +1,14 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
+use Presentation\Http\Controllers\AuthController;
+use Presentation\Http\Controllers\SupplierController;
+use Presentation\Http\Controllers\ProductController;
+use Presentation\Http\Controllers\CollectionController;
+use Presentation\Http\Controllers\PaymentController;
+use Presentation\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,66 +21,48 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Public routes
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-
-// Protected routes
-Route::middleware('auth:api')->group(function () {
-    // Auth routes
-    Route::get('/me', [AuthController::class, 'me']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/refresh', [AuthController::class, 'refresh']);
-    Route::post('/change-password', [AuthController::class, 'changePassword']);
-
-    // User management routes
-    Route::apiResource('users', App\Http\Controllers\Api\UserController::class);
-
-    // Role and Permission routes
-    Route::apiResource('roles', App\Http\Controllers\Api\RoleController::class);
-    Route::apiResource('permissions', App\Http\Controllers\Api\PermissionController::class);
-    Route::post('/roles/{role}/permissions', [App\Http\Controllers\Api\RoleController::class, 'assignPermissions']);
-    Route::post('/users/{user}/roles', [App\Http\Controllers\Api\UserController::class, 'assignRoles']);
-
-    // Supplier routes
-    Route::apiResource('suppliers', App\Http\Controllers\Api\SupplierController::class);
-    Route::get('/suppliers/{supplier}/collections', [App\Http\Controllers\Api\SupplierController::class, 'collections']);
-    Route::get('/suppliers/{supplier}/payments', [App\Http\Controllers\Api\SupplierController::class, 'payments']);
-    Route::get('/suppliers/{supplier}/balance', [App\Http\Controllers\Api\SupplierController::class, 'balance']);
-
-    // Product routes
-    Route::apiResource('products', App\Http\Controllers\Api\ProductController::class);
-    Route::get('/products/{product}/rates', [App\Http\Controllers\Api\ProductController::class, 'rates']);
-    Route::post('/products/{product}/rates', [App\Http\Controllers\Api\ProductController::class, 'addRate']);
-    Route::get('/products/{product}/current-rate', [App\Http\Controllers\Api\ProductController::class, 'currentRate']);
-
-    // Product Rate routes
-    Route::apiResource('product-rates', App\Http\Controllers\Api\ProductRateController::class);
-
-    // Collection routes
-    Route::apiResource('collections', App\Http\Controllers\Api\CollectionController::class);
-    Route::get('/collections/supplier/{supplier}', [App\Http\Controllers\Api\CollectionController::class, 'bySupplier']);
-    Route::get('/collections/date/{date}', [App\Http\Controllers\Api\CollectionController::class, 'byDate']);
-
-    // Payment routes
-    Route::apiResource('payments', App\Http\Controllers\Api\PaymentController::class);
-    Route::get('/payments/supplier/{supplier}', [App\Http\Controllers\Api\PaymentController::class, 'bySupplier']);
-    Route::post('/payments/calculate', [App\Http\Controllers\Api\PaymentController::class, 'calculate']);
-
-    // Audit Log routes
-    Route::get('/audit-logs', [App\Http\Controllers\Api\AuditLogController::class, 'index']);
-    Route::get('/audit-logs/{auditLog}', [App\Http\Controllers\Api\AuditLogController::class, 'show']);
-
-    // Dashboard/Analytics routes
-    Route::get('/dashboard/stats', [App\Http\Controllers\Api\DashboardController::class, 'stats']);
-    Route::get('/dashboard/recent-collections', [App\Http\Controllers\Api\DashboardController::class, 'recentCollections']);
-    Route::get('/dashboard/recent-payments', [App\Http\Controllers\Api\DashboardController::class, 'recentPayments']);
-
-    // Sync routes for offline support
-    Route::prefix('sync')->group(function () {
-        Route::post('/', [App\Http\Controllers\Api\SyncController::class, 'sync']);
-        Route::get('/changes', [App\Http\Controllers\Api\SyncController::class, 'getChanges']);
-        Route::post('/resolve-conflict', [App\Http\Controllers\Api\SyncController::class, 'resolveConflict']);
-        Route::get('/status', [App\Http\Controllers\Api\SyncController::class, 'status']);
-    });
+// Public routes - Authentication
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register'])->name('auth.register');
+    Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
 });
+
+// Protected routes - Require authentication
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Authentication
+    Route::prefix('auth')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
+        Route::get('/me', [AuthController::class, 'me'])->name('auth.me');
+    });
+
+    // Suppliers
+    Route::apiResource('suppliers', SupplierController::class);
+    
+    // Products
+    Route::apiResource('products', ProductController::class);
+    Route::post('products/{id}/rates', [ProductController::class, 'addRate'])->name('products.rates.add');
+    
+    // Collections
+    Route::apiResource('collections', CollectionController::class)->except(['update']);
+    Route::get('suppliers/{supplierId}/collections/total', [CollectionController::class, 'calculateTotal'])
+        ->name('suppliers.collections.total');
+    
+    // Payments
+    Route::apiResource('payments', PaymentController::class)->except(['update']);
+    Route::get('suppliers/{supplierId}/payments/total', [PaymentController::class, 'calculateTotal'])
+        ->name('suppliers.payments.total');
+    Route::get('suppliers/{supplierId}/balance', [PaymentController::class, 'calculateBalance'])
+        ->name('suppliers.balance');
+    
+    // Users - Admin only routes can be protected with role middleware later
+    Route::apiResource('users', UserController::class)->except(['store']);
+});
+
+// Health check endpoint
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+})->name('health');

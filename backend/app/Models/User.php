@@ -4,15 +4,24 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, HasUuids;
+
+    /**
+     * The primary key type.
+     */
+    protected $keyType = 'string';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     */
+    public $incrementing = false;
 
     /**
      * The attributes that are mass assignable.
@@ -20,13 +29,12 @@ class User extends Authenticatable implements JWTSubject
      * @var list<string>
      */
     protected $fillable = [
+        'id',
         'name',
         'email',
         'password',
-        'phone',
-        'status',
-        'metadata',
-        'version',
+        'roles',
+        'is_active',
     ];
 
     /**
@@ -49,93 +57,8 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'last_login_at' => 'datetime',
-            'metadata' => 'array',
+            'roles' => 'array',
+            'is_active' => 'boolean',
         ];
-    }
-
-    /**
-     * Get the identifier that will be stored in the subject claim of the JWT.
-     *
-     * @return mixed
-     */
-    public function getJWTIdentifier()
-    {
-        return $this->getKey();
-    }
-
-    /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
-     *
-     * @return array
-     */
-    public function getJWTCustomClaims()
-    {
-        return [];
-    }
-
-    /**
-     * Get the roles for the user.
-     */
-    public function roles()
-    {
-        return $this->belongsToMany(Role::class, 'user_role');
-    }
-
-    /**
-     * Check if user has a specific role.
-     */
-    public function hasRole(string $roleName): bool
-    {
-        return $this->roles()->where('name', $roleName)->exists();
-    }
-
-    /**
-     * Check if user has any of the given roles.
-     */
-    public function hasAnyRole(array $roles): bool
-    {
-        return $this->roles()->whereIn('name', $roles)->exists();
-    }
-
-    /**
-     * Get all permissions for the user through roles.
-     */
-    public function permissions()
-    {
-        return $this->roles()->with('permissions')->get()
-            ->pluck('permissions')->flatten()->unique('id');
-    }
-
-    /**
-     * Check if user has a specific permission.
-     */
-    public function hasPermission(string $permissionName): bool
-    {
-        return $this->permissions()->contains('name', $permissionName);
-    }
-
-    /**
-     * Get collections created by this user.
-     */
-    public function collections()
-    {
-        return $this->hasMany(Collection::class, 'collected_by');
-    }
-
-    /**
-     * Get payments recorded by this user.
-     */
-    public function payments()
-    {
-        return $this->hasMany(Payment::class, 'recorded_by');
-    }
-
-    /**
-     * Get audit logs for this user.
-     */
-    public function auditLogs()
-    {
-        return $this->hasMany(AuditLog::class);
     }
 }
