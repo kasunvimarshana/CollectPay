@@ -28,6 +28,13 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["@react-native-community/datetimepicker"]
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4564384c-389a-485b-af76-3e50cfd1580a"
+      }
+    }
   }
 }
