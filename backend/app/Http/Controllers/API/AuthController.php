@@ -5,7 +5,6 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -13,18 +12,21 @@ class AuthController extends Controller
 {
     /**
      * Register a new user
-     * 
+     *
      * @OA\Post(
      *     path="/register",
      *     tags={"Authentication"},
      *     summary="Register a new user",
      *     description="Create a new user account with email and password",
      *     operationId="register",
+     *
      *     @OA\RequestBody(
      *         required=true,
      *         description="User registration data",
+     *
      *         @OA\JsonContent(
      *             required={"name","email","password","password_confirmation"},
+     *
      *             @OA\Property(property="name", type="string", example="John Doe"),
      *             @OA\Property(property="email", type="string", format="email", example="john@example.com"),
      *             @OA\Property(property="password", type="string", format="password", minLength=8, example="password123"),
@@ -32,10 +34,13 @@ class AuthController extends Controller
      *             @OA\Property(property="role_id", type="integer", nullable=true, example=2, description="Role ID (optional)")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=201,
      *         description="User registered successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="User registered successfully"),
      *             @OA\Property(
@@ -48,10 +53,13 @@ class AuthController extends Controller
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="errors", type="object")
      *         )
@@ -70,7 +78,7 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -90,33 +98,39 @@ class AuthController extends Controller
                 'user' => $user,
                 'token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60
-            ]
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
+            ],
         ], 201);
     }
 
     /**
      * Login user and create token
-     * 
+     *
      * @OA\Post(
      *     path="/login",
      *     tags={"Authentication"},
      *     summary="Login user",
      *     description="Authenticate user and return JWT token",
      *     operationId="login",
+     *
      *     @OA\RequestBody(
      *         required=true,
      *         description="User login credentials",
+     *
      *         @OA\JsonContent(
      *             required={"email","password"},
+     *
      *             @OA\Property(property="email", type="string", format="email", example="admin@ledger.com"),
      *             @OA\Property(property="password", type="string", format="password", example="password")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Login successful",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Login successful"),
      *             @OA\Property(
@@ -129,18 +143,24 @@ class AuthController extends Controller
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Invalid credentials",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="message", type="string", example="Invalid credentials")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="errors", type="object")
      *         )
@@ -157,16 +177,16 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $credentials = $request->only('email', 'password');
 
-        if (!$token = auth('api')->attempt($credentials)) {
+        if (! $token = auth('api')->attempt($credentials)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid credentials'
+                'message' => 'Invalid credentials',
             ], 401);
         }
 
@@ -179,14 +199,14 @@ class AuthController extends Controller
                 'user' => $user->load('role'),
                 'token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60
-            ]
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
+            ],
         ]);
     }
 
     /**
      * Get the authenticated user
-     * 
+     *
      * @OA\Get(
      *     path="/me",
      *     tags={"Authentication"},
@@ -194,18 +214,24 @@ class AuthController extends Controller
      *     description="Get the currently authenticated user's information",
      *     operationId="me",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="User data retrieved successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="data", type="object")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated")
      *         )
      *     )
@@ -214,16 +240,16 @@ class AuthController extends Controller
     public function me()
     {
         $user = auth('api')->user()->load('role');
-        
+
         return response()->json([
             'success' => true,
-            'data' => $user
+            'data' => $user,
         ]);
     }
 
     /**
      * Logout user (revoke the token)
-     * 
+     *
      * @OA\Post(
      *     path="/logout",
      *     tags={"Authentication"},
@@ -231,18 +257,24 @@ class AuthController extends Controller
      *     description="Revoke the user's JWT token",
      *     operationId="logout",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Logout successful",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Logout successful")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated")
      *         )
      *     )
@@ -254,13 +286,13 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logout successful'
+            'message' => 'Logout successful',
         ]);
     }
 
     /**
      * Refresh a token
-     * 
+     *
      * @OA\Post(
      *     path="/refresh",
      *     tags={"Authentication"},
@@ -268,10 +300,13 @@ class AuthController extends Controller
      *     description="Get a new JWT token using the current token",
      *     operationId="refresh",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Token refreshed successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(
      *                 property="data",
@@ -282,10 +317,13 @@ class AuthController extends Controller
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated")
      *         )
      *     )
@@ -300,8 +338,8 @@ class AuthController extends Controller
             'data' => [
                 'token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60
-            ]
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
+            ],
         ]);
     }
 }

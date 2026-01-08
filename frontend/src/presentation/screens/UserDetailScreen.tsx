@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.base,
   },
   backText: {
-    fontSize: 16,
+    fontSize: THEME.typography.fontSize.md,
     color: THEME.colors.primary,
   },
 });

@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: THEME.typography.fontSize.md,
     color: THEME.colors.textSecondary,
-    marginTop: 4,
+    marginTop: THEME.spacing.xs,
   },
   listContent: {
     padding: THEME.spacing.base,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     fontWeight: THEME.typography.fontWeight.semibold,
   },
   cardBody: {
-    marginTop: 4,
+    marginTop: THEME.spacing.xs,
   },
   detailRow: {
     flexDirection: 'row',

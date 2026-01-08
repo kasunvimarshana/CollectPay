@@ -13,7 +13,7 @@ class CollectionController extends Controller
 {
     /**
      * Display a listing of collections
-     * 
+     *
      * @OA\Get(
      *     path="/collections",
      *     tags={"Collections"},
@@ -21,6 +21,7 @@ class CollectionController extends Controller
      *     description="Retrieve collections with multi-unit tracking and filtering options",
      *     operationId="getCollections",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(name="supplier_id", in="query", required=false, @OA\Schema(type="integer")),
      *     @OA\Parameter(name="product_id", in="query", required=false, @OA\Schema(type="integer")),
      *     @OA\Parameter(name="user_id", in="query", required=false, @OA\Schema(type="integer")),
@@ -32,15 +33,19 @@ class CollectionController extends Controller
      *         in="query",
      *         description="Field to sort by",
      *         required=false,
+     *
      *         @OA\Schema(type="string", enum={"collection_date","quantity","total_amount","created_at","updated_at"}, default="collection_date")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="sort_order",
      *         in="query",
      *         description="Sort order",
      *         required=false,
+     *
      *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
      *     ),
+     *
      *     @OA\Response(response=200, description="Success"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -48,55 +53,55 @@ class CollectionController extends Controller
     public function index(Request $request)
     {
         $query = Collection::with(['supplier', 'product', 'user', 'rate']);
-        
+
         // Filter by supplier
         if ($request->has('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
         }
-        
+
         // Filter by product
         if ($request->has('product_id')) {
             $query->where('product_id', $request->product_id);
         }
-        
+
         // Filter by user
         if ($request->has('user_id')) {
             $query->where('user_id', $request->user_id);
         }
-        
+
         // Filter by date range
         if ($request->has('start_date')) {
             $query->where('collection_date', '>=', $request->start_date);
         }
-        
+
         if ($request->has('end_date')) {
             $query->where('collection_date', '<=', $request->end_date);
         }
-        
+
         // Sorting
         $sortBy = $request->get('sort_by', 'collection_date');
         $sortOrder = $request->get('sort_order', 'desc');
         $allowedSortFields = ['collection_date', 'quantity', 'total_amount', 'created_at', 'updated_at'];
-        
+
         if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
             $query->orderBy($sortBy, $sortOrder);
         } else {
             $query->latest('collection_date');
         }
-        
+
         // Pagination
         $perPage = $request->get('per_page', 15);
         $collections = $query->paginate($perPage);
-        
+
         return response()->json([
             'success' => true,
-            'data' => $collections
+            'data' => $collections,
         ]);
     }
 
     /**
      * Store a newly created collection
-     * 
+     *
      * @OA\Post(
      *     path="/collections",
      *     tags={"Collections"},
@@ -104,11 +109,14 @@ class CollectionController extends Controller
      *     description="Record a new collection with automatic rate lookup and amount calculation",
      *     operationId="createCollection",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\RequestBody(
      *         required=true,
      *         description="Collection data with multi-unit quantity",
+     *
      *         @OA\JsonContent(
      *             required={"supplier_id","product_id","collection_date","quantity","unit"},
+     *
      *             @OA\Property(property="supplier_id", type="integer", example=1, description="ID of the supplier"),
      *             @OA\Property(property="product_id", type="integer", example=1, description="ID of the product"),
      *             @OA\Property(property="collection_date", type="string", format="date", example="2025-12-29", description="Date of collection"),
@@ -117,15 +125,19 @@ class CollectionController extends Controller
      *             @OA\Property(property="notes", type="string", nullable=true, example="Quality grade A", description="Additional notes")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=201,
      *         description="Collection created successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Collection created successfully"),
      *             @OA\Property(property="data", type="object", description="Collection details with calculated amount")
      *         )
      *     ),
+     *
      *     @OA\Response(response=422, description="Validation error or rate not found"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -144,7 +156,7 @@ class CollectionController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -152,7 +164,7 @@ class CollectionController extends Controller
             $collection = DB::transaction(function () use ($request) {
                 // Get authenticated user
                 $userId = auth()->id();
-                if (!$userId) {
+                if (! $userId) {
                     throw new \Exception('User authentication required');
                 }
 
@@ -160,7 +172,7 @@ class CollectionController extends Controller
                 $product = Product::findOrFail($request->product_id);
                 $rate = $product->getCurrentRate($request->collection_date, $request->unit);
 
-                if (!$rate) {
+                if (! $rate) {
                     throw new \Exception('No valid rate found for the specified date and unit');
                 }
 
@@ -190,19 +202,19 @@ class CollectionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Collection created successfully',
-                'data' => $collection
+                'data' => $collection,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
 
     /**
      * Display the specified collection
-     * 
+     *
      * @OA\Get(
      *     path="/collections/{id}",
      *     tags={"Collections"},
@@ -210,21 +222,27 @@ class CollectionController extends Controller
      *     description="Retrieve a specific collection with related supplier, product, user, and rate information",
      *     operationId="getCollectionById",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Collection ID",
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Success",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="data", type="object", description="Collection details")
      *         )
      *     ),
+     *
      *     @OA\Response(response=404, description="Collection not found"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -232,16 +250,16 @@ class CollectionController extends Controller
     public function show(Collection $collection)
     {
         $collection->load(['supplier', 'product', 'user', 'rate']);
-        
+
         return response()->json([
             'success' => true,
-            'data' => $collection
+            'data' => $collection,
         ]);
     }
 
     /**
      * Update the specified collection
-     * 
+     *
      * @OA\Put(
      *     path="/collections/{id}",
      *     tags={"Collections"},
@@ -249,17 +267,22 @@ class CollectionController extends Controller
      *     description="Update collection details with automatic recalculation of rate and amount if necessary",
      *     operationId="updateCollection",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Collection ID",
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\RequestBody(
      *         required=true,
      *         description="Updated collection data",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="supplier_id", type="integer", example=1),
      *             @OA\Property(property="product_id", type="integer", example=1),
      *             @OA\Property(property="collection_date", type="string", format="date", example="2025-12-29"),
@@ -268,15 +291,19 @@ class CollectionController extends Controller
      *             @OA\Property(property="notes", type="string", nullable=true, example="Updated notes")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Collection updated successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Collection updated successfully"),
      *             @OA\Property(property="data", type="object", description="Updated collection with recalculated amount")
      *         )
      *     ),
+     *
      *     @OA\Response(response=422, description="Validation error"),
      *     @OA\Response(response=404, description="Collection not found"),
      *     @OA\Response(response=401, description="Unauthenticated")
@@ -296,7 +323,7 @@ class CollectionController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -307,11 +334,11 @@ class CollectionController extends Controller
                     $productId = $request->get('product_id', $collection->product_id);
                     $date = $request->get('collection_date', $collection->collection_date);
                     $unit = $request->get('unit', $collection->unit);
-                    
+
                     $product = Product::findOrFail($productId);
                     $rate = $product->getCurrentRate($date, $unit);
 
-                    if (!$rate) {
+                    if (! $rate) {
                         throw new \Exception('No valid rate found for the specified date and unit');
                     }
 
@@ -329,7 +356,7 @@ class CollectionController extends Controller
 
                 // Update other fields
                 $collection->fill($request->only(['supplier_id', 'product_id', 'collection_date', 'unit', 'notes']));
-                
+
                 // Increment version for concurrency control
                 $collection->version++;
                 $collection->save();
@@ -340,19 +367,19 @@ class CollectionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Collection updated successfully',
-                'data' => $collection
+                'data' => $collection,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
 
     /**
      * Remove the specified collection
-     * 
+     *
      * @OA\Delete(
      *     path="/collections/{id}",
      *     tags={"Collections"},
@@ -360,21 +387,27 @@ class CollectionController extends Controller
      *     description="Remove a collection record from the system",
      *     operationId="deleteCollection",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Collection ID",
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Collection deleted successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Collection deleted successfully")
      *         )
      *     ),
+     *
      *     @OA\Response(response=404, description="Collection not found"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -385,7 +418,7 @@ class CollectionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Collection deleted successfully'
+            'message' => 'Collection deleted successfully',
         ]);
     }
 }

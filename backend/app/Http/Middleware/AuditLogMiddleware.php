@@ -5,8 +5,8 @@ namespace App\Http\Middleware;
 use App\Models\AuditLog;
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuditLogMiddleware
 {
@@ -35,9 +35,9 @@ class AuditLogMiddleware
         try {
             // Determine the action type
             $action = $this->determineAction($request);
-            
+
             // Skip if no significant action
-            if (!$action) {
+            if (! $action) {
                 return;
             }
 
@@ -56,7 +56,7 @@ class AuditLogMiddleware
             ]);
         } catch (\Exception $e) {
             // Log error but don't fail the request
-            Log::error('Audit log error: ' . $e->getMessage());
+            Log::error('Audit log error: '.$e->getMessage());
         }
     }
 
@@ -72,7 +72,7 @@ class AuditLogMiddleware
             return null;
         }
 
-        return match($method) {
+        return match ($method) {
             'POST' => 'created',
             'PUT', 'PATCH' => 'updated',
             'DELETE' => 'deleted',

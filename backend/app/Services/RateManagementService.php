@@ -10,10 +10,6 @@ class RateManagementService
 {
     /**
      * Create a new rate version for a product.
-     * 
-     * @param int $productId
-     * @param array $rateData
-     * @return Rate
      */
     public function createRateVersion(int $productId, array $rateData): Rate
     {
@@ -32,15 +28,10 @@ class RateManagementService
 
     /**
      * Close existing open-ended rates when a new rate starts.
-     * 
-     * @param int $productId
-     * @param string $unit
-     * @param string $newEffectiveFrom
-     * @return void
      */
     protected function closeExistingRates(int $productId, string $unit, string $newEffectiveFrom): void
     {
-        $previousDay = date('Y-m-d', strtotime($newEffectiveFrom . ' -1 day'));
+        $previousDay = date('Y-m-d', strtotime($newEffectiveFrom.' -1 day'));
 
         Rate::where('product_id', $productId)
             ->where('unit', $unit)
@@ -51,11 +42,6 @@ class RateManagementService
 
     /**
      * Get the current applicable rate for a product.
-     * 
-     * @param int $productId
-     * @param string $unit
-     * @param string|null $date
-     * @return Rate|null
      */
     public function getCurrentRate(int $productId, string $unit, ?string $date = null): ?Rate
     {
@@ -64,9 +50,9 @@ class RateManagementService
         return Rate::where('product_id', $productId)
             ->where('unit', $unit)
             ->where('effective_from', '<=', $date)
-            ->where(function($query) use ($date) {
+            ->where(function ($query) use ($date) {
                 $query->whereNull('effective_to')
-                      ->orWhere('effective_to', '>=', $date);
+                    ->orWhere('effective_to', '>=', $date);
             })
             ->orderBy('effective_from', 'desc')
             ->first();
@@ -74,10 +60,6 @@ class RateManagementService
 
     /**
      * Get rate history for a product.
-     * 
-     * @param int $productId
-     * @param string|null $unit
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getRateHistory(int $productId, ?string $unit = null): \Illuminate\Database\Eloquent\Collection
     {
@@ -93,10 +75,6 @@ class RateManagementService
 
     /**
      * Update a rate (closes old one and creates new version).
-     * 
-     * @param int $rateId
-     * @param array $newData
-     * @return Rate
      */
     public function updateRate(int $rateId, array $newData): Rate
     {
@@ -104,7 +82,7 @@ class RateManagementService
             $oldRate = Rate::findOrFail($rateId);
 
             // Close the old rate if it's still open
-            if (!$oldRate->effective_to) {
+            if (! $oldRate->effective_to) {
                 $oldRate->update(['effective_to' => now()->toDateString()]);
             }
 
@@ -118,11 +96,6 @@ class RateManagementService
 
     /**
      * Check if a product has a valid rate for a given date.
-     * 
-     * @param int $productId
-     * @param string $unit
-     * @param string|null $date
-     * @return bool
      */
     public function hasValidRate(int $productId, string $unit, ?string $date = null): bool
     {
@@ -131,9 +104,6 @@ class RateManagementService
 
     /**
      * Get all units that have rates for a product.
-     * 
-     * @param int $productId
-     * @return array
      */
     public function getAvailableUnitsForProduct(int $productId): array
     {

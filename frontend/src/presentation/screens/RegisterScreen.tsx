@@ -89,7 +89,7 @@ export const RegisterScreen: React.FC = () => {
     >
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: insets.bottom + THEME.spacing.lg }]}>
         <View style={styles.content}>
-          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.title} accessibilityRole="header">Create Account</Text>
           <Text style={styles.subtitle}>Join Ledger Management System</Text>
 
           <View style={styles.form}>
@@ -100,6 +100,8 @@ export const RegisterScreen: React.FC = () => {
               onChangeText={setName}
               autoCapitalize="words"
               autoCorrect={false}
+              accessibilityLabel="Full name"
+              accessibilityHint="Enter your full name"
             />
 
             <TextInput
@@ -110,6 +112,8 @@ export const RegisterScreen: React.FC = () => {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              accessibilityLabel="Email address"
+              accessibilityHint="Enter your email address"
             />
 
             <TextInput
@@ -118,6 +122,8 @@ export const RegisterScreen: React.FC = () => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              accessibilityLabel="Password"
+              accessibilityHint="Enter a password with at least 8 characters"
             />
 
             <TextInput
@@ -126,12 +132,18 @@ export const RegisterScreen: React.FC = () => {
               value={passwordConfirmation}
               onChangeText={setPasswordConfirmation}
               secureTextEntry
+              accessibilityLabel="Confirm password"
+              accessibilityHint="Re-enter your password to confirm"
             />
 
             <TouchableOpacity
               style={[styles.button, isLoading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel="Register"
+              accessibilityHint="Press to create your account"
+              accessibilityState={{ disabled: isLoading, busy: isLoading }}
             >
               {isLoading ? (
                 <ActivityIndicator color={THEME.colors.white} />
@@ -143,6 +155,9 @@ export const RegisterScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.linkButton}
               onPress={goToLogin}
+              accessibilityRole="button"
+              accessibilityLabel="Go to login"
+              accessibilityHint="Navigate to login screen"
             >
               <Text style={styles.linkText}>
                 Already have an account? <Text style={styles.linkTextBold}>Login</Text>

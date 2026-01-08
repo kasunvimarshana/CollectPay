@@ -15,13 +15,9 @@ class PaymentCalculationService
     {
         $this->rateService = $rateService;
     }
+
     /**
      * Calculate total amount owed to a supplier.
-     * 
-     * @param int $supplierId
-     * @param string|null $startDate
-     * @param string|null $endDate
-     * @return array
      */
     public function calculateSupplierBalance(int $supplierId, ?string $startDate = null, ?string $endDate = null): array
     {
@@ -29,7 +25,7 @@ class PaymentCalculationService
 
         // Get total collections
         $collectionsQuery = Collection::where('supplier_id', $supplierId);
-        
+
         if ($startDate) {
             $collectionsQuery->where('collected_at', '>=', $startDate);
         }
@@ -41,7 +37,7 @@ class PaymentCalculationService
 
         // Get total payments
         $paymentsQuery = Payment::where('supplier_id', $supplierId);
-        
+
         if ($startDate) {
             $paymentsQuery->where('payment_date', '>=', $startDate);
         }
@@ -69,12 +65,6 @@ class PaymentCalculationService
 
     /**
      * Calculate payment for a new collection based on rate and quantity.
-     * 
-     * @param int $productId
-     * @param float $quantity
-     * @param string $unit
-     * @param string|null $collectionDate
-     * @return array
      */
     public function calculateCollectionAmount(int $productId, float $quantity, string $unit, ?string $collectionDate = null): array
     {
@@ -83,7 +73,7 @@ class PaymentCalculationService
         // Use rate service to get the applicable rate
         $rate = $this->rateService->getCurrentRate($productId, $unit, $date);
 
-        if (!$rate) {
+        if (! $rate) {
             throw new \InvalidArgumentException("No valid rate found for product ID {$productId}, unit {$unit}, and date {$date}");
         }
 
@@ -100,10 +90,6 @@ class PaymentCalculationService
 
     /**
      * Process a full settlement payment for a supplier.
-     * 
-     * @param int $supplierId
-     * @param array $paymentData
-     * @return Payment
      */
     public function processFullSettlement(int $supplierId, array $paymentData): Payment
     {
@@ -124,11 +110,6 @@ class PaymentCalculationService
 
     /**
      * Validate if a payment amount is valid for the supplier's current balance.
-     * 
-     * @param int $supplierId
-     * @param float $amount
-     * @param string $paymentType
-     * @return bool
      */
     public function validatePaymentAmount(int $supplierId, float $amount, string $paymentType): bool
     {

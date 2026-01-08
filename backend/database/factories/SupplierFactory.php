@@ -13,7 +13,7 @@ class SupplierFactory extends Factory
     {
         return [
             'name' => fake()->company(),
-            'code' => 'SUP' . fake()->unique()->numberBetween(1000, 9999),
+            'code' => 'SUP'.fake()->unique()->numberBetween(1000, 9999),
             'contact_person' => fake()->name(),
             'phone' => fake()->phoneNumber(),
             'email' => fake()->unique()->safeEmail(),

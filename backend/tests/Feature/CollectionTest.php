@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Supplier;
+use App\Models\Collection;
 use App\Models\Product;
 use App\Models\Rate;
-use App\Models\Collection;
 use App\Models\Role;
+use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,13 +16,15 @@ class CollectionTest extends TestCase
     use RefreshDatabase;
 
     protected $supplier;
+
     protected $product;
+
     protected $rate;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create admin role
         Role::factory()->create([
             'name' => 'Admin',
@@ -151,7 +153,7 @@ class CollectionTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/collections/' . $collection->id);
+            ->getJson('/api/collections/'.$collection->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -183,7 +185,7 @@ class CollectionTest extends TestCase
         ];
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->putJson('/api/collections/' . $collection->id, $data);
+            ->putJson('/api/collections/'.$collection->id, $data);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -208,12 +210,12 @@ class CollectionTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->deleteJson('/api/collections/' . $collection->id);
+            ->deleteJson('/api/collections/'.$collection->id);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Collection deleted successfully'
+                'message' => 'Collection deleted successfully',
             ]);
 
         $this->assertSoftDeleted('collections', [

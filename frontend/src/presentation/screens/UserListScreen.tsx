@@ -122,6 +122,9 @@ export const UserListScreen: React.FC = () => {
     <TouchableOpacity
       style={styles.userCard}
       onPress={() => handleUserPress(item.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`User: ${item.name}, Email: ${item.email}, Role: ${item.role?.name || 'None'}, Status: ${item.is_active ? 'Active' : 'Inactive'}`}
+      accessibilityHint="Press to view user details"
     >
       <View style={styles.userHeader}>
         <Text style={styles.userName}>{String(item.name)}</Text>

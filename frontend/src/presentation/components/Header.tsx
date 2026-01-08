@@ -64,7 +64,13 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
     >
       <View style={styles.headerContent}>
         {showBackButton && (
-          <TouchableOpacity onPress={goBack} style={styles.backButton}>
+          <TouchableOpacity 
+            onPress={goBack} 
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            accessibilityHint="Navigate to the previous screen"
+          >
             <Text style={[
               styles.backButtonText,
               { color: isPrimary ? THEME.colors.white : THEME.colors.primary }
@@ -74,10 +80,13 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
           </TouchableOpacity>
         )}
         <View style={styles.titleContainer}>
-          <Text style={[
-            styles.title,
-            { color: isPrimary ? THEME.colors.white : THEME.colors.textPrimary }
-          ]}>
+          <Text 
+            style={[
+              styles.title,
+              { color: isPrimary ? THEME.colors.white : THEME.colors.textPrimary }
+            ]}
+            accessibilityRole="header"
+          >
             {title}
           </Text>
           {subtitle && (
@@ -96,6 +105,9 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={onAddPress}
+                accessibilityRole="button"
+                accessibilityLabel={addButtonText}
+                accessibilityHint="Add a new item"
               >
                 <Text style={styles.addButtonText}>{addButtonText}</Text>
               </TouchableOpacity>

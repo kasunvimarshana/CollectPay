@@ -229,12 +229,12 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: THEME.typography.fontSize.xl,
-    marginLeft: 8,
+    marginLeft: THEME.spacing.sm,
   },
   errorText: {
     color: THEME.colors.error,
     fontSize: THEME.typography.fontSize.base,
-    marginTop: 4,
+    marginTop: THEME.spacing.xs,
   },
   iosPickerContainer: {
     backgroundColor: THEME.colors.surface,

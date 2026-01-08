@@ -22,7 +22,14 @@ export const SortButton: React.FC<SortButtonProps> = ({ label, direction, onPres
   };
 
   return (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
+    <TouchableOpacity 
+      style={styles.button} 
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Sort by ${label}`}
+      accessibilityHint={`Current sort: ${direction ? (direction === 'asc' ? 'ascending' : 'descending') : 'not sorted'}. Press to change sort order`}
+      accessibilityState={{ selected: !!direction }}
+    >
       <Text style={[styles.label, direction && styles.activeLabel]}>
         {label} <Text style={styles.icon}>{getSortIcon()}</Text>
       </Text>

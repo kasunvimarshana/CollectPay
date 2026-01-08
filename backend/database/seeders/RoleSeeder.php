@@ -25,8 +25,8 @@ class RoleSeeder extends Seeder
                     'rates.view', 'rates.create', 'rates.edit', 'rates.delete',
                     'collections.view', 'collections.create', 'collections.edit', 'collections.delete',
                     'payments.view', 'payments.create', 'payments.edit', 'payments.delete',
-                    'reports.view', 'audit.view'
-                ]
+                    'reports.view', 'audit.view',
+                ],
             ],
             [
                 'name' => 'manager',
@@ -38,8 +38,8 @@ class RoleSeeder extends Seeder
                     'rates.view', 'rates.create', 'rates.edit',
                     'collections.view', 'collections.create', 'collections.edit',
                     'payments.view', 'payments.create', 'payments.edit',
-                    'reports.view'
-                ]
+                    'reports.view',
+                ],
             ],
             [
                 'name' => 'collector',
@@ -50,7 +50,7 @@ class RoleSeeder extends Seeder
                     'products.view',
                     'rates.view',
                     'collections.view', 'collections.create', 'collections.edit',
-                ]
+                ],
             ],
             [
                 'name' => 'viewer',
@@ -62,9 +62,9 @@ class RoleSeeder extends Seeder
                     'rates.view',
                     'collections.view',
                     'payments.view',
-                    'reports.view'
-                ]
-            ]
+                    'reports.view',
+                ],
+            ],
         ];
 
         foreach ($roles as $roleData) {

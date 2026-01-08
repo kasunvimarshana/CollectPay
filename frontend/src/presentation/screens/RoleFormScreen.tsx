@@ -149,22 +149,38 @@ export const RoleFormScreen: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!name || !displayName || !description) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    // Validate required fields
+    if (!name || !name.trim()) {
+      Alert.alert('Validation Error', 'Name is required');
+      return;
+    }
+
+    if (name.length > 255) {
+      Alert.alert('Validation Error', 'Name must not exceed 255 characters');
+      return;
+    }
+
+    if (!displayName || !displayName.trim()) {
+      Alert.alert('Validation Error', 'Display name is required');
+      return;
+    }
+
+    if (displayName.length > 255) {
+      Alert.alert('Validation Error', 'Display name must not exceed 255 characters');
       return;
     }
 
     if (selectedPermissions.length === 0) {
-      Alert.alert('Error', 'Please select at least one permission');
+      Alert.alert('Validation Error', 'Please select at least one permission');
       return;
     }
 
     try {
       setSubmitting(true);
       const data = {
-        name,
-        display_name: displayName,
-        description,
+        name: name.trim(),
+        display_name: displayName.trim(),
+        description: description.trim() || null,
         permissions: selectedPermissions,
       };
 
@@ -195,53 +211,56 @@ export const RoleFormScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+    <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>{isEditMode ? 'Edit Role' : 'Create Role'}</Text>
       </View>
+      
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+        <View style={styles.form}>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>System Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., manager, collector"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="none"
+              editable={!isEditMode}
+              maxLength={255}
+            />
+            {isEditMode && (
+              <Text style={styles.helpText}>System name cannot be changed to maintain referential integrity</Text>
+            )}
+          </View>
 
-      <View style={styles.form}>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>System Name *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., manager, collector"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="none"
-            editable={!isEditMode}
-          />
-          {isEditMode && (
-            <Text style={styles.helpText}>System name cannot be changed to maintain referential integrity</Text>
-          )}
-        </View>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Display Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Manager, Collector"
+              value={displayName}
+              onChangeText={setDisplayName}
+              maxLength={255}
+            />
+          </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Display Name *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., Manager, Collector"
-            value={displayName}
-            onChangeText={setDisplayName}
-          />
-        </View>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Describe the role's purpose (optional)"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={3}
+            />
+          </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Description *</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Describe the role's purpose"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={3}
-          />
-        </View>
-
-        <View style={styles.formGroup}>
+          <View style={styles.formGroup}>
           <Text style={styles.label}>Permissions *</Text>
           <Text style={styles.helpText}>
             Selected: {selectedPermissions.length} permissions
@@ -308,6 +327,7 @@ export const RoleFormScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </View>
   );
 };
 
@@ -315,6 +335,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: THEME.colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.background,
+  },
+  loadingText: {
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   header: {
     backgroundColor: THEME.colors.surface,
@@ -361,7 +395,7 @@ const styles = StyleSheet.create({
   helpText: {
     fontSize: THEME.typography.fontSize.sm,
     color: THEME.colors.textSecondary,
-    marginTop: 4,
+    marginTop: THEME.spacing.xs,
   },
   permissionGroup: {
     backgroundColor: THEME.colors.surface,
@@ -440,16 +474,5 @@ const styles = StyleSheet.create({
     color: THEME.colors.white,
     fontSize: THEME.typography.fontSize.md,
     fontWeight: THEME.typography.fontWeight.semibold,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.background,
-  },
-  loadingText: {
-    marginTop: THEME.spacing.md,
-    fontSize: THEME.typography.fontSize.md,
-    color: THEME.colors.textSecondary,
   },
 });

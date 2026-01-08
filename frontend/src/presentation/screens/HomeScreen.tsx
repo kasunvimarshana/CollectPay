@@ -50,6 +50,9 @@ export const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => navigateTo('SupplierList')}
+              accessibilityRole="button"
+              accessibilityLabel="Suppliers"
+              accessibilityHint="View and manage suppliers"
             >
               <Text style={styles.menuIcon}>👥</Text>
               <Text style={styles.menuText}>Suppliers</Text>
@@ -60,6 +63,9 @@ export const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => navigateTo('ProductList')}
+              accessibilityRole="button"
+              accessibilityLabel="Products"
+              accessibilityHint="View and manage products"
             >
               <Text style={styles.menuIcon}>📦</Text>
               <Text style={styles.menuText}>Products</Text>
@@ -70,6 +76,9 @@ export const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => navigateTo('RateList')}
+              accessibilityRole="button"
+              accessibilityLabel="Rates"
+              accessibilityHint="View and manage product rates"
             >
               <Text style={styles.menuIcon}>💵</Text>
               <Text style={styles.menuText}>Rates</Text>
@@ -80,6 +89,9 @@ export const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => navigateTo('CollectionList')}
+              accessibilityRole="button"
+              accessibilityLabel="Collections"
+              accessibilityHint="View and record collections"
             >
               <Text style={styles.menuIcon}>📊</Text>
               <Text style={styles.menuText}>Collections</Text>
@@ -90,6 +102,9 @@ export const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => navigateTo('PaymentList')}
+              accessibilityRole="button"
+              accessibilityLabel="Payments"
+              accessibilityHint="View and record payments"
             >
               <Text style={styles.menuIcon}>💰</Text>
               <Text style={styles.menuText}>Payments</Text>
@@ -100,6 +115,9 @@ export const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => navigateTo('UserList')}
+              accessibilityRole="button"
+              accessibilityLabel="Users"
+              accessibilityHint="View and manage users"
             >
               <Text style={styles.menuIcon}>👤</Text>
               <Text style={styles.menuText}>Users</Text>
@@ -110,6 +128,9 @@ export const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => navigateTo('RoleList')}
+              accessibilityRole="button"
+              accessibilityLabel="Roles"
+              accessibilityHint="View and manage user roles"
             >
               <Text style={styles.menuIcon}>🔐</Text>
               <Text style={styles.menuText}>Roles</Text>
@@ -120,13 +141,22 @@ export const HomeScreen: React.FC = () => {
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => navigateTo('Reports')}
+            accessibilityRole="button"
+            accessibilityLabel="Reports"
+            accessibilityHint="View analytics and reports"
           >
             <Text style={styles.menuIcon}>📈</Text>
             <Text style={styles.menuText}>Reports</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Logout"
+          accessibilityHint="Log out of your account"
+        >
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -182,7 +212,7 @@ const styles = StyleSheet.create({
     ...THEME.shadows.base,
   },
   menuIcon: {
-    fontSize: 40,
+    fontSize: THEME.typography.fontSize.huge,
     marginBottom: THEME.spacing.sm,
   },
   menuText: {

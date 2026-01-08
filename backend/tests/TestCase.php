@@ -2,8 +2,8 @@
 
 namespace Tests;
 
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use App\Models\User;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -13,6 +13,7 @@ abstract class TestCase extends BaseTestCase
     protected function actingAsUser(?User $user = null): string
     {
         $user = $user ?? User::factory()->create();
+
         return auth('api')->login($user);
     }
 
@@ -22,6 +23,7 @@ abstract class TestCase extends BaseTestCase
     protected function authenticatedHeaders(?User $user = null): array
     {
         $token = $this->actingAsUser($user);
-        return ['Authorization' => 'Bearer ' . $token];
+
+        return ['Authorization' => 'Bearer '.$token];
     }
 }

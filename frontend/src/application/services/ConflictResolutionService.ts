@@ -62,7 +62,7 @@ class ConflictResolutionService {
    * Merge non-conflicting fields (optional strategy for specific cases)
    * Only used when explicitly needed, server data takes precedence for conflicts
    */
-  mergeData(localData: any, serverData: any, entity: string): any {
+  mergeData(localData: any, serverData: any, _entity: string): any {
     // For most entities, server data takes precedence
     // This method is provided for future extension if needed
     return {

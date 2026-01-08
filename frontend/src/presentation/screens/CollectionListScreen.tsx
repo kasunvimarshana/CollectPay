@@ -15,7 +15,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Collection } from '../../domain/entities/Collection';
@@ -26,8 +26,10 @@ import THEME from '../../core/constants/theme';
 
 export const CollectionListScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const supplierId = (route.params as any)?.supplierId;
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,6 +70,9 @@ export const CollectionListScreen: React.FC = () => {
       });
       if (searchTerm.trim()) {
         params.append('search', searchTerm.trim());
+      }
+      if (supplierId) {
+        params.append('supplier_id', supplierId.toString());
       }
       const response = await apiClient.get<any>(`/collections?${params.toString()}`);
       if (response.success && response.data) {
@@ -122,6 +127,9 @@ export const CollectionListScreen: React.FC = () => {
     <TouchableOpacity
       style={styles.collectionCard}
       onPress={() => handleCollectionPress(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Collection from ${item.supplier?.name || 'Unknown Supplier'}, Product: ${item.product?.name || 'Unknown'}, Quantity: ${item.quantity} ${item.unit}, Amount: $${typeof item.total_amount === 'number' ? item.total_amount.toFixed(2) : '0.00'}`}
+      accessibilityHint="Press to view collection details"
     >
       <View style={styles.collectionHeader}>
         <Text style={styles.supplierName}>{String(item.supplier?.name || 'Unknown Supplier')}</Text>
@@ -319,7 +327,7 @@ const styles = StyleSheet.create({
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: THEME.spacing.sm,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: THEME.colors.border,
@@ -335,7 +343,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.primary,
   },
   notesContainer: {
-    marginTop: 8,
+    marginTop: THEME.spacing.sm,
     padding: THEME.spacing.sm,
     backgroundColor: THEME.colors.gray50,
     borderRadius: THEME.borderRadius.sm,

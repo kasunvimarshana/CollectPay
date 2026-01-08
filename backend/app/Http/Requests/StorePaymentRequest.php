@@ -13,7 +13,8 @@ class StorePaymentRequest extends FormRequest
     {
         // Check if user has permission to create payments
         $user = $this->user();
-        return $user && $user->role && 
+
+        return $user && $user->role &&
                in_array('payments.create', $user->role->permissions ?? []);
     }
 

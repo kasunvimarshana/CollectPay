@@ -15,7 +15,7 @@ class CollectionObserver
         // Increment version on every update
         // The ?? 0 is a safety fallback - version should always exist (set to 1 by created event)
         // but if somehow it doesn't, we start from 0 and increment to 1
-        if ($collection->isDirty() && !$collection->isDirty('version')) {
+        if ($collection->isDirty() && ! $collection->isDirty('version')) {
             $collection->version = ($collection->version ?? 0) + 1;
         }
     }
@@ -26,7 +26,7 @@ class CollectionObserver
     public function created(Collection $collection): void
     {
         // Ensure version starts at 1
-        if (!$collection->version) {
+        if (! $collection->version) {
             $collection->version = 1;
             $collection->saveQuietly(); // Save without triggering events
         }

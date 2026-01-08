@@ -118,12 +118,14 @@ export const RateFormScreen: React.FC = () => {
 
     if (!formData.rate.trim()) {
       newErrors.rate = 'Rate is required';
-    } else if (isNaN(Number(formData.rate)) || Number(formData.rate) <= 0) {
-      newErrors.rate = 'Rate must be a positive number';
+    } else if (isNaN(Number(formData.rate)) || Number(formData.rate) < 0) {
+      newErrors.rate = 'Rate must be a positive number or zero';
     }
 
     if (!formData.unit.trim()) {
       newErrors.unit = 'Unit is required';
+    } else if (formData.unit.length > 50) {
+      newErrors.unit = 'Unit must not exceed 50 characters';
     }
 
     if (!formData.effective_from) {
@@ -470,7 +472,7 @@ const styles = StyleSheet.create({
   pickerItemSubtext: {
     fontSize: THEME.typography.fontSize.sm,
     color: THEME.colors.textSecondary,
-    marginTop: 2,
+    marginTop: THEME.spacing.xs,
   },
   submitButton: {
     backgroundColor: THEME.colors.primary,

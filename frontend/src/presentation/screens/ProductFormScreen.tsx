@@ -85,14 +85,20 @@ export const ProductFormScreen: React.FC = () => {
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
+    } else if (formData.name.length > 255) {
+      newErrors.name = 'Name must not exceed 255 characters';
     }
 
     if (!formData.code.trim()) {
       newErrors.code = 'Code is required';
+    } else if (formData.code.length > 255) {
+      newErrors.code = 'Code must not exceed 255 characters';
     }
 
     if (!formData.base_unit.trim()) {
       newErrors.base_unit = 'Base unit is required';
+    } else if (formData.base_unit.length > 50) {
+      newErrors.base_unit = 'Base unit must not exceed 50 characters';
     }
 
     if (!formData.supported_units.trim()) {
@@ -168,6 +174,7 @@ export const ProductFormScreen: React.FC = () => {
             placeholder="Enter product name"
             value={formData.name}
             onChangeText={(value) => updateField('name', value)}
+            maxLength={255}
           />
           {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
         </View>
@@ -180,8 +187,13 @@ export const ProductFormScreen: React.FC = () => {
             placeholder="Enter product code"
             value={formData.code}
             onChangeText={(value) => updateField('code', value)}
+            editable={!isEditMode}
+            maxLength={255}
           />
           {errors.code && <Text style={styles.errorText}>{errors.code}</Text>}
+          {isEditMode && (
+            <Text style={styles.helpText}>Product code cannot be changed</Text>
+          )}
         </View>
 
         {/* Description */}
@@ -205,6 +217,7 @@ export const ProductFormScreen: React.FC = () => {
             placeholder="e.g., kg, liters"
             value={formData.base_unit}
             onChangeText={(value) => updateField('base_unit', value)}
+            maxLength={50}
           />
           {errors.base_unit && <Text style={styles.errorText}>{errors.base_unit}</Text>}
         </View>

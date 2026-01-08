@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import THEME from '../../core/constants/theme';
+import THEME, { getPaymentTypeColor } from '../../core/constants/theme';
 import {
   View,
   Text,
@@ -77,18 +77,7 @@ export const PaymentDetailScreen: React.FC = () => {
   };
 
   const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'advance':
-        return '#FF9800';
-      case 'partial':
-        return '#2196F3';
-      case 'full':
-        return '#4CAF50';
-      case 'adjustment':
-        return '#9C27B0';
-      default:
-        return '#666';
-    }
+    return getPaymentTypeColor(type);
   };
 
   if (loading) {

@@ -3,9 +3,9 @@
 namespace Database\Factories;
 
 use App\Models\Collection;
-use App\Models\Supplier;
 use App\Models\Product;
 use App\Models\Rate;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,7 +17,7 @@ class CollectionFactory extends Factory
     {
         $quantity = fake()->randomFloat(2, 10, 100);
         $rate = fake()->randomFloat(2, 100, 500);
-        
+
         return [
             'supplier_id' => Supplier::factory(),
             'product_id' => Product::factory(),

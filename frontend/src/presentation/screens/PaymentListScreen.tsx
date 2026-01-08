@@ -15,19 +15,21 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Payment } from '../../domain/entities/Payment';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination, SortButton, ScreenHeader, SyncStatusIndicator } from '../components';
-import THEME from '../../core/constants/theme';
+import THEME, { getPaymentTypeColor } from '../../core/constants/theme';
 
 export const PaymentListScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const supplierId = (route.params as any)?.supplierId;
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,6 +70,9 @@ export const PaymentListScreen: React.FC = () => {
       });
       if (searchTerm.trim()) {
         params.append('search', searchTerm.trim());
+      }
+      if (supplierId) {
+        params.append('supplier_id', supplierId.toString());
       }
       const response = await apiClient.get<any>(`/payments?${params.toString()}`);
       if (response.success && response.data) {
@@ -119,24 +124,16 @@ export const PaymentListScreen: React.FC = () => {
   };
 
   const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'advance':
-        return '#FF9800';
-      case 'partial':
-        return '#2196F3';
-      case 'full':
-        return '#4CAF50';
-      case 'adjustment':
-        return '#9C27B0';
-      default:
-        return '#666';
-    }
+    return getPaymentTypeColor(type);
   };
 
   const renderPaymentItem = ({ item }: { item: Payment }) => (
     <TouchableOpacity
       style={styles.paymentCard}
       onPress={() => handlePaymentPress(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Payment from ${item.supplier?.name || 'Unknown Supplier'}, Type: ${item.type}, Amount: $${typeof item.amount === 'number' ? item.amount.toFixed(2) : '0.00'}, Date: ${new Date(item.payment_date).toLocaleDateString()}`}
+      accessibilityHint="Press to view payment details"
     >
       <View style={styles.paymentHeader}>
         <Text style={styles.supplierName}>{String(item.supplier?.name || 'Unknown Supplier')}</Text>
@@ -348,7 +345,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notesContainer: {
-    marginTop: 8,
+    marginTop: THEME.spacing.sm,
     padding: THEME.spacing.sm,
     backgroundColor: THEME.colors.gray50,
     borderRadius: THEME.borderRadius.sm,

@@ -134,8 +134,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: THEME.spacing.lg,
-    paddingBottom: 12,
-    gap: 12,
+    paddingBottom: THEME.spacing.md,
+    gap: THEME.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: THEME.colors.border,
   },
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   message: {
     fontSize: THEME.typography.fontSize.base,
     color: COLORS.text,
-    lineHeight: 22,
+    lineHeight: THEME.typography.lineHeight.normal * THEME.typography.fontSize.base,
     marginBottom: THEME.spacing.sm,
   },
   entityName: {
@@ -161,11 +161,11 @@ const styles = StyleSheet.create({
   subMessage: {
     fontSize: THEME.typography.fontSize.base,
     color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: THEME.typography.lineHeight.normal * THEME.typography.fontSize.base,
     marginBottom: THEME.spacing.base,
   },
   changeSection: {
-    marginTop: 12,
+    marginTop: THEME.spacing.md,
     padding: THEME.spacing.md,
     backgroundColor: THEME.colors.background,
     borderRadius: THEME.borderRadius.base,
@@ -179,8 +179,8 @@ const styles = StyleSheet.create({
   changeItem: {
     fontSize: THEME.typography.fontSize.sm,
     color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginLeft: 8,
+    lineHeight: THEME.typography.lineHeight.normal * THEME.typography.fontSize.sm,
+    marginLeft: THEME.spacing.sm,
   },
   serverChange: {
     color: COLORS.success,
@@ -189,8 +189,8 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 16,
+    gap: THEME.spacing.sm,
+    marginTop: THEME.spacing.base,
     padding: THEME.spacing.md,
     backgroundColor: THEME.colors.gray100,
     borderRadius: THEME.borderRadius.base,
@@ -203,15 +203,15 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
+    gap: THEME.spacing.md,
     padding: THEME.spacing.lg,
-    paddingTop: 12,
+    paddingTop: THEME.spacing.md,
     borderTopWidth: 1,
     borderTopColor: THEME.colors.border,
   },
   button: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.lg,
     borderRadius: THEME.borderRadius.base,
     minWidth: 80,
     alignItems: 'center',

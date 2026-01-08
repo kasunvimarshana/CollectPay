@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Product;
 use App\Models\Rate;
 use App\Models\Role;
@@ -16,7 +15,7 @@ class ProductTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create admin role
         Role::factory()->create([
             'name' => 'Admin',
@@ -49,7 +48,7 @@ class ProductTest extends TestCase
                     'name',
                     'code',
                     'base_unit',
-                ]
+                ],
             ]);
 
         $this->assertDatabaseHas('products', [
@@ -87,7 +86,7 @@ class ProductTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/products/' . $product->id);
+            ->getJson('/api/products/'.$product->id);
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
@@ -110,7 +109,7 @@ class ProductTest extends TestCase
         ];
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->putJson('/api/products/' . $product->id, $data);
+            ->putJson('/api/products/'.$product->id, $data);
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
@@ -127,7 +126,7 @@ class ProductTest extends TestCase
         $product = Product::factory()->create();
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->deleteJson('/api/products/' . $product->id);
+            ->deleteJson('/api/products/'.$product->id);
 
         $response->assertStatus(200); // Changed to 200 to match actual implementation
 
@@ -139,7 +138,7 @@ class ProductTest extends TestCase
     public function test_can_get_current_rate_for_product(): void
     {
         $product = Product::factory()->create();
-        
+
         Rate::factory()->create([
             'product_id' => $product->id,
             'rate' => 250.00,
@@ -149,7 +148,7 @@ class ProductTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/products/' . $product->id . '/current-rate');
+            ->getJson('/api/products/'.$product->id.'/current-rate');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -166,7 +165,7 @@ class ProductTest extends TestCase
     public function test_can_get_rate_history_for_product(): void
     {
         $product = Product::factory()->create();
-        
+
         // Create historical rates
         Rate::factory()->create([
             'product_id' => $product->id,
@@ -187,7 +186,7 @@ class ProductTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/products/' . $product->id . '/rate-history');
+            ->getJson('/api/products/'.$product->id.'/rate-history');
 
         $response->assertStatus(200)
             ->assertJsonStructure([

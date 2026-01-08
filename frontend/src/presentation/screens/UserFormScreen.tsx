@@ -19,7 +19,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
-import { SearchableSelector } from '../components';
+import { SearchableSelector, ScreenHeader } from '../components';
 
 export const UserFormScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -62,26 +62,64 @@ export const UserFormScreen: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!name || !email) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    // Validate name
+    if (!name || !name.trim()) {
+      Alert.alert('Validation Error', 'Name is required');
       return;
     }
 
+    if (name.length > 255) {
+      Alert.alert('Validation Error', 'Name must not exceed 255 characters');
+      return;
+    }
+
+    // Validate email
+    if (!email || !email.trim()) {
+      Alert.alert('Validation Error', 'Email is required');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Validation Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (email.length > 255) {
+      Alert.alert('Validation Error', 'Email must not exceed 255 characters');
+      return;
+    }
+
+    // Validate role (required for new users)
+    if (!isEditMode && (!roleId || !roleId.trim())) {
+      Alert.alert('Validation Error', 'Role is required');
+      return;
+    }
+
+    // Validate password for new users
     if (!isEditMode && (!password || !passwordConfirmation)) {
-      Alert.alert('Error', 'Password is required for new users');
+      Alert.alert('Validation Error', 'Password is required for new users');
       return;
     }
 
-    if (password && password !== passwordConfirmation) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
+    // Validate password if provided
+    if (password || passwordConfirmation) {
+      if (password !== passwordConfirmation) {
+        Alert.alert('Validation Error', 'Passwords do not match');
+        return;
+      }
+
+      if (password.length < 8) {
+        Alert.alert('Validation Error', 'Password must be at least 8 characters long');
+        return;
+      }
     }
 
     try {
       setSubmitting(true);
       const data: any = {
-        name,
-        email,
+        name: name.trim(),
+        email: email.trim(),
         is_active: isActive,
       };
 
@@ -121,40 +159,42 @@ export const UserFormScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
-      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>{isEditMode ? 'Edit User' : 'Add User'}</Text>
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader
+        title={isEditMode ? 'Edit User' : 'Add User'}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+      />
 
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Name *</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter name"
-          />
-        </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+        <View style={styles.form}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter name"
+              maxLength={255}
+            />
+          </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email *</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Enter email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email *</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              maxLength={255}
+            />
+          </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>
-            Password {!isEditMode && '*'}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+              Password {!isEditMode && '*'}
           </Text>
           <TextInput
             style={styles.input}
@@ -179,10 +219,10 @@ export const UserFormScreen: React.FC = () => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Role</Text>
+          <Text style={styles.label}>Role {!isEditMode && '*'}</Text>
           <SearchableSelector
             label=""
-            placeholder="Select role (optional)"
+            placeholder={isEditMode ? "Select role (optional)" : "Select role"}
             value={roleId}
             onSelect={(value, option) => setRoleId(value)}
             endpoint="/roles"
@@ -214,6 +254,7 @@ export const UserFormScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </View>
   );
 };
 
@@ -222,23 +263,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.background,
   },
-  header: {
-    backgroundColor: THEME.colors.surface,
-    padding: THEME.spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
-  },
-  backButton: {
-    marginBottom: THEME.spacing.sm,
-  },
-  backButtonText: {
-    fontSize: THEME.typography.fontSize.md,
-    color: THEME.colors.primary,
-  },
-  title: {
-    fontSize: THEME.typography.fontSize.xxl,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+  scrollView: {
+    flex: 1,
   },
   form: {
     padding: THEME.spacing.base,
@@ -271,7 +297,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.base,
     borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: THEME.spacing.sm,
   },
   submitButtonDisabled: {
     opacity: 0.6,

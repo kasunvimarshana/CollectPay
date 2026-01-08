@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     borderBottomColor: THEME.colors.border,
   },
   rateAmount: {
-    fontSize: 48,
+    fontSize: THEME.typography.fontSize.huge,
     fontWeight: THEME.typography.fontWeight.bold,
     color: THEME.colors.primary,
   },
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   productCode: {
     fontSize: THEME.typography.fontSize.sm,
     color: THEME.colors.textSecondary,
-    marginTop: 2,
+    marginTop: THEME.spacing.xs,
   },
   linkArrow: {
     fontSize: THEME.typography.fontSize.xl,

@@ -17,23 +17,23 @@ class CheckVersionConflict
     public function handle(Request $request, Closure $next): Response
     {
         // Only check for UPDATE operations
-        if (!in_array($request->method(), ['PUT', 'PATCH'])) {
+        if (! in_array($request->method(), ['PUT', 'PATCH'])) {
             return $next($request);
         }
 
         // Get the model being updated from route parameters
         $model = $this->getModelFromRoute($request);
-        
-        if (!$model || !$this->hasVersionField($model)) {
+
+        if (! $model || ! $this->hasVersionField($model)) {
             return $next($request);
         }
 
         // Check if client sent version information
         $clientVersion = $request->input('version');
-        
+
         if ($clientVersion !== null) {
             $serverVersion = $model->version;
-            
+
             // Version mismatch - potential conflict
             if ($clientVersion != $serverVersion) {
                 return response()->json([
@@ -45,7 +45,7 @@ class CheckVersionConflict
                         'client_version' => $clientVersion,
                         'server_version' => $serverVersion,
                         'current_data' => $model,
-                    ]
+                    ],
                 ], 409); // HTTP 409 Conflict
             }
         }
@@ -59,21 +59,21 @@ class CheckVersionConflict
     protected function getModelFromRoute(Request $request)
     {
         $route = $request->route();
-        
-        if (!$route) {
+
+        if (! $route) {
             return null;
         }
 
         // Get model from route parameters
         // Laravel automatically binds route parameters to models
         $parameters = $route->parameters();
-        
+
         foreach ($parameters as $parameter) {
             if (is_object($parameter) && method_exists($parameter, 'getTable')) {
                 return $parameter;
             }
         }
-        
+
         return null;
     }
 
@@ -82,10 +82,10 @@ class CheckVersionConflict
      */
     protected function hasVersionField($model): bool
     {
-        if (!$model) {
+        if (! $model) {
             return false;
         }
-        
+
         // Check if the model has a version attribute (handles Eloquent models)
         return array_key_exists('version', $model->getAttributes());
     }

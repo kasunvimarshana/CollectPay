@@ -21,7 +21,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->integer('version')->default(1);
             $table->timestamps();
-            
+
             $table->index(['product_id', 'effective_from', 'is_active']);
             $table->index(['product_id', 'version']);
         });

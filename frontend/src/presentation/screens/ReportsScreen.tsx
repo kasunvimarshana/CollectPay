@@ -13,9 +13,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
-  TextInput,
   Modal,
-  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -182,6 +180,15 @@ export const ReportsScreen: React.FC = () => {
   };
 
   const generateHTMLReport = () => {
+    // Use theme colors for consistency
+    const primaryColor = THEME.colors.reportPrimary;
+    const successColor = THEME.colors.reportSuccess;
+    const dangerColor = THEME.colors.reportDanger;
+    const secondaryColor = THEME.colors.reportSecondary;
+    const backgroundColor = THEME.colors.reportBackground;
+    const borderColor = THEME.colors.reportBorder;
+    const textColor = THEME.colors.textPrimary;
+    
     return `
       <!DOCTYPE html>
       <html>
@@ -191,77 +198,77 @@ export const ReportsScreen: React.FC = () => {
         <style>
           body {
             font-family: 'Helvetica', Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.6;
-            color: #333;
-            padding: 20px;
+            font-size: ${THEME.typography.fontSize.base}px;
+            line-height: ${THEME.typography.lineHeight.normal};
+            color: ${textColor};
+            padding: ${THEME.spacing.lg}px;
           }
           .header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #007bff;
-            padding-bottom: 15px;
+            margin-bottom: ${THEME.spacing.xxxl}px;
+            border-bottom: 3px solid ${primaryColor};
+            padding-bottom: ${THEME.spacing.base}px;
           }
           h1 {
-            font-size: 24px;
-            color: #007bff;
-            margin: 0 0 5px 0;
+            font-size: ${THEME.typography.fontSize.xxl}px;
+            color: ${primaryColor};
+            margin: 0 0 ${THEME.spacing.xs}px 0;
           }
           h2 {
-            font-size: 18px;
-            color: #666;
+            font-size: ${THEME.typography.fontSize.lg}px;
+            color: ${secondaryColor};
             font-weight: normal;
             margin: 0;
           }
           .meta-info {
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-left: 4px solid #007bff;
+            margin-bottom: ${THEME.spacing.lg}px;
+            padding: ${THEME.spacing.sm}px;
+            background-color: ${backgroundColor};
+            border-left: 4px solid ${primaryColor};
           }
           .section {
-            margin-bottom: 25px;
+            margin-bottom: ${THEME.spacing.xl}px;
           }
           .section-title {
-            font-size: 18px;
+            font-size: ${THEME.typography.fontSize.lg}px;
             font-weight: bold;
-            color: #333;
-            margin-bottom: 15px;
+            color: ${textColor};
+            margin-bottom: ${THEME.spacing.base}px;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: ${THEME.spacing.lg}px;
           }
           th, td {
-            padding: 10px;
+            padding: ${THEME.spacing.sm}px;
             text-align: left;
-            border: 1px solid #ddd;
+            border: 1px solid ${borderColor};
           }
           th {
-            background-color: #007bff;
+            background-color: ${primaryColor};
             color: white;
             font-weight: bold;
           }
           tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: ${backgroundColor};
           }
           .text-right {
             text-align: right;
           }
           .text-success {
-            color: #28a745;
+            color: ${successColor};
           }
           .text-danger {
-            color: #dc3545;
+            color: ${dangerColor};
           }
           .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
+            margin-top: ${THEME.spacing.xxxl}px;
+            padding-top: ${THEME.spacing.base}px;
+            border-top: 1px solid ${borderColor};
             text-align: center;
-            font-size: 12px;
-            color: #666;
+            font-size: ${THEME.typography.fontSize.sm}px;
+            color: ${secondaryColor};
           }
         </style>
       </head>

@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,7 +14,7 @@ class AuthenticationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create roles
         Role::factory()->create([
             'name' => 'Admin',
@@ -95,7 +95,7 @@ class AuthenticationTest extends TestCase
         $token = auth('api')->login($user);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/me');
 
         $response->assertStatus(200)
@@ -110,7 +110,7 @@ class AuthenticationTest extends TestCase
         $token = auth('api')->login($user);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->postJson('/api/logout');
 
         $response->assertStatus(200)
@@ -123,7 +123,7 @@ class AuthenticationTest extends TestCase
         $token = auth('api')->login($user);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->postJson('/api/refresh');
 
         $response->assertStatus(200)

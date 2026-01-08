@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: THEME.spacing.sm,
   },
   statusText: {
     fontSize: THEME.typography.fontSize.base,
@@ -109,9 +109,9 @@ const styles = StyleSheet.create({
   offlineBadge: {
     backgroundColor: COLORS.warning,
     borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginTop: 4,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
   },
   offlineText: {
     color: THEME.colors.white,
@@ -121,9 +121,9 @@ const styles = StyleSheet.create({
   pendingBadge: {
     backgroundColor: COLORS.info,
     borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginTop: 4,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
   },
   pendingText: {
     color: THEME.colors.white,

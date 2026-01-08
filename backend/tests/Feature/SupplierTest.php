@@ -2,9 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Supplier;
 use App\Models\Role;
+use App\Models\Supplier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +14,7 @@ class SupplierTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create admin role
         Role::factory()->create([
             'name' => 'Admin',
@@ -25,7 +24,6 @@ class SupplierTest extends TestCase
     }
 
     // Using parent TestCase::authenticatedHeaders() method to get auth headers
-
 
     public function test_can_create_supplier(): void
     {
@@ -88,7 +86,7 @@ class SupplierTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/suppliers/' . $supplier->id);
+            ->getJson('/api/suppliers/'.$supplier->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -115,7 +113,7 @@ class SupplierTest extends TestCase
         ];
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->putJson('/api/suppliers/' . $supplier->id, $data);
+            ->putJson('/api/suppliers/'.$supplier->id, $data);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -137,12 +135,12 @@ class SupplierTest extends TestCase
         $supplier = Supplier::factory()->create();
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->deleteJson('/api/suppliers/' . $supplier->id);
+            ->deleteJson('/api/suppliers/'.$supplier->id);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Supplier deleted successfully'
+                'message' => 'Supplier deleted successfully',
             ]);
 
         $this->assertSoftDeleted('suppliers', [
@@ -155,7 +153,7 @@ class SupplierTest extends TestCase
         $supplier = Supplier::factory()->create();
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/suppliers/' . $supplier->id . '/balance');
+            ->getJson('/api/suppliers/'.$supplier->id.'/balance');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -175,7 +173,7 @@ class SupplierTest extends TestCase
         $supplier = Supplier::factory()->create();
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/suppliers/' . $supplier->id . '/collections');
+            ->getJson('/api/suppliers/'.$supplier->id.'/collections');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['data']);
@@ -186,7 +184,7 @@ class SupplierTest extends TestCase
         $supplier = Supplier::factory()->create();
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/suppliers/' . $supplier->id . '/payments');
+            ->getJson('/api/suppliers/'.$supplier->id.'/payments');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['data']);
@@ -225,7 +223,7 @@ class SupplierTest extends TestCase
         ];
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->putJson('/api/suppliers/' . $supplier->id, $data);
+            ->putJson('/api/suppliers/'.$supplier->id, $data);
 
         $response->assertStatus(409); // Conflict
     }

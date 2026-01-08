@@ -20,7 +20,7 @@ export const Loading: React.FC<LoadingProps> = ({
 }) => {
   return (
     <View style={[styles.container, style]}>
-      <ActivityIndicator size={size} color="#007bff" />
+      <ActivityIndicator size={size} color={THEME.colors.primary} />
       {message && <Text style={styles.message}>{message}</Text>}
     </View>
   );
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
   },
   message: {
-    marginTop: 15,
+    marginTop: THEME.spacing.base,
     fontSize: THEME.typography.fontSize.base,
     color: THEME.colors.textSecondary,
     textAlign: 'center',

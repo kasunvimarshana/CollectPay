@@ -19,6 +19,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
+import { ScreenHeader } from '../components';
 
 interface SupplierFormData {
   name: string;
@@ -88,14 +89,34 @@ export const SupplierFormScreen: React.FC = () => {
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
+    } else if (formData.name.length > 255) {
+      newErrors.name = 'Name must not exceed 255 characters';
     }
 
     if (!formData.code.trim()) {
       newErrors.code = 'Code is required';
+    } else if (formData.code.length > 255) {
+      newErrors.code = 'Code must not exceed 255 characters';
     }
 
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+    if (formData.contact_person && formData.contact_person.length > 255) {
+      newErrors.contact_person = 'Contact person must not exceed 255 characters';
+    }
+
+    if (formData.phone && formData.phone.length > 20) {
+      newErrors.phone = 'Phone must not exceed 20 characters';
+    }
+
+    if (formData.email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'Invalid email format';
+      } else if (formData.email.length > 255) {
+        newErrors.email = 'Email must not exceed 255 characters';
+      }
+    }
+
+    if (formData.region && formData.region.length > 255) {
+      newErrors.region = 'Region must not exceed 255 characters';
     }
 
     setErrors(newErrors);
@@ -147,11 +168,11 @@ export const SupplierFormScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
-        <Text style={styles.title}>
-          {isEditMode ? 'Edit Supplier' : 'New Supplier'}
-        </Text>
-      </View>
+      <ScreenHeader
+        title={isEditMode ? 'Edit Supplier' : 'New Supplier'}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+      />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={[styles.form, { paddingBottom: insets.bottom + THEME.spacing.lg }]}>
         <View style={styles.formGroup}>
@@ -161,6 +182,7 @@ export const SupplierFormScreen: React.FC = () => {
             value={formData.name}
             onChangeText={(value) => updateField('name', value)}
             placeholder="Enter supplier name"
+            maxLength={255}
           />
           {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
         </View>
@@ -173,6 +195,7 @@ export const SupplierFormScreen: React.FC = () => {
             onChangeText={(value) => updateField('code', value)}
             placeholder="Enter supplier code"
             editable={!isEditMode} // Don't allow editing code in edit mode
+            maxLength={255}
           />
           {errors.code && <Text style={styles.errorText}>{errors.code}</Text>}
         </View>
@@ -180,22 +203,26 @@ export const SupplierFormScreen: React.FC = () => {
         <View style={styles.formGroup}>
           <Text style={styles.label}>Contact Person</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, errors.contact_person && styles.inputError]}
             value={formData.contact_person}
             onChangeText={(value) => updateField('contact_person', value)}
             placeholder="Enter contact person name"
+            maxLength={255}
           />
+          {errors.contact_person && <Text style={styles.errorText}>{errors.contact_person}</Text>}
         </View>
 
         <View style={styles.formGroup}>
           <Text style={styles.label}>Phone</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, errors.phone && styles.inputError]}
             value={formData.phone}
             onChangeText={(value) => updateField('phone', value)}
             placeholder="Enter phone number"
             keyboardType="phone-pad"
+            maxLength={20}
           />
+          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
         </View>
 
         <View style={styles.formGroup}>
@@ -207,6 +234,7 @@ export const SupplierFormScreen: React.FC = () => {
             placeholder="Enter email address"
             keyboardType="email-address"
             autoCapitalize="none"
+            maxLength={255}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
         </View>
@@ -226,11 +254,13 @@ export const SupplierFormScreen: React.FC = () => {
         <View style={styles.formGroup}>
           <Text style={styles.label}>Region</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, errors.region && styles.inputError]}
             value={formData.region}
             onChangeText={(value) => updateField('region', value)}
             placeholder="Enter region"
+            maxLength={255}
           />
+          {errors.region && <Text style={styles.errorText}>{errors.region}</Text>}
         </View>
 
         <View style={styles.formGroup}>
@@ -284,7 +314,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: THEME.spacing.sm,
     color: THEME.colors.textSecondary,
   },
   header: {
@@ -331,7 +361,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: THEME.colors.error,
     fontSize: THEME.typography.fontSize.sm,
-    marginTop: 4,
+    marginTop: THEME.spacing.xs,
   },
   switchContainer: {
     flexDirection: 'row',

@@ -13,7 +13,8 @@ class StoreSupplierRequest extends FormRequest
     {
         // Check if user has permission to create suppliers
         $user = $this->user();
-        return $user && $user->role && 
+
+        return $user && $user->role &&
                in_array('suppliers.create', $user->role->permissions ?? []);
     }
 

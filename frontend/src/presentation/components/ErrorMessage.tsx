@@ -42,21 +42,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon: {
-    fontSize: 48,
-    marginBottom: 10,
+    fontSize: THEME.typography.fontSize.xxxl,
+    marginBottom: THEME.spacing.sm,
   },
   message: {
     fontSize: THEME.typography.fontSize.base,
     color: THEME.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 15,
-    lineHeight: 20,
+    marginBottom: THEME.spacing.base,
+    lineHeight: THEME.typography.lineHeight.normal * THEME.typography.fontSize.base,
   },
   retryButton: {
     backgroundColor: THEME.colors.warning,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.base,
   },
   retryButtonText: {
     color: THEME.colors.textSecondary,

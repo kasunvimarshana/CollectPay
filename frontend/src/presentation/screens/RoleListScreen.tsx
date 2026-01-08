@@ -122,6 +122,9 @@ export const RoleListScreen: React.FC = () => {
     <TouchableOpacity
       style={styles.roleCard}
       onPress={() => handleRolePress(item.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`Role: ${item.display_name}, ${item.users_count !== undefined ? item.users_count : 0} users, ${item.permissions.length} permissions`}
+      accessibilityHint="Press to view role details"
     >
       <View style={styles.roleHeader}>
         <Text style={styles.roleName}>{String(item.display_name)}</Text>

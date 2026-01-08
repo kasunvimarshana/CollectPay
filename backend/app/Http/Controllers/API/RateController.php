@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Rate;
 use App\Models\Product;
+use App\Models\Rate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -12,7 +12,7 @@ class RateController extends Controller
 {
     /**
      * Display a listing of rates
-     * 
+     *
      * @OA\Get(
      *     path="/rates",
      *     tags={"Rates"},
@@ -20,6 +20,7 @@ class RateController extends Controller
      *     description="Retrieve versioned product rates with historical preservation",
      *     operationId="getRates",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(name="product_id", in="query", required=false, @OA\Schema(type="integer")),
      *     @OA\Parameter(name="unit", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="is_active", in="query", required=false, @OA\Schema(type="boolean")),
@@ -30,15 +31,19 @@ class RateController extends Controller
      *         in="query",
      *         description="Field to sort by",
      *         required=false,
+     *
      *         @OA\Schema(type="string", enum={"rate","unit","effective_from","effective_to","version","created_at","updated_at"}, default="effective_from")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="sort_order",
      *         in="query",
      *         description="Sort order",
      *         required=false,
+     *
      *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
      *     ),
+     *
      *     @OA\Response(response=200, description="Success"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -46,56 +51,56 @@ class RateController extends Controller
     public function index(Request $request)
     {
         $query = Rate::with('product');
-        
+
         // Filter by product
         if ($request->has('product_id')) {
             $query->where('product_id', $request->product_id);
         }
-        
+
         // Filter by unit
         if ($request->has('unit')) {
             $query->where('unit', $request->unit);
         }
-        
+
         // Filter by active status
         if ($request->has('is_active')) {
             $query->where('is_active', $request->is_active);
         }
-        
+
         // Filter by date range
         if ($request->has('date')) {
             $date = $request->date;
             $query->where('effective_from', '<=', $date)
-                ->where(function($q) use ($date) {
+                ->where(function ($q) use ($date) {
                     $q->whereNull('effective_to')
-                      ->orWhere('effective_to', '>=', $date);
+                        ->orWhere('effective_to', '>=', $date);
                 });
         }
-        
+
         // Sorting
         $sortBy = $request->get('sort_by', 'effective_from');
         $sortOrder = $request->get('sort_order', 'desc');
         $allowedSortFields = ['rate', 'unit', 'effective_from', 'effective_to', 'version', 'created_at', 'updated_at'];
-        
+
         if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, ['asc', 'desc'])) {
             $query->orderBy($sortBy, $sortOrder);
         } else {
             $query->latest('effective_from');
         }
-        
+
         // Pagination
         $perPage = $request->get('per_page', 15);
         $rates = $query->paginate($perPage);
-        
+
         return response()->json([
             'success' => true,
-            'data' => $rates
+            'data' => $rates,
         ]);
     }
 
     /**
      * Store a newly created rate
-     * 
+     *
      * @OA\Post(
      *     path="/rates",
      *     tags={"Rates"},
@@ -103,11 +108,14 @@ class RateController extends Controller
      *     description="Create a new versioned rate for a product with automatic version incrementing",
      *     operationId="createRate",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\RequestBody(
      *         required=true,
      *         description="Rate data with effective date range",
+     *
      *         @OA\JsonContent(
      *             required={"product_id","rate","unit","effective_from"},
+     *
      *             @OA\Property(property="product_id", type="integer", example=1, description="ID of the product"),
      *             @OA\Property(property="rate", type="number", format="float", example=250.00, description="Rate per unit"),
      *             @OA\Property(property="unit", type="string", example="kg", description="Unit of measurement"),
@@ -116,15 +124,19 @@ class RateController extends Controller
      *             @OA\Property(property="is_active", type="boolean", nullable=true, example=true, description="Active status")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=201,
      *         description="Rate created successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Rate created successfully"),
      *             @OA\Property(property="data", type="object", description="Rate details with version number")
      *         )
      *     ),
+     *
      *     @OA\Response(response=422, description="Validation error"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -143,7 +155,7 @@ class RateController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -162,13 +174,13 @@ class RateController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Rate created successfully',
-            'data' => $rate
+            'data' => $rate,
         ], 201);
     }
 
     /**
      * Display the specified rate
-     * 
+     *
      * @OA\Get(
      *     path="/rates/{id}",
      *     tags={"Rates"},
@@ -176,21 +188,27 @@ class RateController extends Controller
      *     description="Retrieve a specific rate with product information",
      *     operationId="getRateById",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Rate ID",
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Success",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="data", type="object", description="Rate details")
      *         )
      *     ),
+     *
      *     @OA\Response(response=404, description="Rate not found"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -198,16 +216,16 @@ class RateController extends Controller
     public function show(Rate $rate)
     {
         $rate->load('product');
-        
+
         return response()->json([
             'success' => true,
-            'data' => $rate
+            'data' => $rate,
         ]);
     }
 
     /**
      * Update the specified rate
-     * 
+     *
      * @OA\Put(
      *     path="/rates/{id}",
      *     tags={"Rates"},
@@ -215,17 +233,22 @@ class RateController extends Controller
      *     description="Update rate details including effective dates and active status",
      *     operationId="updateRate",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Rate ID",
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\RequestBody(
      *         required=true,
      *         description="Updated rate data",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="product_id", type="integer", example=1),
      *             @OA\Property(property="rate", type="number", format="float", example=275.00),
      *             @OA\Property(property="unit", type="string", example="kg"),
@@ -234,15 +257,19 @@ class RateController extends Controller
      *             @OA\Property(property="is_active", type="boolean", nullable=true, example=true)
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Rate updated successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Rate updated successfully"),
      *             @OA\Property(property="data", type="object", description="Updated rate details")
      *         )
      *     ),
+     *
      *     @OA\Response(response=422, description="Validation error"),
      *     @OA\Response(response=404, description="Rate not found"),
      *     @OA\Response(response=401, description="Unauthenticated")
@@ -262,7 +289,7 @@ class RateController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -272,13 +299,13 @@ class RateController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Rate updated successfully',
-            'data' => $rate
+            'data' => $rate,
         ]);
     }
 
     /**
      * Remove the specified rate
-     * 
+     *
      * @OA\Delete(
      *     path="/rates/{id}",
      *     tags={"Rates"},
@@ -286,29 +313,38 @@ class RateController extends Controller
      *     description="Remove a rate record if it's not used in any collections",
      *     operationId="deleteRate",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Rate ID",
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Rate deleted successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Rate deleted successfully")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Cannot delete rate that is used in collections",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="message", type="string", example="Cannot delete rate that is used in collections")
      *         )
      *     ),
+     *
      *     @OA\Response(response=404, description="Rate not found"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -319,7 +355,7 @@ class RateController extends Controller
         if ($rate->collections()->count() > 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete rate that is used in collections'
+                'message' => 'Cannot delete rate that is used in collections',
             ], 422);
         }
 
@@ -327,7 +363,7 @@ class RateController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Rate deleted successfully'
+            'message' => 'Rate deleted successfully',
         ]);
     }
 }

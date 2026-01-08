@@ -13,7 +13,7 @@ class SupplierObserver
     public function updating(Supplier $supplier): void
     {
         // Increment version on every update
-        if ($supplier->isDirty() && !$supplier->isDirty('version')) {
+        if ($supplier->isDirty() && ! $supplier->isDirty('version')) {
             $supplier->version = ($supplier->version ?? 0) + 1;
         }
     }
@@ -24,7 +24,7 @@ class SupplierObserver
     public function created(Supplier $supplier): void
     {
         // Ensure version starts at 1
-        if (!$supplier->version) {
+        if (! $supplier->version) {
             $supplier->version = 1;
             $supplier->saveQuietly(); // Save without triggering events
         }

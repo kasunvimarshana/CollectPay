@@ -5,7 +5,6 @@
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo from '@react-native-community/netinfo';
 import { API_BASE_URL, API_TIMEOUT, TOKEN_STORAGE_KEY } from '../../core/constants/api';
 import LocalStorageService from '../storage/LocalStorageService';
 

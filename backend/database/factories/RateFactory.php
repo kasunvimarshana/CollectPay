@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Rate;
 use App\Models\Product;
+use App\Models\Rate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class RateFactory extends Factory

@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
 {
@@ -50,15 +50,15 @@ class Supplier extends Model
     public function totalCollected($startDate = null, $endDate = null)
     {
         $query = $this->collections();
-        
+
         if ($startDate) {
             $query->where('collection_date', '>=', $startDate);
         }
-        
+
         if ($endDate) {
             $query->where('collection_date', '<=', $endDate);
         }
-        
+
         return $query->sum('total_amount');
     }
 
@@ -68,15 +68,15 @@ class Supplier extends Model
     public function totalPaid($startDate = null, $endDate = null)
     {
         $query = $this->payments();
-        
+
         if ($startDate) {
             $query->where('payment_date', '>=', $startDate);
         }
-        
+
         if ($endDate) {
             $query->where('payment_date', '<=', $endDate);
         }
-        
+
         return $query->sum('amount');
     }
 

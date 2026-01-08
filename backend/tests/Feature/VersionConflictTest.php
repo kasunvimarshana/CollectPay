@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Supplier;
-use App\Models\Product;
 use App\Models\Collection;
 use App\Models\Payment;
+use App\Models\Product;
 use App\Models\Rate;
+use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class VersionConflictTest extends TestCase
 {
@@ -202,7 +202,7 @@ class VersionConflictTest extends TestCase
         $response->assertJson([
             'success' => true,
         ]);
-        
+
         // Version should be incremented
         $this->assertEquals(2, $supplier->fresh()->version);
     }
@@ -304,7 +304,7 @@ class VersionConflictTest extends TestCase
         // Device B should get conflict
         $responseB->assertStatus(409);
         $responseB->assertJsonPath('conflict', true);
-        
+
         // Server data should be Device A's update
         $responseB->assertJsonPath('data.current_data.name', 'Device A Update');
         $responseB->assertJsonPath('data.current_data.version', 2);

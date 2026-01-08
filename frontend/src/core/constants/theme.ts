@@ -121,6 +121,20 @@ export const THEME = {
     textTertiary: '#999999',
     textLight: '#FFFFFF',
     textDisabled: '#cccccc',
+    
+    // Payment type colors (semantic mappings)
+    paymentAdvance: '#FF9800',
+    paymentPartial: '#2196F3',
+    paymentFull: '#4CAF50',
+    paymentAdjustment: '#9C27B0',
+    
+    // Report/Print colors (for consistency with PDF generation)
+    reportPrimary: '#007bff',
+    reportSuccess: '#28a745',
+    reportDanger: '#dc3545',
+    reportSecondary: '#666666',
+    reportBackground: '#f8f9fa',
+    reportBorder: '#dddddd',
   },
   spacing: SPACING,
   typography: TYPOGRAPHY,
@@ -142,6 +156,25 @@ export const LAYOUT = {
   containerPadding: SPACING.base,
   sectionGap: SPACING.md,
   cardPadding: SPACING.base,
+};
+
+/**
+ * Helper function to get color for payment type
+ * Provides consistent color mapping across the application
+ */
+export const getPaymentTypeColor = (type: string): string => {
+  switch (type?.toLowerCase()) {
+    case 'advance':
+      return THEME.colors.paymentAdvance;
+    case 'partial':
+      return THEME.colors.paymentPartial;
+    case 'full':
+      return THEME.colors.paymentFull;
+    case 'adjustment':
+      return THEME.colors.paymentAdjustment;
+    default:
+      return THEME.colors.textSecondary;
+  }
 };
 
 export default THEME;

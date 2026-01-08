@@ -19,7 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { PaymentType } from '../../domain/entities/Payment';
-import { DateTimePicker, SearchableSelector } from '../components';
+import { DateTimePicker, SearchableSelector, ScreenHeader } from '../components';
 
 interface PaymentFormData {
   supplier_id: string;
@@ -123,6 +123,15 @@ export const PaymentFormScreen: React.FC = () => {
       newErrors.type = 'Payment type is required';
     }
 
+    // Validate max lengths per API specs
+    if (formData.reference_number && formData.reference_number.length > 255) {
+      newErrors.reference_number = 'Reference number must not exceed 255 characters';
+    }
+
+    if (formData.payment_method && formData.payment_method.length > 255) {
+      newErrors.payment_method = 'Payment method must not exceed 255 characters';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -181,43 +190,41 @@ export const PaymentFormScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
-      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>
-          {isEditMode ? 'Edit Payment' : 'New Payment'}
-        </Text>
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader
+        title={isEditMode ? 'Edit Payment' : 'New Payment'}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+      />
+      
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+        <View style={styles.form}>
+          {/* Supplier Selection */}
+          <SearchableSelector
+            label="Supplier *"
+            placeholder="Select supplier"
+            value={formData.supplier_id}
+            onSelect={(value, option) => updateField('supplier_id', value)}
+            endpoint="/suppliers"
+            error={errors.supplier_id}
+            queryParams={{ is_active: 1 }}
+          />
 
-      <View style={styles.form}>
-        {/* Supplier Selection */}
-        <SearchableSelector
-          label="Supplier *"
-          placeholder="Select supplier"
-          value={formData.supplier_id}
-          onSelect={(value, option) => updateField('supplier_id', value)}
-          endpoint="/suppliers"
-          error={errors.supplier_id}
-          queryParams={{ is_active: 1 }}
-        />
+          {/* Supplier Balance Display */}
+          {supplierBalance !== null && (
+            <View style={styles.balanceInfo}>
+              <Text style={styles.balanceLabel}>Current Balance:</Text>
+              <Text style={[
+                styles.balanceValue,
+                { color: supplierBalance >= 0 ? THEME.colors.success : THEME.colors.error }
+              ]}>
+                ${supplierBalance.toFixed(2)}
+              </Text>
+            </View>
+          )}
 
-        {/* Supplier Balance Display */}
-        {supplierBalance !== null && (
-          <View style={styles.balanceInfo}>
-            <Text style={styles.balanceLabel}>Current Balance:</Text>
-            <Text style={[
-              styles.balanceValue,
-              { color: supplierBalance >= 0 ? THEME.colors.success : THEME.colors.error }
-            ]}>
-              ${supplierBalance.toFixed(2)}
-            </Text>
-          </View>
-        )}
-
-        {/* Payment Date */}
-        <DateTimePicker
+          {/* Payment Date */}
+          <DateTimePicker
           label="Payment Date *"
           value={formData.payment_date}
           onChange={(value) => updateField('payment_date', value)}
@@ -294,11 +301,13 @@ export const PaymentFormScreen: React.FC = () => {
         <View style={styles.formGroup}>
           <Text style={styles.label}>Reference Number</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, errors.reference_number && styles.inputError]}
             placeholder="Enter reference number (optional)"
             value={formData.reference_number}
             onChangeText={(value) => updateField('reference_number', value)}
+            maxLength={255}
           />
+          {errors.reference_number && <Text style={styles.errorText}>{errors.reference_number}</Text>}
         </View>
 
         {/* Notes */}
@@ -330,6 +339,7 @@ export const PaymentFormScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </View>
   );
 };
 
@@ -338,23 +348,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.background,
   },
-  header: {
-    backgroundColor: THEME.colors.surface,
-    padding: THEME.spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+  scrollView: {
+    flex: 1,
   },
-  backButton: {
-    marginBottom: THEME.spacing.sm,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.background,
   },
-  backButtonText: {
+  loadingText: {
+    marginTop: THEME.spacing.md,
     fontSize: THEME.typography.fontSize.md,
-    color: THEME.colors.primary,
-  },
-  title: {
-    fontSize: THEME.typography.fontSize.xxl,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.textSecondary,
   },
   form: {
     padding: THEME.spacing.base,
@@ -390,10 +396,10 @@ const styles = StyleSheet.create({
   errorText: {
     color: THEME.colors.error,
     fontSize: THEME.typography.fontSize.base,
-    marginTop: 4,
+    marginTop: THEME.spacing.xs,
   },
   optionsList: {
-    marginTop: 8,
+    marginTop: THEME.spacing.sm,
     maxHeight: 200,
   },
   optionItem: {
@@ -471,16 +477,5 @@ const styles = StyleSheet.create({
     color: THEME.colors.white,
     fontSize: THEME.typography.fontSize.lg,
     fontWeight: THEME.typography.fontWeight.semibold,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.background,
-  },
-  loadingText: {
-    marginTop: THEME.spacing.md,
-    fontSize: THEME.typography.fontSize.md,
-    color: THEME.colors.textSecondary,
   },
 });

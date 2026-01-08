@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // Add version to suppliers table if not exists
-        if (!Schema::hasColumn('suppliers', 'version')) {
+        if (! Schema::hasColumn('suppliers', 'version')) {
             Schema::table('suppliers', function (Blueprint $table) {
                 $table->unsignedInteger('version')->default(1)->after('is_active');
                 $table->index('version');
@@ -21,7 +21,7 @@ return new class extends Migration
         }
 
         // Add version to products table if not exists
-        if (!Schema::hasColumn('products', 'version')) {
+        if (! Schema::hasColumn('products', 'version')) {
             Schema::table('products', function (Blueprint $table) {
                 $table->unsignedInteger('version')->default(1)->after('is_active');
                 $table->index('version');
@@ -30,14 +30,14 @@ return new class extends Migration
 
         // Collections and payments already have version in their migrations
         // Verify they exist
-        if (!Schema::hasColumn('collections', 'version')) {
+        if (! Schema::hasColumn('collections', 'version')) {
             Schema::table('collections', function (Blueprint $table) {
                 $table->unsignedInteger('version')->default(1)->after('notes');
                 $table->index('version');
             });
         }
 
-        if (!Schema::hasColumn('payments', 'version')) {
+        if (! Schema::hasColumn('payments', 'version')) {
             Schema::table('payments', function (Blueprint $table) {
                 $table->unsignedInteger('version')->default(1)->after('notes');
                 $table->index('version');

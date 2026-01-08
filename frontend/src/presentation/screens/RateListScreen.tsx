@@ -18,7 +18,6 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
-import LocalStorageService from '../../infrastructure/storage/LocalStorageService';
 import { Rate } from '../../domain/entities/Product';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
@@ -125,6 +124,9 @@ export const RateListScreen: React.FC = () => {
       <TouchableOpacity
         style={styles.rateCard}
         onPress={() => handleViewDetails(item.id)}
+        accessibilityRole="button"
+        accessibilityLabel={`Rate for ${item.product?.name || 'Product'}: ${item.rate} per ${item.unit}, ${isActive ? 'Active' : 'Inactive'}`}
+        accessibilityHint="Press to view rate details"
       >
         <View style={styles.cardHeader}>
           <View style={styles.rateInfo}>
@@ -182,7 +184,8 @@ export const RateListScreen: React.FC = () => {
       <ScreenHeader
         title="Rates"
         subtitle={`${totalItems} total`}
-        onBack={() => navigation.goBack()}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
         rightComponent={<SyncStatusIndicator />}
       />
 
@@ -199,20 +202,17 @@ export const RateListScreen: React.FC = () => {
         <View style={styles.sortContainer}>
           <SortButton
             label="Rate"
-            active={sortBy === 'rate'}
-            order={sortBy === 'rate' ? sortOrder : undefined}
+            direction={sortBy === 'rate' ? sortOrder : null}
             onPress={() => handleSort('rate')}
           />
           <SortButton
             label="Date"
-            active={sortBy === 'effective_from'}
-            order={sortBy === 'effective_from' ? sortOrder : undefined}
+            direction={sortBy === 'effective_from' ? sortOrder : null}
             onPress={() => handleSort('effective_from')}
           />
           <SortButton
             label="Version"
-            active={sortBy === 'version'}
-            order={sortBy === 'version' ? sortOrder : undefined}
+            direction={sortBy === 'version' ? sortOrder : null}
             onPress={() => handleSort('version')}
           />
         </View>
@@ -245,7 +245,9 @@ export const RateListScreen: React.FC = () => {
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               totalItems={totalItems}
-              itemsPerPage={perPage}
+              perPage={perPage}
+              hasNextPage={currentPage < totalPages}
+              hasPreviousPage={currentPage > 1}
             />
           )}
         </>
@@ -334,7 +336,7 @@ const styles = StyleSheet.create({
     fontWeight: THEME.typography.fontWeight.semibold,
   },
   cardBody: {
-    marginTop: 4,
+    marginTop: THEME.spacing.xs,
   },
   detailRow: {
     flexDirection: 'row',
@@ -366,7 +368,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.lg,
-    marginTop: 60,
+    marginTop: THEME.spacing.xxxl,
   },
   emptyText: {
     fontSize: THEME.typography.fontSize.md,
@@ -393,10 +395,10 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...THEME.shadows.large,
+    ...THEME.shadows.lg,
   },
   fabText: {
-    fontSize: 32,
+    fontSize: THEME.typography.fontSize.huge,
     color: THEME.colors.white,
     fontWeight: THEME.typography.fontWeight.bold,
   },

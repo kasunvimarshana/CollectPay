@@ -26,7 +26,7 @@ return new class extends Migration
             $table->integer('version')->default(1);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['supplier_id', 'collection_date']);
             $table->index(['product_id', 'collection_date']);
             $table->index(['user_id', 'collection_date']);

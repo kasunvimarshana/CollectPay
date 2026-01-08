@@ -141,6 +141,9 @@ export const SupplierListScreen: React.FC = () => {
     <TouchableOpacity
       style={styles.supplierCard}
       onPress={() => handleSupplierPress(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Supplier: ${item.name}, Code: ${item.code}, Status: ${item.is_active ? 'Active' : 'Inactive'}`}
+      accessibilityHint="Press to view supplier details"
     >
       <View style={styles.supplierHeader}>
         <Text style={styles.supplierName}>{String(item.name)}</Text>
@@ -192,6 +195,8 @@ export const SupplierListScreen: React.FC = () => {
           placeholder="Search by name, code, or region..."
           value={searchQuery}
           onChangeText={setSearchQuery}
+          accessibilityLabel="Search suppliers"
+          accessibilityHint="Enter text to search suppliers by name, code, or region"
         />
       </View>
 
@@ -315,7 +320,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.xxxl,
-    marginTop: 64,
+    marginTop: THEME.spacing.xxxl * 1.5,
   },
   emptyText: {
     fontSize: THEME.typography.fontSize.lg,

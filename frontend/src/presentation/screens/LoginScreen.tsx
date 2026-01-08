@@ -53,7 +53,7 @@ export const LoginScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.content, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: insets.bottom + THEME.spacing.lg }]}>
-        <Text style={styles.title}>Ledger</Text>
+        <Text style={styles.title} accessibilityRole="header">Ledger</Text>
         <Text style={styles.subtitle}>Data Collection & Payment Management</Text>
 
         <View style={styles.form}>
@@ -65,6 +65,8 @@ export const LoginScreen: React.FC = () => {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            accessibilityLabel="Email address"
+            accessibilityHint="Enter your email address"
           />
 
           <TextInput
@@ -73,12 +75,18 @@ export const LoginScreen: React.FC = () => {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            accessibilityLabel="Password"
+            accessibilityHint="Enter your password"
           />
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Login"
+            accessibilityHint="Press to log in to your account"
+            accessibilityState={{ disabled: isLoading, busy: isLoading }}
           >
             {isLoading ? (
               <ActivityIndicator color={THEME.colors.white} />
@@ -90,6 +98,9 @@ export const LoginScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.linkButton}
             onPress={goToRegister}
+            accessibilityRole="button"
+            accessibilityLabel="Register"
+            accessibilityHint="Navigate to registration screen"
           >
             <Text style={styles.linkText}>
               Don't have an account? <Text style={styles.linkTextBold}>Register</Text>

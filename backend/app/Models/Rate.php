@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Rate extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'product_id',
         'rate',
@@ -50,16 +51,17 @@ class Rate extends Model
     {
         $date = $date instanceof \DateTime ? $date : new \DateTime($date);
         $effectiveFrom = new \DateTime($this->effective_from);
-        
+
         if ($date < $effectiveFrom) {
             return false;
         }
-        
+
         if ($this->effective_to) {
             $effectiveTo = new \DateTime($this->effective_to);
+
             return $date <= $effectiveTo;
         }
-        
+
         return true;
     }
 }

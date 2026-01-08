@@ -19,7 +19,7 @@ class PaymentFactory extends Factory
             'payment_date' => now()->subDays(rand(0, 30)),
             'amount' => fake()->randomFloat(2, 1000, 10000),
             'type' => fake()->randomElement(['advance', 'partial', 'full']),
-            'reference_number' => 'PAY' . fake()->unique()->numberBetween(10000, 99999),
+            'reference_number' => 'PAY'.fake()->unique()->numberBetween(10000, 99999),
             'payment_method' => fake()->randomElement(['cash', 'bank_transfer', 'check']),
             'notes' => fake()->optional()->sentence(),
             'version' => 1,

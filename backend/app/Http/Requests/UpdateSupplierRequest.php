@@ -14,7 +14,8 @@ class UpdateSupplierRequest extends FormRequest
     {
         // Check if user has permission to edit suppliers
         $user = $this->user();
-        return $user && $user->role && 
+
+        return $user && $user->role &&
                in_array('suppliers.edit', $user->role->permissions ?? []);
     }
 
@@ -26,7 +27,7 @@ class UpdateSupplierRequest extends FormRequest
     public function rules(): array
     {
         $supplierId = $this->route('supplier');
-        
+
         return [
             'name' => 'sometimes|required|string|max:255',
             'code' => [
@@ -34,7 +35,7 @@ class UpdateSupplierRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('suppliers')->ignore($supplierId)
+                Rule::unique('suppliers')->ignore($supplierId),
             ],
             'contact_person' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',

@@ -13,7 +13,7 @@ class ProductFactory extends Factory
     {
         return [
             'name' => fake()->words(3, true),
-            'code' => 'PROD' . fake()->unique()->numberBetween(1000, 9999),
+            'code' => 'PROD'.fake()->unique()->numberBetween(1000, 9999),
             'description' => fake()->sentence(),
             'supported_units' => json_encode(['kg', 'g', 'lbs']),
             'base_unit' => 'kg',

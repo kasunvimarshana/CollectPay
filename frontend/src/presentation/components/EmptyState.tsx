@@ -34,16 +34,16 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xxxl,
     backgroundColor: THEME.colors.surface,
     borderRadius: THEME.borderRadius.md,
-    marginVertical: 20,
+    marginVertical: THEME.spacing.lg,
   },
   icon: {
     fontSize: 64,
-    marginBottom: 20,
+    marginBottom: THEME.spacing.lg,
   },
   message: {
     fontSize: THEME.typography.fontSize.md,
     color: THEME.colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: THEME.typography.lineHeight.normal * THEME.typography.fontSize.md,
   },
 });

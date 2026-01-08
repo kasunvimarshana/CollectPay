@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Supplier;
-use App\Models\Product;
-use App\Models\Rate;
 use App\Models\Collection;
 use App\Models\Payment;
+use App\Models\Product;
+use App\Models\Rate;
 use App\Models\Role;
+use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,14 +17,17 @@ class PaymentTest extends TestCase
     use RefreshDatabase;
 
     protected $supplier;
+
     protected $product;
+
     protected $rate;
+
     protected $collection;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create admin role
         Role::factory()->create([
             'name' => 'Admin',
@@ -168,7 +171,7 @@ class PaymentTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/payments/' . $payment->id);
+            ->getJson('/api/payments/'.$payment->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -196,7 +199,7 @@ class PaymentTest extends TestCase
         ];
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->putJson('/api/payments/' . $payment->id, $data);
+            ->putJson('/api/payments/'.$payment->id, $data);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -219,12 +222,12 @@ class PaymentTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->deleteJson('/api/payments/' . $payment->id);
+            ->deleteJson('/api/payments/'.$payment->id);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Payment deleted successfully'
+                'message' => 'Payment deleted successfully',
             ]);
 
         $this->assertSoftDeleted('payments', [
@@ -245,7 +248,7 @@ class PaymentTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authenticatedHeaders())
-            ->getJson('/api/suppliers/' . $this->supplier->id . '/balance');
+            ->getJson('/api/suppliers/'.$this->supplier->id.'/balance');
 
         $response->assertStatus(200)
             ->assertJson([

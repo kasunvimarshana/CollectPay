@@ -133,6 +133,9 @@ export const ProductListScreen: React.FC = () => {
     <TouchableOpacity
       style={styles.productCard}
       onPress={() => handleProductPress(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Product: ${item.name}, Code: ${item.code}, Status: ${item.is_active ? 'Active' : 'Inactive'}`}
+      accessibilityHint="Press to view product details"
     >
       <View style={styles.productHeader}>
         <Text style={styles.productName}>{String(item.name)}</Text>

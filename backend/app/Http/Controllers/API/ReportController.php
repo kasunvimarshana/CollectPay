@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Supplier;
-use App\Models\Product;
 use App\Models\Collection;
 use App\Models\Payment;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use App\Models\Product;
+use App\Models\Supplier;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @OA\Tag(
@@ -28,10 +27,13 @@ class ReportController extends Controller
      *     summary="Get overall system summary",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Summary data retrieved successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="totalSuppliers", type="integer", example=50),
      *             @OA\Property(property="activeSuppliers", type="integer", example=45),
      *             @OA\Property(property="totalProducts", type="integer", example=20),
@@ -53,28 +55,28 @@ class ReportController extends Controller
     {
         $totalSuppliers = Supplier::count();
         $activeSuppliers = Supplier::where('is_active', true)->count();
-        
+
         $totalProducts = Product::count();
         $activeProducts = Product::where('is_active', true)->count();
-        
+
         $totalCollections = Collection::count();
         $totalCollectionAmount = Collection::sum('total_amount');
-        
+
         $totalPayments = Payment::count();
         $totalPaymentAmount = Payment::sum('amount');
-        
+
         $outstandingBalance = $totalCollectionAmount - $totalPaymentAmount;
-        
+
         // This month's data
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
-        
+
         $collectionsThisMonth = Collection::whereBetween('collection_date', [$startOfMonth, $endOfMonth])->count();
         $collectionAmountThisMonth = Collection::whereBetween('collection_date', [$startOfMonth, $endOfMonth])->sum('total_amount');
-        
+
         $paymentsThisMonth = Payment::whereBetween('payment_date', [$startOfMonth, $endOfMonth])->count();
         $paymentAmountThisMonth = Payment::whereBetween('payment_date', [$startOfMonth, $endOfMonth])->sum('amount');
-        
+
         return response()->json([
             'totalSuppliers' => $totalSuppliers,
             'activeSuppliers' => $activeSuppliers,
@@ -98,26 +100,34 @@ class ReportController extends Controller
      *     summary="Get supplier balances report",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="limit",
      *         in="query",
      *         description="Limit number of results",
      *         required=false,
+     *
      *         @OA\Schema(type="integer", example=10)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="sort",
      *         in="query",
      *         description="Sort by balance (asc or desc)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", enum={"asc", "desc"}, example="desc")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Supplier balances retrieved successfully",
+     *
      *         @OA\JsonContent(
      *             type="array",
+     *
      *             @OA\Items(
+     *
      *                 @OA\Property(property="supplier_id", type="integer", example=1),
      *                 @OA\Property(property="supplier_name", type="string", example="John Supplier"),
      *                 @OA\Property(property="supplier_code", type="string", example="SUP001"),
@@ -135,17 +145,17 @@ class ReportController extends Controller
     {
         $limit = $request->input('limit', 10);
         $sort = $request->input('sort', 'desc');
-        
+
         $balances = Supplier::select([
-                'suppliers.id as supplier_id',
-                'suppliers.name as supplier_name',
-                'suppliers.code as supplier_code',
-                DB::raw('COALESCE(SUM(collections.total_amount), 0) as total_collections'),
-                DB::raw('COALESCE(SUM(payments.amount), 0) as total_payments'),
-                DB::raw('COALESCE(SUM(collections.total_amount), 0) - COALESCE(SUM(payments.amount), 0) as balance'),
-                DB::raw('COUNT(DISTINCT collections.id) as collection_count'),
-                DB::raw('COUNT(DISTINCT payments.id) as payment_count')
-            ])
+            'suppliers.id as supplier_id',
+            'suppliers.name as supplier_name',
+            'suppliers.code as supplier_code',
+            DB::raw('COALESCE(SUM(collections.total_amount), 0) as total_collections'),
+            DB::raw('COALESCE(SUM(payments.amount), 0) as total_payments'),
+            DB::raw('COALESCE(SUM(collections.total_amount), 0) - COALESCE(SUM(payments.amount), 0) as balance'),
+            DB::raw('COUNT(DISTINCT collections.id) as collection_count'),
+            DB::raw('COUNT(DISTINCT payments.id) as payment_count'),
+        ])
             ->leftJoin('collections', 'suppliers.id', '=', 'collections.supplier_id')
             ->leftJoin('payments', 'suppliers.id', '=', 'payments.supplier_id')
             ->groupBy('suppliers.id', 'suppliers.name', 'suppliers.code')
@@ -164,7 +174,7 @@ class ReportController extends Controller
                     'payment_count' => (int) $item->payment_count,
                 ];
             });
-        
+
         return response()->json($balances);
     }
 
@@ -174,34 +184,43 @@ class ReportController extends Controller
      *     summary="Get collections summary by date range",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="start_date",
      *         in="query",
      *         description="Start date (Y-m-d format)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", format="date", example="2025-01-01")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="end_date",
      *         in="query",
      *         description="End date (Y-m-d format)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", format="date", example="2025-12-31")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="supplier_id",
      *         in="query",
      *         description="Filter by supplier ID",
      *         required=false,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="product_id",
      *         in="query",
      *         description="Filter by product ID",
      *         required=false,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Collections summary retrieved successfully"
@@ -211,34 +230,34 @@ class ReportController extends Controller
     public function collectionsSummary(Request $request): JsonResponse
     {
         $query = Collection::query();
-        
+
         if ($request->has('start_date')) {
             $query->where('collection_date', '>=', $request->input('start_date'));
         }
-        
+
         if ($request->has('end_date')) {
             $query->where('collection_date', '<=', $request->input('end_date'));
         }
-        
+
         if ($request->has('supplier_id')) {
             $query->where('supplier_id', $request->input('supplier_id'));
         }
-        
+
         if ($request->has('product_id')) {
             $query->where('product_id', $request->input('product_id'));
         }
-        
+
         $totalCount = $query->count();
         $totalAmount = $query->sum('total_amount');
         $totalQuantity = $query->sum('quantity');
-        
+
         $byProduct = Collection::select([
-                'products.id as product_id',
-                'products.name as product_name',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(collections.quantity) as total_quantity'),
-                DB::raw('SUM(collections.total_amount) as total_amount')
-            ])
+            'products.id as product_id',
+            'products.name as product_name',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(collections.quantity) as total_quantity'),
+            DB::raw('SUM(collections.total_amount) as total_amount'),
+        ])
             ->join('products', 'collections.product_id', '=', 'products.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('collection_date', '>=', $request->input('start_date'));
@@ -261,15 +280,15 @@ class ReportController extends Controller
                     'total_amount' => round($item->total_amount, 2),
                 ];
             });
-        
+
         $bySupplier = Collection::select([
-                'suppliers.id as supplier_id',
-                'suppliers.name as supplier_name',
-                'suppliers.code as supplier_code',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(collections.quantity) as total_quantity'),
-                DB::raw('SUM(collections.total_amount) as total_amount')
-            ])
+            'suppliers.id as supplier_id',
+            'suppliers.name as supplier_name',
+            'suppliers.code as supplier_code',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(collections.quantity) as total_quantity'),
+            DB::raw('SUM(collections.total_amount) as total_amount'),
+        ])
             ->join('suppliers', 'collections.supplier_id', '=', 'suppliers.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('collection_date', '>=', $request->input('start_date'));
@@ -293,7 +312,7 @@ class ReportController extends Controller
                     'total_amount' => round($item->total_amount, 2),
                 ];
             });
-        
+
         return response()->json([
             'summary' => [
                 'total_count' => $totalCount,
@@ -311,27 +330,34 @@ class ReportController extends Controller
      *     summary="Get payments summary by date range",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="start_date",
      *         in="query",
      *         description="Start date (Y-m-d format)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", format="date")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="end_date",
      *         in="query",
      *         description="End date (Y-m-d format)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", format="date")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="supplier_id",
      *         in="query",
      *         description="Filter by supplier ID",
      *         required=false,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Payments summary retrieved successfully"
@@ -341,27 +367,27 @@ class ReportController extends Controller
     public function paymentsSummary(Request $request): JsonResponse
     {
         $query = Payment::query();
-        
+
         if ($request->has('start_date')) {
             $query->where('payment_date', '>=', $request->input('start_date'));
         }
-        
+
         if ($request->has('end_date')) {
             $query->where('payment_date', '<=', $request->input('end_date'));
         }
-        
+
         if ($request->has('supplier_id')) {
             $query->where('supplier_id', $request->input('supplier_id'));
         }
-        
+
         $totalCount = $query->count();
         $totalAmount = $query->sum('amount');
-        
+
         $byType = Payment::select([
-                'type',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(amount) as total_amount')
-            ])
+            'type',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(amount) as total_amount'),
+        ])
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('payment_date', '>=', $request->input('start_date'));
             })
@@ -380,14 +406,14 @@ class ReportController extends Controller
                     'total_amount' => round($item->total_amount, 2),
                 ];
             });
-        
+
         $bySupplier = Payment::select([
-                'suppliers.id as supplier_id',
-                'suppliers.name as supplier_name',
-                'suppliers.code as supplier_code',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(payments.amount) as total_amount')
-            ])
+            'suppliers.id as supplier_id',
+            'suppliers.name as supplier_name',
+            'suppliers.code as supplier_code',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(payments.amount) as total_amount'),
+        ])
             ->join('suppliers', 'payments.supplier_id', '=', 'suppliers.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('payment_date', '>=', $request->input('start_date'));
@@ -407,7 +433,7 @@ class ReportController extends Controller
                     'total_amount' => round($item->total_amount, 2),
                 ];
             });
-        
+
         return response()->json([
             'summary' => [
                 'total_count' => $totalCount,
@@ -424,20 +450,25 @@ class ReportController extends Controller
      *     summary="Get product performance report",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="start_date",
      *         in="query",
      *         description="Start date (Y-m-d format)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", format="date")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="end_date",
      *         in="query",
      *         description="End date (Y-m-d format)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", format="date")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Product performance retrieved successfully"
@@ -447,15 +478,15 @@ class ReportController extends Controller
     public function productPerformance(Request $request): JsonResponse
     {
         $products = Product::select([
-                'products.id',
-                'products.name',
-                'products.code',
-                DB::raw('COUNT(DISTINCT collections.id) as collection_count'),
-                DB::raw('COALESCE(SUM(collections.quantity), 0) as total_quantity'),
-                DB::raw('COALESCE(SUM(collections.total_amount), 0) as total_amount'),
-                DB::raw('COUNT(DISTINCT collections.supplier_id) as unique_suppliers'),
-                DB::raw('AVG(collections.rate_applied) as avg_rate')
-            ])
+            'products.id',
+            'products.name',
+            'products.code',
+            DB::raw('COUNT(DISTINCT collections.id) as collection_count'),
+            DB::raw('COALESCE(SUM(collections.quantity), 0) as total_quantity'),
+            DB::raw('COALESCE(SUM(collections.total_amount), 0) as total_amount'),
+            DB::raw('COUNT(DISTINCT collections.supplier_id) as unique_suppliers'),
+            DB::raw('AVG(collections.rate_applied) as avg_rate'),
+        ])
             ->leftJoin('collections', function ($join) use ($request) {
                 $join->on('products.id', '=', 'collections.product_id');
                 if ($request->has('start_date')) {
@@ -480,7 +511,7 @@ class ReportController extends Controller
                     'avg_rate' => $item->avg_rate ? round($item->avg_rate, 2) : 0,
                 ];
             });
-        
+
         return response()->json($products);
     }
 
@@ -489,7 +520,7 @@ class ReportController extends Controller
      */
     private function getMonthDateFormat(string $column): string
     {
-        return DB::connection()->getDriverName() === 'sqlite' 
+        return DB::connection()->getDriverName() === 'sqlite'
             ? "strftime('%Y-%m', $column)"
             : "DATE_FORMAT($column, '%Y-%m')";
     }
@@ -500,20 +531,25 @@ class ReportController extends Controller
      *     summary="Get comprehensive financial summary",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="start_date",
      *         in="query",
      *         description="Start date (Y-m-d format)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", format="date")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="end_date",
      *         in="query",
      *         description="End date (Y-m-d format)",
      *         required=false,
+     *
      *         @OA\Schema(type="string", format="date")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Financial summary retrieved successfully"
@@ -524,27 +560,27 @@ class ReportController extends Controller
     {
         $collectionsQuery = Collection::query();
         $paymentsQuery = Payment::query();
-        
+
         if ($request->has('start_date')) {
             $collectionsQuery->where('collection_date', '>=', $request->input('start_date'));
             $paymentsQuery->where('payment_date', '>=', $request->input('start_date'));
         }
-        
+
         if ($request->has('end_date')) {
             $collectionsQuery->where('collection_date', '<=', $request->input('end_date'));
             $paymentsQuery->where('payment_date', '<=', $request->input('end_date'));
         }
-        
+
         $totalCollections = $collectionsQuery->sum('total_amount');
         $totalPayments = $paymentsQuery->sum('amount');
         $netBalance = $totalCollections - $totalPayments;
-        
+
         // Get monthly breakdown - using database-compatible date formatting
         $monthlyData = Collection::select([
-                DB::raw("{$this->getMonthDateFormat('collection_date')} as month"),
-                DB::raw('COALESCE(SUM(collections.total_amount), 0) as collections'),
-                DB::raw('0 as payments')
-            ])
+            DB::raw("{$this->getMonthDateFormat('collection_date')} as month"),
+            DB::raw('COALESCE(SUM(collections.total_amount), 0) as collections'),
+            DB::raw('0 as payments'),
+        ])
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('collection_date', '>=', $request->input('start_date'));
             })
@@ -554,11 +590,11 @@ class ReportController extends Controller
             ->groupBy('month')
             ->get()
             ->keyBy('month');
-        
+
         Payment::select([
-                DB::raw("{$this->getMonthDateFormat('payment_date')} as month"),
-                DB::raw('COALESCE(SUM(amount), 0) as payments')
-            ])
+            DB::raw("{$this->getMonthDateFormat('payment_date')} as month"),
+            DB::raw('COALESCE(SUM(amount), 0) as payments'),
+        ])
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('payment_date', '>=', $request->input('start_date'));
             })
@@ -578,7 +614,7 @@ class ReportController extends Controller
                     ];
                 }
             });
-        
+
         $monthlyBreakdown = $monthlyData->sortKeys()->map(function ($item) {
             return [
                 'month' => $item->month,
@@ -587,7 +623,7 @@ class ReportController extends Controller
                 'net' => round($item->collections - $item->payments, 2),
             ];
         })->values();
-        
+
         return response()->json([
             'summary' => [
                 'total_collections' => round($totalCollections, 2),
@@ -604,9 +640,11 @@ class ReportController extends Controller
      *     summary="Download system summary report as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="PDF downloaded successfully",
+     *
      *         @OA\MediaType(mediaType="application/pdf")
      *     )
      * )
@@ -614,14 +652,14 @@ class ReportController extends Controller
     public function summaryPdf(Request $request)
     {
         $data = $this->getSummaryData($request);
-        
+
         $pdf = Pdf::loadView('pdf.summary', [
             'data' => $data,
             'start_date' => $request->input('start_date'),
             'end_date' => $request->input('end_date'),
         ]);
-        
-        return $pdf->download('system-summary-' . date('Y-m-d') . '.pdf');
+
+        return $pdf->download('system-summary-'.date('Y-m-d').'.pdf');
     }
 
     /**
@@ -630,16 +668,20 @@ class ReportController extends Controller
      *     summary="Download supplier balances report as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="limit",
      *         in="query",
      *         description="Limit number of results",
      *         required=false,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="PDF downloaded successfully",
+     *
      *         @OA\MediaType(mediaType="application/pdf")
      *     )
      * )
@@ -647,14 +689,14 @@ class ReportController extends Controller
     public function supplierBalancesPdf(Request $request)
     {
         $balances = $this->getSupplierBalancesData($request);
-        
+
         $pdf = Pdf::loadView('pdf.supplier-balances', [
             'balances' => $balances,
             'start_date' => $request->input('start_date'),
             'end_date' => $request->input('end_date'),
         ]);
-        
-        return $pdf->download('supplier-balances-' . date('Y-m-d') . '.pdf');
+
+        return $pdf->download('supplier-balances-'.date('Y-m-d').'.pdf');
     }
 
     /**
@@ -663,9 +705,11 @@ class ReportController extends Controller
      *     summary="Download collections summary as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="PDF downloaded successfully",
+     *
      *         @OA\MediaType(mediaType="application/pdf")
      *     )
      * )
@@ -673,14 +717,14 @@ class ReportController extends Controller
     public function collectionsSummaryPdf(Request $request)
     {
         $data = $this->getCollectionsSummaryData($request);
-        
+
         $pdf = Pdf::loadView('pdf.collections-summary', [
             'data' => $data,
             'start_date' => $request->input('start_date'),
             'end_date' => $request->input('end_date'),
         ]);
-        
-        return $pdf->download('collections-summary-' . date('Y-m-d') . '.pdf');
+
+        return $pdf->download('collections-summary-'.date('Y-m-d').'.pdf');
     }
 
     /**
@@ -689,9 +733,11 @@ class ReportController extends Controller
      *     summary="Download payments summary as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="PDF downloaded successfully",
+     *
      *         @OA\MediaType(mediaType="application/pdf")
      *     )
      * )
@@ -699,14 +745,14 @@ class ReportController extends Controller
     public function paymentsSummaryPdf(Request $request)
     {
         $data = $this->getPaymentsSummaryData($request);
-        
+
         $pdf = Pdf::loadView('pdf.payments-summary', [
             'data' => $data,
             'start_date' => $request->input('start_date'),
             'end_date' => $request->input('end_date'),
         ]);
-        
-        return $pdf->download('payments-summary-' . date('Y-m-d') . '.pdf');
+
+        return $pdf->download('payments-summary-'.date('Y-m-d').'.pdf');
     }
 
     /**
@@ -715,9 +761,11 @@ class ReportController extends Controller
      *     summary="Download product performance report as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="PDF downloaded successfully",
+     *
      *         @OA\MediaType(mediaType="application/pdf")
      *     )
      * )
@@ -725,14 +773,14 @@ class ReportController extends Controller
     public function productPerformancePdf(Request $request)
     {
         $products = $this->getProductPerformanceData($request);
-        
+
         $pdf = Pdf::loadView('pdf.product-performance', [
             'products' => $products,
             'start_date' => $request->input('start_date'),
             'end_date' => $request->input('end_date'),
         ]);
-        
-        return $pdf->download('product-performance-' . date('Y-m-d') . '.pdf');
+
+        return $pdf->download('product-performance-'.date('Y-m-d').'.pdf');
     }
 
     /**
@@ -741,9 +789,11 @@ class ReportController extends Controller
      *     summary="Download financial summary as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="PDF downloaded successfully",
+     *
      *         @OA\MediaType(mediaType="application/pdf")
      *     )
      * )
@@ -751,14 +801,14 @@ class ReportController extends Controller
     public function financialSummaryPdf(Request $request)
     {
         $data = $this->getFinancialSummaryData($request);
-        
+
         $pdf = Pdf::loadView('pdf.financial-summary', [
             'data' => $data,
             'start_date' => $request->input('start_date'),
             'end_date' => $request->input('end_date'),
         ]);
-        
-        return $pdf->download('financial-summary-' . date('Y-m-d') . '.pdf');
+
+        return $pdf->download('financial-summary-'.date('Y-m-d').'.pdf');
     }
 
     // Private helper methods to extract data logic
@@ -766,27 +816,27 @@ class ReportController extends Controller
     {
         $totalSuppliers = Supplier::count();
         $activeSuppliers = Supplier::where('is_active', true)->count();
-        
+
         $totalProducts = Product::count();
         $activeProducts = Product::where('is_active', true)->count();
-        
+
         $totalCollections = Collection::count();
         $totalCollectionAmount = Collection::sum('total_amount');
-        
+
         $totalPayments = Payment::count();
         $totalPaymentAmount = Payment::sum('amount');
-        
+
         $outstandingBalance = $totalCollectionAmount - $totalPaymentAmount;
-        
+
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
-        
+
         $collectionsThisMonth = Collection::whereBetween('collection_date', [$startOfMonth, $endOfMonth])->count();
         $collectionAmountThisMonth = Collection::whereBetween('collection_date', [$startOfMonth, $endOfMonth])->sum('total_amount');
-        
+
         $paymentsThisMonth = Payment::whereBetween('payment_date', [$startOfMonth, $endOfMonth])->count();
         $paymentAmountThisMonth = Payment::whereBetween('payment_date', [$startOfMonth, $endOfMonth])->sum('amount');
-        
+
         return [
             'totalSuppliers' => $totalSuppliers,
             'activeSuppliers' => $activeSuppliers,
@@ -808,15 +858,15 @@ class ReportController extends Controller
     {
         $limit = $request->input('limit', 100);
         $sort = $request->input('sort', 'desc');
-        
+
         return Supplier::select([
-                'suppliers.id as supplier_id',
-                'suppliers.name as supplier_name',
-                'suppliers.code as supplier_code',
-                DB::raw('COALESCE(SUM(collections.total_amount), 0) as total_collections'),
-                DB::raw('COALESCE(SUM(payments.amount), 0) as total_payments'),
-                DB::raw('COALESCE(SUM(collections.total_amount), 0) - COALESCE(SUM(payments.amount), 0) as balance'),
-            ])
+            'suppliers.id as supplier_id',
+            'suppliers.name as supplier_name',
+            'suppliers.code as supplier_code',
+            DB::raw('COALESCE(SUM(collections.total_amount), 0) as total_collections'),
+            DB::raw('COALESCE(SUM(payments.amount), 0) as total_payments'),
+            DB::raw('COALESCE(SUM(collections.total_amount), 0) - COALESCE(SUM(payments.amount), 0) as balance'),
+        ])
             ->leftJoin('collections', 'suppliers.id', '=', 'collections.supplier_id')
             ->leftJoin('payments', 'suppliers.id', '=', 'payments.supplier_id')
             ->groupBy('suppliers.id', 'suppliers.name', 'suppliers.code')
@@ -839,26 +889,26 @@ class ReportController extends Controller
     private function getCollectionsSummaryData(Request $request): array
     {
         $query = Collection::query();
-        
+
         if ($request->has('start_date')) {
             $query->where('collection_date', '>=', $request->input('start_date'));
         }
-        
+
         if ($request->has('end_date')) {
             $query->where('collection_date', '<=', $request->input('end_date'));
         }
-        
+
         $totalCount = $query->count();
         $totalAmount = $query->sum('total_amount');
         $totalQuantity = $query->sum('quantity');
-        
+
         $byProduct = Collection::select([
-                'products.id as product_id',
-                'products.name as product_name',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(collections.quantity) as total_quantity'),
-                DB::raw('SUM(collections.total_amount) as total_amount')
-            ])
+            'products.id as product_id',
+            'products.name as product_name',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(collections.quantity) as total_quantity'),
+            DB::raw('SUM(collections.total_amount) as total_amount'),
+        ])
             ->join('products', 'collections.product_id', '=', 'products.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('collection_date', '>=', $request->input('start_date'));
@@ -879,15 +929,15 @@ class ReportController extends Controller
                 ];
             })
             ->toArray();
-        
+
         $bySupplier = Collection::select([
-                'suppliers.id as supplier_id',
-                'suppliers.name as supplier_name',
-                'suppliers.code as supplier_code',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(collections.quantity) as total_quantity'),
-                DB::raw('SUM(collections.total_amount) as total_amount')
-            ])
+            'suppliers.id as supplier_id',
+            'suppliers.name as supplier_name',
+            'suppliers.code as supplier_code',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(collections.quantity) as total_quantity'),
+            DB::raw('SUM(collections.total_amount) as total_amount'),
+        ])
             ->join('suppliers', 'collections.supplier_id', '=', 'suppliers.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('collection_date', '>=', $request->input('start_date'));
@@ -909,7 +959,7 @@ class ReportController extends Controller
                 ];
             })
             ->toArray();
-        
+
         return [
             'summary' => [
                 'total_count' => $totalCount,
@@ -924,23 +974,23 @@ class ReportController extends Controller
     private function getPaymentsSummaryData(Request $request): array
     {
         $query = Payment::query();
-        
+
         if ($request->has('start_date')) {
             $query->where('payment_date', '>=', $request->input('start_date'));
         }
-        
+
         if ($request->has('end_date')) {
             $query->where('payment_date', '<=', $request->input('end_date'));
         }
-        
+
         $totalCount = $query->count();
         $totalAmount = $query->sum('amount');
-        
+
         $byType = Payment::select([
-                'type',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(amount) as total_amount')
-            ])
+            'type',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(amount) as total_amount'),
+        ])
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('payment_date', '>=', $request->input('start_date'));
             })
@@ -957,14 +1007,14 @@ class ReportController extends Controller
                 ];
             })
             ->toArray();
-        
+
         $bySupplier = Payment::select([
-                'suppliers.id as supplier_id',
-                'suppliers.name as supplier_name',
-                'suppliers.code as supplier_code',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(payments.amount) as total_amount')
-            ])
+            'suppliers.id as supplier_id',
+            'suppliers.name as supplier_name',
+            'suppliers.code as supplier_code',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(payments.amount) as total_amount'),
+        ])
             ->join('suppliers', 'payments.supplier_id', '=', 'suppliers.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('payment_date', '>=', $request->input('start_date'));
@@ -985,7 +1035,7 @@ class ReportController extends Controller
                 ];
             })
             ->toArray();
-        
+
         return [
             'summary' => [
                 'total_count' => $totalCount,
@@ -999,15 +1049,15 @@ class ReportController extends Controller
     private function getProductPerformanceData(Request $request): array
     {
         return Product::select([
-                'products.id',
-                'products.name',
-                'products.code',
-                DB::raw('COUNT(DISTINCT collections.id) as collection_count'),
-                DB::raw('COALESCE(SUM(collections.quantity), 0) as total_quantity'),
-                DB::raw('COALESCE(SUM(collections.total_amount), 0) as total_amount'),
-                DB::raw('COUNT(DISTINCT collections.supplier_id) as unique_suppliers'),
-                DB::raw('AVG(collections.rate_applied) as avg_rate')
-            ])
+            'products.id',
+            'products.name',
+            'products.code',
+            DB::raw('COUNT(DISTINCT collections.id) as collection_count'),
+            DB::raw('COALESCE(SUM(collections.quantity), 0) as total_quantity'),
+            DB::raw('COALESCE(SUM(collections.total_amount), 0) as total_amount'),
+            DB::raw('COUNT(DISTINCT collections.supplier_id) as unique_suppliers'),
+            DB::raw('AVG(collections.rate_applied) as avg_rate'),
+        ])
             ->leftJoin('collections', function ($join) use ($request) {
                 $join->on('products.id', '=', 'collections.product_id');
                 if ($request->has('start_date')) {
@@ -1039,26 +1089,26 @@ class ReportController extends Controller
     {
         $collectionsQuery = Collection::query();
         $paymentsQuery = Payment::query();
-        
+
         if ($request->has('start_date')) {
             $collectionsQuery->where('collection_date', '>=', $request->input('start_date'));
             $paymentsQuery->where('payment_date', '>=', $request->input('start_date'));
         }
-        
+
         if ($request->has('end_date')) {
             $collectionsQuery->where('collection_date', '<=', $request->input('end_date'));
             $paymentsQuery->where('payment_date', '<=', $request->input('end_date'));
         }
-        
+
         $totalCollections = $collectionsQuery->sum('total_amount');
         $totalPayments = $paymentsQuery->sum('amount');
         $netBalance = $totalCollections - $totalPayments;
-        
+
         $monthlyData = Collection::select([
-                DB::raw("{$this->getMonthDateFormat('collection_date')} as month"),
-                DB::raw('COALESCE(SUM(collections.total_amount), 0) as collections'),
-                DB::raw('0 as payments')
-            ])
+            DB::raw("{$this->getMonthDateFormat('collection_date')} as month"),
+            DB::raw('COALESCE(SUM(collections.total_amount), 0) as collections'),
+            DB::raw('0 as payments'),
+        ])
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('collection_date', '>=', $request->input('start_date'));
             })
@@ -1068,11 +1118,11 @@ class ReportController extends Controller
             ->groupBy('month')
             ->get()
             ->keyBy('month');
-        
+
         Payment::select([
-                DB::raw("{$this->getMonthDateFormat('payment_date')} as month"),
-                DB::raw('COALESCE(SUM(amount), 0) as payments')
-            ])
+            DB::raw("{$this->getMonthDateFormat('payment_date')} as month"),
+            DB::raw('COALESCE(SUM(amount), 0) as payments'),
+        ])
             ->when($request->has('start_date'), function ($q) use ($request) {
                 return $q->where('payment_date', '>=', $request->input('start_date'));
             })
@@ -1092,7 +1142,7 @@ class ReportController extends Controller
                     ];
                 }
             });
-        
+
         $monthlyBreakdown = $monthlyData->sortKeys()->map(function ($item) {
             return [
                 'month' => $item->month,
@@ -1101,7 +1151,7 @@ class ReportController extends Controller
                 'net' => round($item->collections - $item->payments, 2),
             ];
         })->values()->toArray();
-        
+
         return [
             'summary' => [
                 'total_collections' => round($totalCollections, 2),
