@@ -153,7 +153,7 @@ export const SupplierDetailScreen: React.FC = () => {
       {/* Supplier Info Card */}
       <View style={styles.card}>
         <View style={styles.nameRow}>
-          <Text style={styles.supplierName}>{supplier.name}</Text>
+          <Text style={styles.supplierName}>{String(supplier.name)}</Text>
           <View style={[
             styles.statusBadge,
             { backgroundColor: supplier.is_active ? THEME.colors.success : THEME.colors.error }
@@ -166,41 +166,41 @@ export const SupplierDetailScreen: React.FC = () => {
         
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Code:</Text>
-          <Text style={styles.infoValue}>{supplier.code}</Text>
+          <Text style={styles.infoValue}>{String(supplier.code)}</Text>
         </View>
 
         {supplier.contact_person && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Contact Person:</Text>
-            <Text style={styles.infoValue}>{supplier.contact_person}</Text>
+            <Text style={styles.infoValue}>{String(supplier.contact_person)}</Text>
           </View>
         )}
 
         {supplier.phone && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Phone:</Text>
-            <Text style={styles.infoValue}>{supplier.phone}</Text>
+            <Text style={styles.infoValue}>{String(supplier.phone)}</Text>
           </View>
         )}
 
         {supplier.email && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Email:</Text>
-            <Text style={styles.infoValue}>{supplier.email}</Text>
+            <Text style={styles.infoValue}>{String(supplier.email)}</Text>
           </View>
         )}
 
         {supplier.address && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Address:</Text>
-            <Text style={styles.infoValue}>{supplier.address}</Text>
+            <Text style={styles.infoValue}>{String(supplier.address)}</Text>
           </View>
         )}
 
         {supplier.region && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Region:</Text>
-            <Text style={styles.infoValue}>{supplier.region}</Text>
+            <Text style={styles.infoValue}>{String(supplier.region)}</Text>
           </View>
         )}
       </View>

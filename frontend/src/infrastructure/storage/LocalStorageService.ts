@@ -16,17 +16,52 @@ export interface PendingSync {
 
 class LocalStorageService {
   private db: SQLite.SQLiteDatabase | null = null;
+  private initializationPromise: Promise<void> | null = null;
+  private isInitialized: boolean = false;
 
   /**
    * Initialize database
    */
   async initialize(): Promise<void> {
+    // If already initialized, return immediately
+    if (this.isInitialized && this.db) {
+      return;
+    }
+
+    // If initialization is in progress, wait for it
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    // Start initialization
+    this.initializationPromise = this.performInitialization();
+    return this.initializationPromise;
+  }
+
+  /**
+   * Perform actual database initialization
+   */
+  private async performInitialization(): Promise<void> {
     try {
       this.db = await SQLite.openDatabaseAsync('ledger.db');
       await this.createTables();
+      this.isInitialized = true;
+      console.log('Database initialized successfully');
     } catch (error) {
       console.error('Database initialization error:', error);
+      this.db = null;
+      this.isInitialized = false;
+      this.initializationPromise = null;
       throw error;
+    }
+  }
+
+  /**
+   * Ensure database is initialized before operations
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.isInitialized || !this.db) {
+      await this.initialize();
     }
   }
 
@@ -34,7 +69,9 @@ class LocalStorageService {
    * Create database tables
    */
   private async createTables(): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
 
     // Create pending sync queue table
     await this.db.execAsync(`
@@ -126,7 +163,8 @@ class LocalStorageService {
    * Add item to sync queue
    */
   async addToSyncQueue(entity: string, action: 'create' | 'update' | 'delete', data: any): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     await this.db.runAsync(
       'INSERT INTO pending_sync (entity, action, data, timestamp, synced) VALUES (?, ?, ?, ?, ?)',
@@ -138,7 +176,8 @@ class LocalStorageService {
    * Get pending sync items
    */
   async getPendingSyncItems(): Promise<PendingSync[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     const result = await this.db.getAllAsync<PendingSync>(
       'SELECT * FROM pending_sync WHERE synced = 0 ORDER BY timestamp ASC'
@@ -154,7 +193,8 @@ class LocalStorageService {
    * Mark sync item as synced
    */
   async markSynced(id: number): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     await this.db.runAsync(
       'UPDATE pending_sync SET synced = 1 WHERE id = ?',
@@ -166,7 +206,8 @@ class LocalStorageService {
    * Delete synced items (cleanup)
    */
   async deleteSyncedItems(): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     await this.db.runAsync('DELETE FROM pending_sync WHERE synced = 1');
   }
@@ -175,7 +216,8 @@ class LocalStorageService {
    * Cache suppliers locally
    */
   async cacheSuppliers(suppliers: any[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     for (const supplier of suppliers) {
       await this.db.runAsync(
@@ -201,7 +243,8 @@ class LocalStorageService {
    * Get cached suppliers
    */
   async getCachedSuppliers(): Promise<any[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     const result = await this.db.getAllAsync<any>(
       'SELECT data FROM suppliers WHERE is_active = 1 ORDER BY name'
@@ -221,7 +264,8 @@ class LocalStorageService {
    * Cache products locally
    */
   async cacheProducts(products: any[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     for (const product of products) {
       await this.db.runAsync(
@@ -245,7 +289,8 @@ class LocalStorageService {
    * Get cached products
    */
   async getCachedProducts(): Promise<any[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     const result = await this.db.getAllAsync<any>(
       'SELECT data FROM products WHERE is_active = 1 ORDER BY name'
@@ -265,7 +310,8 @@ class LocalStorageService {
    * Cache rates locally
    */
   async cacheRates(rates: any[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     for (const rate of rates) {
       await this.db.runAsync(
@@ -291,7 +337,8 @@ class LocalStorageService {
    * Get cached rates
    */
   async getCachedRates(productId?: number): Promise<any[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     // Validate productId if provided
     if (productId !== undefined && (!Number.isInteger(productId) || productId < 0)) {
@@ -324,7 +371,8 @@ class LocalStorageService {
    * Cache collections locally
    */
   async cacheCollections(collections: any[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     for (const collection of collections) {
       await this.db.runAsync(
@@ -351,7 +399,8 @@ class LocalStorageService {
    * Get cached collections
    */
   async getCachedCollections(): Promise<any[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     const result = await this.db.getAllAsync<any>(
       'SELECT data FROM collections WHERE pending_sync = 0 ORDER BY collection_date DESC'
@@ -371,7 +420,8 @@ class LocalStorageService {
    * Cache payments locally
    */
   async cachePayments(payments: any[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     for (const payment of payments) {
       await this.db.runAsync(
@@ -396,7 +446,8 @@ class LocalStorageService {
    * Get cached payments
    */
   async getCachedPayments(): Promise<any[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     const result = await this.db.getAllAsync<any>(
       'SELECT data FROM payments WHERE pending_sync = 0 ORDER BY payment_date DESC'
@@ -416,7 +467,8 @@ class LocalStorageService {
    * Clear all cached data
    */
   async clearCache(): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    await this.ensureInitialized();
+    if (!this.db) throw new Error('Database initialization failed');
 
     await this.db.execAsync(`
       DELETE FROM suppliers;

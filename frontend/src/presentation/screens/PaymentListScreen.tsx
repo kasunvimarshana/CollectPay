@@ -139,9 +139,9 @@ export const PaymentListScreen: React.FC = () => {
       onPress={() => handlePaymentPress(item)}
     >
       <View style={styles.paymentHeader}>
-        <Text style={styles.supplierName}>{item.supplier?.name || 'Unknown Supplier'}</Text>
+        <Text style={styles.supplierName}>{String(item.supplier?.name || 'Unknown Supplier')}</Text>
         <View style={[styles.typeBadge, { backgroundColor: getTypeColor(item.type) }]}>
-          <Text style={styles.typeText}>{item.type.toUpperCase()}</Text>
+          <Text style={styles.typeText}>{String(item.type).toUpperCase()}</Text>
         </View>
       </View>
       
@@ -154,26 +154,26 @@ export const PaymentListScreen: React.FC = () => {
 
       <View style={styles.paymentDetails}>
         <Text style={styles.detailLabel}>Amount:</Text>
-        <Text style={styles.amountValue}>${item.amount.toFixed(2)}</Text>
+        <Text style={styles.amountValue}>${typeof item.amount === 'number' ? item.amount.toFixed(2) : '0.00'}</Text>
       </View>
 
       {item.reference_number && (
         <View style={styles.paymentDetails}>
           <Text style={styles.detailLabel}>Ref:</Text>
-          <Text style={styles.detailValue}>{item.reference_number}</Text>
+          <Text style={styles.detailValue}>{String(item.reference_number)}</Text>
         </View>
       )}
 
       {item.payment_method && (
         <View style={styles.paymentDetails}>
           <Text style={styles.detailLabel}>Method:</Text>
-          <Text style={styles.detailValue}>{item.payment_method}</Text>
+          <Text style={styles.detailValue}>{String(item.payment_method)}</Text>
         </View>
       )}
 
       {item.notes && (
         <View style={styles.notesContainer}>
-          <Text style={styles.notesText}>{item.notes}</Text>
+          <Text style={styles.notesText}>{String(item.notes)}</Text>
         </View>
       )}
     </TouchableOpacity>

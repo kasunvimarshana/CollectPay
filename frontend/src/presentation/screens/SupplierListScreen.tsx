@@ -143,7 +143,7 @@ export const SupplierListScreen: React.FC = () => {
       onPress={() => handleSupplierPress(item)}
     >
       <View style={styles.supplierHeader}>
-        <Text style={styles.supplierName}>{item.name}</Text>
+        <Text style={styles.supplierName}>{String(item.name)}</Text>
         <View style={[
           styles.statusBadge,
           { backgroundColor: item.is_active ? THEME.colors.success : THEME.colors.error }
@@ -155,12 +155,12 @@ export const SupplierListScreen: React.FC = () => {
       </View>
       
       <View style={styles.supplierDetails}>
-        <Text style={styles.detailText}>Code: {item.code}</Text>
+        <Text style={styles.detailText}>Code: {String(item.code)}</Text>
         {item.region && (
-          <Text style={styles.detailText}>Region: {item.region}</Text>
+          <Text style={styles.detailText}>Region: {String(item.region)}</Text>
         )}
         {item.phone && (
-          <Text style={styles.detailText}>Phone: {item.phone}</Text>
+          <Text style={styles.detailText}>Phone: {String(item.phone)}</Text>
         )}
       </View>
     </TouchableOpacity>

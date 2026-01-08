@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: THEME.typography.fontSize.xxl,
+    fontSize: THEME.typography.fontSize.xl,
     fontWeight: THEME.typography.fontWeight.bold,
   },
   subtitle: {

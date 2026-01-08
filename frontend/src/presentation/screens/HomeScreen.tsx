@@ -37,8 +37,8 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.title}>Ledger Dashboard</Text>
-            <Text style={styles.subtitle}>Welcome, {user?.name || 'User'}</Text>
-            <Text style={styles.role}>Role: {user?.role?.display_name || 'N/A'}</Text>
+            <Text style={styles.subtitle}>Welcome, {String(user?.name || 'User')}</Text>
+            <Text style={styles.role}>Role: {String(user?.role?.display_name || 'N/A')}</Text>
           </View>
           <SyncStatusIndicator showDetails={true} />
         </View>
@@ -63,6 +63,16 @@ export const HomeScreen: React.FC = () => {
             >
               <Text style={styles.menuIcon}>📦</Text>
               <Text style={styles.menuText}>Products</Text>
+            </TouchableOpacity>
+          )}
+
+          {canView(user, 'rates') && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('RateList')}
+            >
+              <Text style={styles.menuIcon}>💵</Text>
+              <Text style={styles.menuText}>Rates</Text>
             </TouchableOpacity>
           )}
 

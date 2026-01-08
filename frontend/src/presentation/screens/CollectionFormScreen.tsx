@@ -243,7 +243,7 @@ export const CollectionFormScreen: React.FC = () => {
         {currentRate && (
           <View style={styles.rateInfo}>
             <Text style={styles.rateInfoText}>
-              Current Rate: {currentRate.rate} per {currentRate.unit}
+              Current Rate: {String(currentRate.rate)} per {String(currentRate.unit)}
             </Text>
           </View>
         )}

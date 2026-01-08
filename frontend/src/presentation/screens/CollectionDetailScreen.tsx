@@ -108,12 +108,12 @@ export const CollectionDetailScreen: React.FC = () => {
       <View style={styles.section}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Supplier:</Text>
-          <Text style={styles.detailValue}>{collection.supplier?.name || 'Unknown'}</Text>
+          <Text style={styles.detailValue}>{String(collection.supplier?.name || 'Unknown')}</Text>
         </View>
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Product:</Text>
-          <Text style={styles.detailValue}>{collection.product?.name || 'Unknown'}</Text>
+          <Text style={styles.detailValue}>{String(collection.product?.name || 'Unknown')}</Text>
         </View>
 
         <View style={styles.detailRow}>
@@ -126,35 +126,35 @@ export const CollectionDetailScreen: React.FC = () => {
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Quantity:</Text>
           <Text style={styles.detailValue}>
-            {collection.quantity} {collection.unit}
+            {String(collection.quantity)} {String(collection.unit)}
           </Text>
         </View>
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Rate Applied:</Text>
           <Text style={styles.detailValue}>
-            {collection.rate_applied} per {collection.unit}
+            {String(collection.rate_applied)} per {String(collection.unit)}
           </Text>
         </View>
 
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total Amount:</Text>
           <Text style={styles.totalValue}>
-            ${collection.total_amount?.toFixed(2) || '0.00'}
+            ${typeof collection.total_amount === 'number' ? collection.total_amount.toFixed(2) : '0.00'}
           </Text>
         </View>
 
         {collection.notes && (
           <View style={styles.notesContainer}>
             <Text style={styles.notesLabel}>Notes:</Text>
-            <Text style={styles.notesText}>{collection.notes}</Text>
+            <Text style={styles.notesText}>{String(collection.notes)}</Text>
           </View>
         )}
 
         {collection.user && (
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Recorded By:</Text>
-            <Text style={styles.detailValue}>{collection.user.name}</Text>
+            <Text style={styles.detailValue}>{String(collection.user.name)}</Text>
           </View>
         )}
       </View>

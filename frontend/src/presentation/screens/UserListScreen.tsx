@@ -124,7 +124,7 @@ export const UserListScreen: React.FC = () => {
       onPress={() => handleUserPress(item.id)}
     >
       <View style={styles.userHeader}>
-        <Text style={styles.userName}>{item.name}</Text>
+        <Text style={styles.userName}>{String(item.name)}</Text>
         <View style={[
           styles.statusBadge,
           { backgroundColor: item.is_active ? THEME.colors.success : THEME.colors.error }
@@ -134,9 +134,9 @@ export const UserListScreen: React.FC = () => {
           </Text>
         </View>
       </View>
-      <Text style={styles.userEmail}>{item.email}</Text>
+      <Text style={styles.userEmail}>{String(item.email)}</Text>
       {item.role && (
-        <Text style={styles.userRole}>Role: {item.role.name}</Text>
+        <Text style={styles.userRole}>Role: {String(item.role.name)}</Text>
       )}
     </TouchableOpacity>
   );

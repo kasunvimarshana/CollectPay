@@ -16,3 +16,6 @@ export { ConflictNotification } from './ConflictNotification';
 export { DateTimePicker } from './DateTimePicker';
 export { SearchableSelector } from './SearchableSelector';
 export type { SearchableSelectorOption } from './SearchableSelector';
+export { ProductInfo } from './ProductInfo';
+export { RateInfo } from './RateInfo';
+export { ProductActionButtons } from './ProductActionButtons';

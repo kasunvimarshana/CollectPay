@@ -55,7 +55,7 @@ export const RateHistoryScreen: React.FC = () => {
     return (
       <View style={styles.rateCard}>
         <View style={styles.cardHeader}>
-          <Text style={styles.rateAmount}>{item.rate} per {item.unit}</Text>
+          <Text style={styles.rateAmount}>{String(item.rate)} per {String(item.unit)}</Text>
           {isActive && (
             <View style={styles.activeBadge}>
               <Text style={styles.activeBadgeText}>Active</Text>
@@ -66,7 +66,7 @@ export const RateHistoryScreen: React.FC = () => {
         <View style={styles.cardBody}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Version:</Text>
-            <Text style={styles.detailValue}>{item.version}</Text>
+            <Text style={styles.detailValue}>{String(item.version)}</Text>
           </View>
           
           <View style={styles.detailRow}>

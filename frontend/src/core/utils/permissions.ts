@@ -5,48 +5,49 @@
 import { User } from '../../domain/entities/User';
 
 // Permission constants based on backend RBAC system
+// Using dot notation to match backend format
 export const PERMISSIONS = {
   // User permissions
-  VIEW_USERS: 'view_users',
-  CREATE_USERS: 'create_users',
-  UPDATE_USERS: 'update_users',
-  DELETE_USERS: 'delete_users',
+  VIEW_USERS: 'users.view',
+  CREATE_USERS: 'users.create',
+  UPDATE_USERS: 'users.edit',
+  DELETE_USERS: 'users.delete',
   
   // Supplier permissions
-  VIEW_SUPPLIERS: 'view_suppliers',
-  CREATE_SUPPLIERS: 'create_suppliers',
-  UPDATE_SUPPLIERS: 'update_suppliers',
-  DELETE_SUPPLIERS: 'delete_suppliers',
+  VIEW_SUPPLIERS: 'suppliers.view',
+  CREATE_SUPPLIERS: 'suppliers.create',
+  UPDATE_SUPPLIERS: 'suppliers.edit',
+  DELETE_SUPPLIERS: 'suppliers.delete',
   
   // Product permissions
-  VIEW_PRODUCTS: 'view_products',
-  CREATE_PRODUCTS: 'create_products',
-  UPDATE_PRODUCTS: 'update_products',
-  DELETE_PRODUCTS: 'delete_products',
+  VIEW_PRODUCTS: 'products.view',
+  CREATE_PRODUCTS: 'products.create',
+  UPDATE_PRODUCTS: 'products.edit',
+  DELETE_PRODUCTS: 'products.delete',
   
   // Collection permissions
-  VIEW_COLLECTIONS: 'view_collections',
-  CREATE_COLLECTIONS: 'create_collections',
-  UPDATE_COLLECTIONS: 'update_collections',
-  DELETE_COLLECTIONS: 'delete_collections',
+  VIEW_COLLECTIONS: 'collections.view',
+  CREATE_COLLECTIONS: 'collections.create',
+  UPDATE_COLLECTIONS: 'collections.edit',
+  DELETE_COLLECTIONS: 'collections.delete',
   
   // Payment permissions
-  VIEW_PAYMENTS: 'view_payments',
-  CREATE_PAYMENTS: 'create_payments',
-  UPDATE_PAYMENTS: 'update_payments',
-  DELETE_PAYMENTS: 'delete_payments',
+  VIEW_PAYMENTS: 'payments.view',
+  CREATE_PAYMENTS: 'payments.create',
+  UPDATE_PAYMENTS: 'payments.edit',
+  DELETE_PAYMENTS: 'payments.delete',
   
   // Rate permissions
-  VIEW_RATES: 'view_rates',
-  CREATE_RATES: 'create_rates',
-  UPDATE_RATES: 'update_rates',
-  DELETE_RATES: 'delete_rates',
+  VIEW_RATES: 'rates.view',
+  CREATE_RATES: 'rates.create',
+  UPDATE_RATES: 'rates.edit',
+  DELETE_RATES: 'rates.delete',
   
   // Role permissions
-  VIEW_ROLES: 'view_roles',
-  CREATE_ROLES: 'create_roles',
-  UPDATE_ROLES: 'update_roles',
-  DELETE_ROLES: 'delete_roles',
+  VIEW_ROLES: 'roles.view',
+  CREATE_ROLES: 'roles.create',
+  UPDATE_ROLES: 'roles.edit',
+  DELETE_ROLES: 'roles.delete',
 };
 
 // Role constants
@@ -120,21 +121,22 @@ export const hasAnyRole = (user: User | null, roles: string[]): boolean => {
 
 /**
  * Check if user can perform CRUD operations on a resource
+ * Uses dot notation to match backend format: resource.action
  */
 export const canCreate = (user: User | null, resource: string): boolean => {
-  return hasPermission(user, `create_${resource}`);
+  return hasPermission(user, `${resource}.create`);
 };
 
 export const canView = (user: User | null, resource: string): boolean => {
-  return hasPermission(user, `view_${resource}`);
+  return hasPermission(user, `${resource}.view`);
 };
 
 export const canUpdate = (user: User | null, resource: string): boolean => {
-  return hasPermission(user, `update_${resource}`);
+  return hasPermission(user, `${resource}.edit`);
 };
 
 export const canDelete = (user: User | null, resource: string): boolean => {
-  return hasPermission(user, `delete_${resource}`);
+  return hasPermission(user, `${resource}.delete`);
 };
 
 /**

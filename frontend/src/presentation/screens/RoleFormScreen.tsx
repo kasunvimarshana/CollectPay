@@ -22,7 +22,8 @@ import { PERMISSIONS } from '../../core/utils/permissions';
 
 // Utility function to format permission text for display
 const formatPermissionText = (permission: string): string => {
-  return permission.replace(/_/g, ' ').toLowerCase();
+  // Convert dot notation (e.g., 'users.view') to readable format ('users view')
+  return permission.replace(/\./g, ' ').toLowerCase();
 };
 
 // Available permissions grouped by resource
@@ -99,7 +100,13 @@ export const RoleFormScreen: React.FC = () => {
         setName(response.data.name);
         setDisplayName(response.data.display_name);
         setDescription(response.data.description);
-        setSelectedPermissions(response.data.permissions || []);
+        
+        // Ensure permissions is always an array
+        const permissions = Array.isArray(response.data.permissions) 
+          ? response.data.permissions 
+          : [];
+        
+        setSelectedPermissions(permissions);
       }
     } catch (error) {
       console.error('Error loading role:', error);

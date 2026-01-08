@@ -24,6 +24,9 @@ import { PaymentListScreen } from '../screens/PaymentListScreen';
 import { PaymentFormScreen } from '../screens/PaymentFormScreen';
 import { PaymentDetailScreen } from '../screens/PaymentDetailScreen';
 import { RateHistoryScreen } from '../screens/RateHistoryScreen';
+import { RateListScreen } from '../screens/RateListScreen';
+import { RateFormScreen } from '../screens/RateFormScreen';
+import { RateDetailScreen } from '../screens/RateDetailScreen';
 import { UserListScreen } from '../screens/UserListScreen';
 import { UserDetailScreen } from '../screens/UserDetailScreen';
 import { UserFormScreen } from '../screens/UserFormScreen';
@@ -77,6 +80,11 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="ProductForm" component={ProductFormScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
             <Stack.Screen name="RateHistory" component={RateHistoryScreen} />
+            
+            {/* Rate Screens */}
+            <Stack.Screen name="RateList" component={RateListScreen} />
+            <Stack.Screen name="RateForm" component={RateFormScreen} />
+            <Stack.Screen name="RateDetail" component={RateDetailScreen} />
             
             {/* Collection Screens */}
             <Stack.Screen name="CollectionList" component={CollectionListScreen} />

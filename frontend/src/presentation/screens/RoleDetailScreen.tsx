@@ -105,25 +105,25 @@ export const RoleDetailScreen: React.FC = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{role.display_name}</Text>
+        <Text style={styles.title}>{String(role.display_name)}</Text>
       </View>
 
       <View style={styles.section}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>System Name:</Text>
-          <Text style={styles.detailValue}>{role.name}</Text>
+          <Text style={styles.detailValue}>{String(role.name)}</Text>
         </View>
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Description:</Text>
-          <Text style={styles.detailValue}>{role.description}</Text>
+          <Text style={styles.detailValue}>{String(role.description)}</Text>
         </View>
 
         {role.users_count !== undefined && (
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Users:</Text>
             <Text style={styles.detailValue}>
-              {role.users_count} user{role.users_count !== 1 ? 's' : ''}
+              {String(role.users_count)} user{role.users_count !== 1 ? 's' : ''}
             </Text>
           </View>
         )}
@@ -141,13 +141,13 @@ export const RoleDetailScreen: React.FC = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Permissions</Text>
         <Text style={styles.permissionCount}>
-          {role.permissions.length} permission{role.permissions.length !== 1 ? 's' : ''}
+          {String(role.permissions.length)} permission{role.permissions.length !== 1 ? 's' : ''}
         </Text>
         
         <View style={styles.permissionsGrid}>
           {role.permissions.map((permission, index) => (
             <View key={index} style={styles.permissionChip}>
-              <Text style={styles.permissionText}>{permission}</Text>
+              <Text style={styles.permissionText}>{String(permission)}</Text>
             </View>
           ))}
         </View>

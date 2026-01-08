@@ -123,13 +123,13 @@ export const PaymentDetailScreen: React.FC = () => {
       <View style={styles.section}>
         <View style={styles.typeRow}>
           <View style={[styles.typeBadge, { backgroundColor: getTypeColor(payment.type) }]}>
-            <Text style={styles.typeText}>{payment.type.toUpperCase()}</Text>
+            <Text style={styles.typeText}>{String(payment.type).toUpperCase()}</Text>
           </View>
         </View>
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Supplier:</Text>
-          <Text style={styles.detailValue}>{payment.supplier?.name || 'Unknown'}</Text>
+          <Text style={styles.detailValue}>{String(payment.supplier?.name || 'Unknown')}</Text>
         </View>
 
         <View style={styles.detailRow}>
@@ -141,13 +141,13 @@ export const PaymentDetailScreen: React.FC = () => {
 
         <View style={styles.amountRow}>
           <Text style={styles.amountLabel}>Amount:</Text>
-          <Text style={styles.amountValue}>${payment.amount.toFixed(2)}</Text>
+          <Text style={styles.amountValue}>${typeof payment.amount === 'number' ? payment.amount.toFixed(2) : '0.00'}</Text>
         </View>
 
         {payment.reference_number && (
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Reference Number:</Text>
-            <Text style={styles.detailValue}>{payment.reference_number}</Text>
+            <Text style={styles.detailValue}>{String(payment.reference_number)}</Text>
           </View>
         )}
 
@@ -155,7 +155,7 @@ export const PaymentDetailScreen: React.FC = () => {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Payment Method:</Text>
             <Text style={styles.detailValue}>
-              {payment.payment_method.replace('_', ' ').split(' ').map(w => 
+              {String(payment.payment_method).replace('_', ' ').split(' ').map(w => 
                 w.charAt(0).toUpperCase() + w.slice(1)
               ).join(' ')}
             </Text>
@@ -165,14 +165,14 @@ export const PaymentDetailScreen: React.FC = () => {
         {payment.notes && (
           <View style={styles.notesContainer}>
             <Text style={styles.notesLabel}>Notes:</Text>
-            <Text style={styles.notesText}>{payment.notes}</Text>
+            <Text style={styles.notesText}>{String(payment.notes)}</Text>
           </View>
         )}
 
         {payment.user && (
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Recorded By:</Text>
-            <Text style={styles.detailValue}>{payment.user.name}</Text>
+            <Text style={styles.detailValue}>{String(payment.user.name)}</Text>
           </View>
         )}
 

@@ -135,7 +135,7 @@ export const ProductListScreen: React.FC = () => {
       onPress={() => handleProductPress(item)}
     >
       <View style={styles.productHeader}>
-        <Text style={styles.productName}>{item.name}</Text>
+        <Text style={styles.productName}>{String(item.name)}</Text>
         <View style={[
           styles.statusBadge,
           { backgroundColor: item.is_active ? THEME.colors.success : THEME.colors.error }
@@ -148,12 +148,12 @@ export const ProductListScreen: React.FC = () => {
       
       <View style={styles.productDetails}>
         <Text style={styles.detailLabel}>Code:</Text>
-        <Text style={styles.detailValue}>{item.code}</Text>
+        <Text style={styles.detailValue}>{String(item.code)}</Text>
       </View>
 
       <View style={styles.productDetails}>
         <Text style={styles.detailLabel}>Base Unit:</Text>
-        <Text style={styles.detailValue}>{item.base_unit}</Text>
+        <Text style={styles.detailValue}>{String(item.base_unit)}</Text>
       </View>
 
       {item.supported_units && item.supported_units.length > 0 && (
@@ -162,7 +162,7 @@ export const ProductListScreen: React.FC = () => {
           <Text style={styles.detailValue}>
             {Array.isArray(item.supported_units) 
               ? item.supported_units.join(', ')
-              : item.supported_units}
+              : String(item.supported_units)}
           </Text>
         </View>
       )}

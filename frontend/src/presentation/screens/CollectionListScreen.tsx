@@ -124,7 +124,7 @@ export const CollectionListScreen: React.FC = () => {
       onPress={() => handleCollectionPress(item)}
     >
       <View style={styles.collectionHeader}>
-        <Text style={styles.supplierName}>{item.supplier?.name || 'Unknown Supplier'}</Text>
+        <Text style={styles.supplierName}>{String(item.supplier?.name || 'Unknown Supplier')}</Text>
         <Text style={styles.date}>
           {new Date(item.collection_date).toLocaleDateString()}
         </Text>
@@ -132,33 +132,33 @@ export const CollectionListScreen: React.FC = () => {
       
       <View style={styles.collectionDetails}>
         <Text style={styles.detailLabel}>Product:</Text>
-        <Text style={styles.detailValue}>{item.product?.name || 'Unknown'}</Text>
+        <Text style={styles.detailValue}>{String(item.product?.name || 'Unknown')}</Text>
       </View>
 
       <View style={styles.collectionDetails}>
         <Text style={styles.detailLabel}>Quantity:</Text>
         <Text style={styles.detailValue}>
-          {item.quantity} {item.unit}
+          {String(item.quantity)} {String(item.unit)}
         </Text>
       </View>
 
       <View style={styles.collectionDetails}>
         <Text style={styles.detailLabel}>Rate:</Text>
         <Text style={styles.detailValue}>
-          {item.rate_applied} per {item.unit}
+          {String(item.rate_applied)} per {String(item.unit)}
         </Text>
       </View>
 
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>Total Amount:</Text>
         <Text style={styles.totalValue}>
-          ${item.total_amount?.toFixed(2) || '0.00'}
+          ${typeof item.total_amount === 'number' ? item.total_amount.toFixed(2) : '0.00'}
         </Text>
       </View>
 
       {item.notes && (
         <View style={styles.notesContainer}>
-          <Text style={styles.notesText}>{item.notes}</Text>
+          <Text style={styles.notesText}>{String(item.notes)}</Text>
         </View>
       )}
     </TouchableOpacity>

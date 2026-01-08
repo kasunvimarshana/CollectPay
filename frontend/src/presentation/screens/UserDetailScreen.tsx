@@ -102,7 +102,7 @@ export const UserDetailScreen: React.FC = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{user.name}</Text>
+        <Text style={styles.title}>{String(user.name)}</Text>
       </View>
 
       <View style={styles.section}>
@@ -119,13 +119,13 @@ export const UserDetailScreen: React.FC = () => {
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Email:</Text>
-          <Text style={styles.detailValue}>{user.email}</Text>
+          <Text style={styles.detailValue}>{String(user.email)}</Text>
         </View>
 
         {user.role && (
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Role:</Text>
-            <Text style={styles.detailValue}>{user.role.name}</Text>
+            <Text style={styles.detailValue}>{String(user.role.name)}</Text>
           </View>
         )}
 

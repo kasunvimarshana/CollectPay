@@ -124,19 +124,19 @@ export const RoleListScreen: React.FC = () => {
       onPress={() => handleRolePress(item.id)}
     >
       <View style={styles.roleHeader}>
-        <Text style={styles.roleName}>{item.display_name}</Text>
+        <Text style={styles.roleName}>{String(item.display_name)}</Text>
         {item.users_count !== undefined && (
           <View style={styles.userCountBadge}>
             <Text style={styles.userCountText}>
-              {item.users_count} user{item.users_count !== 1 ? 's' : ''}
+              {String(item.users_count)} user{item.users_count !== 1 ? 's' : ''}
             </Text>
           </View>
         )}
       </View>
-      <Text style={styles.roleSystemName}>System: {item.name}</Text>
-      <Text style={styles.roleDescription}>{item.description}</Text>
+      <Text style={styles.roleSystemName}>System: {String(item.name)}</Text>
+      <Text style={styles.roleDescription}>{String(item.description)}</Text>
       <Text style={styles.permissionCount}>
-        {item.permissions.length} permission{item.permissions.length !== 1 ? 's' : ''}
+        {String(item.permissions.length)} permission{item.permissions.length !== 1 ? 's' : ''}
       </Text>
     </TouchableOpacity>
   );

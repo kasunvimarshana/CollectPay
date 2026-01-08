@@ -641,22 +641,22 @@ export const ReportsScreen: React.FC = () => {
             topBalances.map((balance) => (
               <View key={balance.supplier_id} style={styles.balanceCard}>
                 <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceName}>{balance.supplier_name}</Text>
-                  <Text style={styles.balanceCode}>{balance.supplier_code}</Text>
+                  <Text style={styles.balanceName}>{String(balance.supplier_name)}</Text>
+                  <Text style={styles.balanceCode}>{String(balance.supplier_code)}</Text>
                 </View>
                 <View style={styles.balanceDetails}>
                   <Text style={styles.balanceDetailText}>
-                    Collections: ${balance.total_collections.toFixed(2)}
+                    Collections: ${typeof balance.total_collections === 'number' ? balance.total_collections.toFixed(2) : '0.00'}
                   </Text>
                   <Text style={styles.balanceDetailText}>
-                    Payments: ${balance.total_payments.toFixed(2)}
+                    Payments: ${typeof balance.total_payments === 'number' ? balance.total_payments.toFixed(2) : '0.00'}
                   </Text>
                 </View>
                 <Text style={[
                   styles.balanceAmount,
                   balance.balance > 0 ? styles.textRed : styles.textGreen
                 ]}>
-                  Balance: ${Math.abs(balance.balance).toFixed(2)}
+                  Balance: ${typeof balance.balance === 'number' ? Math.abs(balance.balance).toFixed(2) : '0.00'}
                 </Text>
               </View>
             ))
