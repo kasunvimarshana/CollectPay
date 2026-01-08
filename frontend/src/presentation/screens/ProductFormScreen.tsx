@@ -16,7 +16,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
+import { ScreenHeader } from '../components';
+import THEME from '../../core/constants/theme';
 
 interface ProductFormData {
   name: string;
@@ -32,6 +35,7 @@ export const ProductFormScreen: React.FC = () => {
   const route = useRoute();
   const productId = (route.params as any)?.productId;
   const isEditMode = !!productId;
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
@@ -148,15 +152,12 @@ export const ProductFormScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>
-          {isEditMode ? 'Edit Product' : 'Add Product'}
-        </Text>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+      <ScreenHeader 
+        title={isEditMode ? 'Edit Product' : 'Add Product'}
+        showBackButton={true}
+        variant="light"
+      />
 
       <View style={styles.form}>
         {/* Name */}
@@ -258,62 +259,44 @@ export const ProductFormScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    marginBottom: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#007bff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    backgroundColor: THEME.colors.background,
   },
   form: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   formGroup: {
-    marginBottom: 20,
+    marginBottom: THEME.spacing.lg,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
+    marginBottom: THEME.spacing.sm,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.colors.surface,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderColor: THEME.colors.border,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
   },
   inputError: {
-    borderColor: '#f44336',
+    borderColor: THEME.colors.error,
   },
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
   },
   errorText: {
-    color: '#f44336',
-    fontSize: 14,
-    marginTop: 4,
+    color: THEME.colors.error,
+    fontSize: THEME.typography.fontSize.base,
+    marginTop: THEME.spacing.xs,
   },
   helpText: {
-    color: '#666',
-    fontSize: 12,
-    marginTop: 4,
+    color: THEME.colors.textSecondary,
+    fontSize: THEME.typography.fontSize.sm,
+    marginTop: THEME.spacing.xs,
   },
   switchRow: {
     flexDirection: 'row',
@@ -321,29 +304,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButton: {
-    backgroundColor: '#007bff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: THEME.spacing.lg,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
 });

@@ -15,16 +15,18 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Role } from '../../domain/entities/Role';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { Pagination } from '../components/Pagination';
-import { SortButton } from '../components/SortButton';
+import { Pagination, SortButton, ScreenHeader } from '../components';
+import THEME from '../../core/constants/theme';
 
 export const RoleListScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user: currentUser } = useAuth();
+  const insets = useSafeAreaInsets();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,17 +152,18 @@ export const RoleListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Roles</Text>
-        {canCreate(currentUser, 'roles') && (
-          <TouchableOpacity style={styles.addButton} onPress={handleAddRole}>
-            <Text style={styles.addButtonText}>+ Add Role</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title="Roles"
+        showBackButton={true}
+        variant="light"
+        rightComponent={
+          canCreate(currentUser, 'roles') ? (
+            <TouchableOpacity style={styles.addButton} onPress={handleAddRole}>
+              <Text style={styles.addButtonText}>+ Add Role</Text>
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
       <View style={styles.searchContainer}>
         <TextInput
@@ -189,7 +192,7 @@ export const RoleListScreen: React.FC = () => {
         data={roles}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderRoleItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 16 }]}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No roles found</Text>
@@ -197,15 +200,17 @@ export const RoleListScreen: React.FC = () => {
         }
       />
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={handlePageChange}
-        hasNextPage={currentPage < totalPages}
-        hasPreviousPage={currentPage > 1}
-      />
+      <View style={[{ paddingBottom: insets.bottom }]}>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          perPage={perPage}
+          onPageChange={handlePageChange}
+          hasNextPage={currentPage < totalPages}
+          hasPreviousPage={currentPage > 1}
+        />
+      </View>
     </View>
   );
 };

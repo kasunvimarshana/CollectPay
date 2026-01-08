@@ -16,17 +16,18 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Payment } from '../../domain/entities/Payment';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { Pagination } from '../components/Pagination';
-import { SortButton } from '../components/SortButton';
-import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
+import { Pagination, SortButton, ListScreenHeader, SyncStatusIndicator } from '../components';
+import THEME from '../../core/constants/theme';
 
 export const PaymentListScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -189,20 +190,13 @@ export const PaymentListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Payments</Text>
-          {canCreate(user, 'payments') && (
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handleAddPayment}
-            >
-              <Text style={styles.addButtonText}>+ Add Payment</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <SyncStatusIndicator showDetails={true} />
-      </View>
+      <ListScreenHeader
+        title="Payments"
+        showAddButton={canCreate(user, 'payments')}
+        onAddPress={handleAddPayment}
+        addButtonText="+ Add Payment"
+        rightComponent={<SyncStatusIndicator showDetails={false} />}
+      />
 
       <View style={styles.searchContainer}>
         <TextInput
@@ -231,7 +225,7 @@ export const PaymentListScreen: React.FC = () => {
         data={payments}
         renderItem={renderPaymentItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 16 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -242,15 +236,17 @@ export const PaymentListScreen: React.FC = () => {
         }
       />
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={handlePageChange}
-        hasNextPage={currentPage < totalPages}
-        hasPreviousPage={currentPage > 1}
-      />
+      <View style={[{ paddingBottom: insets.bottom }]}>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          perPage={perPage}
+          onPageChange={handlePageChange}
+          hasNextPage={currentPage < totalPages}
+          hasPreviousPage={currentPage > 1}
+        />
+      </View>
     </View>
   );
 };
@@ -261,19 +257,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  headerLeft: {
+  headerTop: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 12,
-    flex: 1,
+    marginBottom: 12,
   },
   title: {
     fontSize: 24,

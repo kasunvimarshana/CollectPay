@@ -15,16 +15,18 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { User } from '../../domain/entities/User';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { Pagination } from '../components/Pagination';
-import { SortButton } from '../components/SortButton';
+import { Pagination, SortButton, ScreenHeader } from '../components';
+import THEME from '../../core/constants/theme';
 
 export const UserListScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user: currentUser } = useAuth();
+  const insets = useSafeAreaInsets();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,17 +152,18 @@ export const UserListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Users</Text>
-        {canCreate(currentUser, 'users') && (
-          <TouchableOpacity style={styles.addButton} onPress={handleAddUser}>
-            <Text style={styles.addButtonText}>+ Add User</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title="Users"
+        showBackButton={true}
+        variant="light"
+        rightComponent={
+          canCreate(currentUser, 'users') ? (
+            <TouchableOpacity style={styles.addButton} onPress={handleAddUser}>
+              <Text style={styles.addButtonText}>+ Add User</Text>
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
       <View style={styles.searchContainer}>
         <TextInput
@@ -189,7 +192,7 @@ export const UserListScreen: React.FC = () => {
         data={users}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderUserItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 16 }]}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No users found</Text>
@@ -197,15 +200,17 @@ export const UserListScreen: React.FC = () => {
         }
       />
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={handlePageChange}
-        hasNextPage={currentPage < totalPages}
-        hasPreviousPage={currentPage > 1}
-      />
+      <View style={[{ paddingBottom: insets.bottom }]}>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          perPage={perPage}
+          onPageChange={handlePageChange}
+          hasNextPage={currentPage < totalPages}
+          hasPreviousPage={currentPage > 1}
+        />
+      </View>
     </View>
   );
 };
@@ -213,46 +218,39 @@ export const UserListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
-  header: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  addButton: {
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.base,
   },
-  backButton: {
-    marginBottom: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#007bff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+  addButtonText: {
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   searchContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   searchInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    backgroundColor: THEME.colors.gray100,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
   },
   listContent: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   userCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.base,
+    marginBottom: THEME.spacing.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

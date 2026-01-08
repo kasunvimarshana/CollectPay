@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Rate } from '../../domain/entities/Product';
 
@@ -21,6 +22,7 @@ export const RateHistoryScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { productId, productName } = (route.params as any) || {};
+  const insets = useSafeAreaInsets();
 
   const [rates, setRates] = useState<Rate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +106,7 @@ export const RateHistoryScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
@@ -121,7 +123,7 @@ export const RateHistoryScreen: React.FC = () => {
           data={rates}
           keyExtractor={(item, index) => item.id?.toString() || `rate-${index}`}
           renderItem={renderRateItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 16 }]}
         />
       )}
     </View>

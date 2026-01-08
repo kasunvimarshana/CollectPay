@@ -16,18 +16,19 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import LocalStorageService from '../../infrastructure/storage/LocalStorageService';
 import { Product } from '../../domain/entities/Product';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { Pagination } from '../components/Pagination';
-import { SortButton } from '../components/SortButton';
-import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
+import { Pagination, SortButton, ListScreenHeader } from '../components';
+import THEME from '../../core/constants/theme';
 
 export const ProductListScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -179,17 +180,12 @@ export const ProductListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Products</Text>
-        {canCreate(user, 'products') && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddProduct}
-          >
-            <Text style={styles.addButtonText}>+ Add Product</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ListScreenHeader
+        title="Products"
+        showAddButton={canCreate(user, 'products')}
+        onAddPress={handleAddProduct}
+        addButtonText="+ Add Product"
+      />
 
       <View style={styles.searchContainer}>
         <TextInput
@@ -218,7 +214,7 @@ export const ProductListScreen: React.FC = () => {
         data={products}
         renderItem={renderProductItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + THEME.spacing.base }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -229,15 +225,17 @@ export const ProductListScreen: React.FC = () => {
         }
       />
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={handlePageChange}
-        hasNextPage={currentPage < totalPages}
-        hasPreviousPage={currentPage > 1}
-      />
+      <View style={[{ paddingBottom: insets.bottom }]}>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          perPage={perPage}
+          onPageChange={handlePageChange}
+          hasNextPage={currentPage < totalPages}
+          hasPreviousPage={currentPage > 1}
+        />
+      </View>
     </View>
   );
 };
@@ -245,120 +243,91 @@ export const ProductListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#007bff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    backgroundColor: THEME.colors.background,
   },
   searchContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: THEME.spacing.base,
+    backgroundColor: THEME.colors.surface,
   },
   searchInput: {
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 16,
+    backgroundColor: THEME.colors.gray100,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.base,
+    fontSize: THEME.typography.fontSize.md,
   },
   listContent: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   productCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.base,
   },
   productHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
   },
   productName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.md,
   },
   statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   productDetails: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
     width: 120,
   },
   detailValue: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   emptyContainer: {
-    padding: 32,
+    padding: THEME.spacing.xxxl,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textTertiary,
   },
   sortContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    backgroundColor: THEME.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
     justifyContent: 'flex-start',
-    gap: 8,
+    gap: THEME.spacing.sm,
   },
 });

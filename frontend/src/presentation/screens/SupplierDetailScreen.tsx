@@ -15,6 +15,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Supplier } from '../../domain/entities/Supplier';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +26,7 @@ export const SupplierDetailScreen: React.FC = () => {
   const route = useRoute();
   const { user } = useAuth();
   const supplierId = (route.params as any)?.supplierId;
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,12 +128,13 @@ export const SupplierDetailScreen: React.FC = () => {
   return (
     <ScrollView
       style={styles.container}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
       {/* Header with action buttons */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerActions}>
           {canUpdate(user, 'suppliers') && (
             <TouchableOpacity style={styles.editButton} onPress={handleEdit}>

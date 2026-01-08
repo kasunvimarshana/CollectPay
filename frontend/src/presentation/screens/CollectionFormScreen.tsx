@@ -16,6 +16,7 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Supplier } from '../../domain/entities/Supplier';
 import { Product, Rate } from '../../domain/entities/Product';
@@ -34,6 +35,7 @@ export const CollectionFormScreen: React.FC = () => {
   const route = useRoute();
   const collectionId = (route.params as any)?.collectionId;
   const isEditMode = !!collectionId;
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -237,8 +239,8 @@ export const CollectionFormScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>

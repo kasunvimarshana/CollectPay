@@ -16,8 +16,10 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import THEME from '../../core/constants/theme';
 
 export const RegisterScreen: React.FC = () => {
   const [name, setName] = useState('');
@@ -27,6 +29,7 @@ export const RegisterScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const validateForm = (): boolean => {
     if (!name || !email || !password || !passwordConfirmation) {
@@ -84,7 +87,7 @@ export const RegisterScreen: React.FC = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.content}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join Ledger Management System</Text>
@@ -162,7 +165,7 @@ export const RegisterScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -170,79 +173,79 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    padding: 20,
-    paddingTop: 40,
+    padding: THEME.spacing.lg,
+    paddingTop: THEME.spacing.xxxl,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.huge,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: THEME.spacing.xxxl,
   },
   form: {
     width: '100%',
   },
   input: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 15,
-    fontSize: 16,
+    backgroundColor: THEME.colors.surface,
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.base,
+    fontSize: THEME.typography.fontSize.md,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: THEME.colors.border,
   },
   button: {
-    backgroundColor: '#007bff',
-    paddingVertical: 15,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    paddingVertical: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: THEME.spacing.sm,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: THEME.colors.gray400,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   linkButton: {
-    marginTop: 20,
+    marginTop: THEME.spacing.lg,
     alignItems: 'center',
   },
   linkText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
   },
   linkTextBold: {
-    color: '#007bff',
-    fontWeight: 'bold',
+    color: THEME.colors.primary,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   infoBox: {
-    marginTop: 30,
-    padding: 15,
+    marginTop: THEME.spacing.xl,
+    padding: THEME.spacing.base,
     backgroundColor: '#fff3cd',
-    borderRadius: 8,
+    borderRadius: THEME.borderRadius.base,
     borderWidth: 1,
     borderColor: '#ffc107',
   },
   infoTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.bold,
     color: '#856404',
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   infoText: {
-    fontSize: 12,
+    fontSize: THEME.typography.fontSize.sm,
     color: '#856404',
-    marginBottom: 4,
+    marginBottom: THEME.spacing.xs,
   },
 });

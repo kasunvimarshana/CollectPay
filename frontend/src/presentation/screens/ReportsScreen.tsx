@@ -18,6 +18,7 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -25,6 +26,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import apiClient from '../../infrastructure/api/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 import { TOKEN_STORAGE_KEY, API_BASE_URL } from '../../core/constants/api';
+import { ScreenHeader } from '../components';
+import THEME from '../../core/constants/theme';
 
 interface ReportSummary {
   totalSuppliers: number;
@@ -59,6 +62,7 @@ interface DateFilter {
 export const ReportsScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
@@ -481,12 +485,11 @@ export const ReportsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Reports & Analytics</Text>
-      </View>
+      <ScreenHeader 
+        title="Reports & Analytics"
+        showBackButton={true}
+        variant="light"
+      />
 
       {/* Quick Filters */}
       <View style={styles.filterBar}>
@@ -735,7 +738,6 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#007bff',
     padding: 20,
-    paddingTop: 50,
   },
   backButton: {
     marginBottom: 10,

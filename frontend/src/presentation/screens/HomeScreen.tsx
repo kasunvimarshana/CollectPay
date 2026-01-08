@@ -12,13 +12,16 @@ import {
   ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { canView } from '../../core/utils/permissions';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
+import THEME from '../../core/constants/theme';
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const handleLogout = async () => {
     await logout();
@@ -30,7 +33,7 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.lg }]}>
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.title}>Ledger Dashboard</Text>
@@ -124,12 +127,11 @@ export const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   header: {
-    backgroundColor: '#007bff',
-    padding: 20,
-    paddingTop: 50,
+    backgroundColor: THEME.colors.primary,
+    padding: THEME.spacing.lg,
   },
   headerTop: {
     flexDirection: 'row',
@@ -137,23 +139,23 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.white,
+    marginBottom: THEME.spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fff',
-    marginBottom: 4,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.white,
+    marginBottom: THEME.spacing.xs,
   },
   role: {
-    fontSize: 14,
-    color: '#e0e0e0',
+    fontSize: THEME.typography.fontSize.base,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: THEME.spacing.lg,
   },
   menuGrid: {
     flexDirection: 'row',
@@ -162,38 +164,34 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     width: '48%',
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.md,
     alignItems: 'center',
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginBottom: THEME.spacing.base,
+    ...THEME.shadows.base,
   },
   menuIcon: {
     fontSize: 40,
-    marginBottom: 10,
+    marginBottom: THEME.spacing.sm,
   },
   menuText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
     textAlign: 'center',
   },
   logoutButton: {
-    backgroundColor: '#dc3545',
-    paddingVertical: 15,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.error,
+    paddingVertical: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 40,
+    marginTop: THEME.spacing.lg,
+    marginBottom: THEME.spacing.xxxl,
   },
   logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
 });

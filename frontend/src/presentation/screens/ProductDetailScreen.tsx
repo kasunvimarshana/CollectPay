@@ -14,16 +14,20 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Product, Rate } from '../../domain/entities/Product';
 import { useAuth } from '../contexts/AuthContext';
 import { canUpdate, canDelete } from '../../core/utils/permissions';
+import { ScreenHeader } from '../components';
+import THEME from '../../core/constants/theme';
 
 export const ProductDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
   const productId = (route.params as any)?.productId;
+  const insets = useSafeAreaInsets();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [currentRate, setCurrentRate] = useState<Rate | null>(null);
@@ -117,13 +121,12 @@ export const ProductDetailScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>{product.name}</Text>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+      <ScreenHeader 
+        title={product.name} 
+        showBackButton={true}
+        variant="light"
+      />
 
       <View style={styles.section}>
         <View style={styles.statusRow}>
@@ -216,105 +219,87 @@ export const ProductDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    marginBottom: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#007bff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    backgroundColor: THEME.colors.background,
   },
   section: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginTop: 12,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
+    marginTop: THEME.spacing.md,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
+    marginBottom: THEME.spacing.md,
   },
   statusRow: {
-    marginBottom: 16,
+    marginBottom: THEME.spacing.base,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.xs + 2,
+    borderRadius: THEME.borderRadius.md,
     alignSelf: 'flex-start',
   },
   statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
     width: 140,
-    fontWeight: '600',
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   detailValue: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   rateCard: {
-    backgroundColor: '#f9f9f9',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    backgroundColor: THEME.colors.gray100,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.md,
   },
   secondaryButton: {
-    backgroundColor: '#6c757d',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.gray600,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   actionButtons: {
     flexDirection: 'row',
-    padding: 16,
-    gap: 12,
+    padding: THEME.spacing.base,
+    gap: THEME.spacing.md,
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#007bff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
   },
   editButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   deleteButton: {
     flex: 1,
-    backgroundColor: '#f44336',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.error,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
   },
   deleteButtonText: {

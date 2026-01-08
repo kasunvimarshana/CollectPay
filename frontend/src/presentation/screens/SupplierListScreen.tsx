@@ -16,18 +16,19 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import LocalStorageService from '../../infrastructure/storage/LocalStorageService';
 import { Supplier } from '../../domain/entities/Supplier';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { Pagination } from '../components/Pagination';
-import { SortButton } from '../components/SortButton';
-import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
+import { Pagination, SortButton, ListScreenHeader, SyncStatusIndicator } from '../components';
+import THEME from '../../core/constants/theme';
 
 export const SupplierListScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -176,20 +177,13 @@ export const SupplierListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.title}>Suppliers</Text>
-          <SyncStatusIndicator showDetails={false} />
-        </View>
-        {canCreate(user, 'suppliers') && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddSupplier}
-          >
-            <Text style={styles.addButtonText}>+ Add Supplier</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ListScreenHeader
+        title="Suppliers"
+        showAddButton={canCreate(user, 'suppliers')}
+        onAddPress={handleAddSupplier}
+        addButtonText="+ Add Supplier"
+        rightComponent={<SyncStatusIndicator showDetails={false} />}
+      />
 
       <View style={styles.searchContainer}>
         <TextInput
@@ -223,7 +217,7 @@ export const SupplierListScreen: React.FC = () => {
         data={suppliers}
         renderItem={renderSupplierItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[styles.listContainer, { paddingBottom: insets.bottom + 16 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -237,15 +231,17 @@ export const SupplierListScreen: React.FC = () => {
         }
       />
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={handlePageChange}
-        hasNextPage={currentPage < totalPages}
-        hasPreviousPage={currentPage > 1}
-      />
+      <View style={[{ paddingBottom: insets.bottom }]}>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          perPage={perPage}
+          onPageChange={handlePageChange}
+          hasNextPage={currentPage < totalPages}
+          hasPreviousPage={currentPage > 1}
+        />
+      </View>
     </View>
   );
 };
@@ -253,7 +249,7 @@ export const SupplierListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   centerContainer: {
     flex: 1,
@@ -261,115 +257,84 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 10,
-    color: '#666',
-  },
-  header: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    marginTop: THEME.spacing.sm,
+    color: THEME.colors.textSecondary,
   },
   searchContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: THEME.spacing.base,
+    backgroundColor: THEME.colors.surface,
   },
   searchInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    backgroundColor: THEME.colors.gray100,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
   },
   listContainer: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   supplierCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.md,
+    padding: THEME.spacing.base,
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.base,
   },
   supplierHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
   },
   supplierName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.md,
   },
   statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   supplierDetails: {
-    gap: 4,
+    gap: THEME.spacing.xs,
   },
   detailText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: THEME.spacing.xxxl,
     marginTop: 64,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textSecondary,
+    marginBottom: THEME.spacing.sm,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textTertiary,
     textAlign: 'center',
   },
   sortContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    backgroundColor: THEME.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
     justifyContent: 'flex-start',
-    gap: 8,
+    gap: THEME.spacing.sm,
   },
 });

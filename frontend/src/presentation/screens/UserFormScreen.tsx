@@ -16,6 +16,7 @@ import {
   Switch,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 
 export const UserFormScreen: React.FC = () => {
@@ -23,6 +24,7 @@ export const UserFormScreen: React.FC = () => {
   const route = useRoute();
   const userId = (route.params as any)?.userId;
   const isEditMode = !!userId;
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -117,8 +119,8 @@ export const UserFormScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>

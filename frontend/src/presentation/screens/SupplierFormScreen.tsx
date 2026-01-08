@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 
 interface SupplierFormData {
@@ -34,6 +35,7 @@ export const SupplierFormScreen: React.FC = () => {
   const route = useRoute();
   const supplierId = (route.params as any)?.supplierId;
   const isEditMode = !!supplierId;
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<SupplierFormData>({
@@ -144,13 +146,13 @@ export const SupplierFormScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.title}>
           {isEditMode ? 'Edit Supplier' : 'New Supplier'}
         </Text>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.form}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.form, { paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.formGroup}>
           <Text style={styles.label}>Name *</Text>
           <TextInput
