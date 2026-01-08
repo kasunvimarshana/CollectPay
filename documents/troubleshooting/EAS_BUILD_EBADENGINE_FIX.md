@@ -26,7 +26,9 @@ Combined with `engine-strict=true` in `.npmrc`, this configuration enforced stri
 
 ## Solution
 
-### Change Made
+### Changes Made
+
+#### 1. Updated package.json engines (Initial Fix)
 
 Updated the minimum Node.js version requirement from `>=20.17.0` to `>=20.0.0`:
 
@@ -37,12 +39,38 @@ Updated the minimum Node.js version requirement from `>=20.17.0` to `>=20.0.0`:
 }
 ```
 
+#### 2. Pinned Node Version in eas.json (Best Practice)
+
+Added explicit Node version to all build profiles in `eas.json`:
+
+```json
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "node": "20.17.0"
+    },
+    "preview": {
+      "distribution": "internal",
+      "node": "20.17.0"
+    },
+    "production": {
+      "autoIncrement": true,
+      "node": "20.17.0"
+    }
+  }
+}
+```
+
 ### Why This Works
 
 1. **EAS Compatibility**: EAS build images for Expo SDK 54 use Node 20.x by default
 2. **Broader Acceptance**: `>=20.0.0` accepts all Node 20.x versions
 3. **Maintains Safety**: Upper bound `<24.0.0` ensures compatibility with Expo SDK 54
 4. **Local Development**: `.nvmrc` still specifies 20.17.0 for recommended local setup
+5. **Deterministic Builds**: Explicit Node version in `eas.json` ensures EAS Build always uses 20.17.0
+6. **Prevents Drift**: Version pinning eliminates future EBADENGINE failures from version mismatches
 
 ## Validation Steps
 
@@ -56,9 +84,36 @@ After implementing the fix:
 
 ## Prevention Best Practices
 
-### 1. Use Broader Version Ranges for CI/CD
+### 1. Pin Node Version in EAS Configuration (Recommended)
 
-When specifying engine requirements, use broader ranges that accommodate build server environments:
+**Best Practice**: Explicitly specify the Node.js version in `eas.json` for deterministic builds:
+
+```json
+{
+  "build": {
+    "development": {
+      "node": "20.17.0"
+    },
+    "preview": {
+      "node": "20.17.0"
+    },
+    "production": {
+      "node": "20.17.0"
+    }
+  }
+}
+```
+
+**Benefits**:
+- ✅ Ensures exact Node version used by EAS Build
+- ✅ Prevents version drift between environments
+- ✅ Eliminates EBADENGINE failures from version mismatches
+- ✅ Makes builds deterministic and reproducible
+- ✅ Matches local development environment (`.nvmrc`)
+
+### 2. Use Broader Version Ranges for CI/CD
+
+When specifying engine requirements in `package.json`, use broader ranges that accommodate build server environments:
 
 ```json
 "engines": {
@@ -67,7 +122,9 @@ When specifying engine requirements, use broader ranges that accommodate build s
 }
 ```
 
-### 2. Test with Multiple Node Versions
+**Note**: With explicit Node version pinning in `eas.json`, the `package.json` engines field serves as a safety net for local development.
+
+### 3. Test with Multiple Node Versions
 
 Before pushing, test your build with different Node versions:
 
@@ -81,7 +138,7 @@ nvm use 20.17.0
 npm ci --include=dev
 ```
 
-### 3. Consider engine-strict Setting
+### 4. Consider engine-strict Setting
 
 The `.npmrc` file contains `engine-strict=true` which causes hard failures on version mismatches. Consider:
 
@@ -89,7 +146,7 @@ The `.npmrc` file contains `engine-strict=true` which causes hard failures on ve
 - **Ensure version ranges** are broad enough for your CI/CD environment
 - **Document minimum versions** based on Expo SDK requirements, not local preferences
 
-### 4. Monitor Expo SDK Requirements
+### 5. Monitor Expo SDK Requirements
 
 For each Expo SDK version, check the recommended Node.js versions:
 
@@ -100,7 +157,7 @@ For each Expo SDK version, check the recommended Node.js versions:
 
 Reference: [Expo Build Infrastructure](https://docs.expo.dev/build-reference/infrastructure/)
 
-### 5. Keep Package Lock Files in Sync
+### 6. Keep Package Lock Files in Sync
 
 Always ensure `package-lock.json` is committed and in sync with `package.json`:
 
