@@ -62,7 +62,7 @@ This project follows Clean Architecture principles with clear separation of conc
 - **Expo SDK 54** (latest stable)
 - iOS Simulator (macOS) or Android Emulator
 
-> ⚠️ **Important**: This project requires Node.js v20.x and npm v10.x. Do NOT use Node.js v24.x with npm v11.6.x as it has a known bug that causes "Class extends value undefined is not a constructor or null" error.
+> ⚠️ **Important**: This project requires Node.js v20.x and npm v10.x. Do NOT use Node.js v24.x with npm v11.6.x as it has a known bug that causes "Class extends value undefined is not a constructor or null" error. This is related to compatibility issues between React Native and Node.js v24. For more details, see the [Expo compatibility documentation](https://docs.expo.dev/guides/troubleshooting-errors/).
 
 ### Installation
 

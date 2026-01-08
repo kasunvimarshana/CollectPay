@@ -43,8 +43,14 @@ Seeds 6 sample suppliers with realistic data including:
 
 **Usage:**
 ```bash
+# Run individual seeders (ensure dependency order: Roles → Suppliers → Products → Rates → Collections → Payments)
 php artisan db:seed --class=SupplierSeeder
+
+# Or better yet, run all seeders in correct order:
+php artisan db:seed
 ```
+
+> ⚠️ **Note**: When running individual seeders, ensure you follow the dependency order outlined below. It's recommended to use `php artisan db:seed` (DatabaseSeeder) which handles dependencies automatically.
 
 ### 3. ProductSeeder
 **Path:** `database/seeders/ProductSeeder.php`

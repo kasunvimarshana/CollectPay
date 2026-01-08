@@ -7,6 +7,8 @@ Successfully implemented comprehensive frontend testing infrastructure for the D
 **Date:** January 8, 2026  
 **Status:** ✅ Phase 1 Complete - Testing Infrastructure & Core Tests Implemented
 
+**Note:** This project follows Jest's `__tests__` directory convention, which is one of the standard patterns for organizing test files. Tests are co-located with their source files within `__tests__` subdirectories, making them easy to find and maintain.
+
 ---
 
 ## Test Framework Setup
@@ -185,12 +187,12 @@ frontend/
 ├── src/
 │   ├── application/
 │   │   └── services/
-│   │       └── __tests__/
+│   │       └── __tests__/          # Tests for service layer
 │   │           ├── AuthService.test.ts
 │   │           └── ConflictResolutionService.test.ts
 │   ├── presentation/
 │   │   ├── components/
-│   │   │   └── __tests__/
+│   │   │   └── __tests__/          # Tests for UI components
 │   │   │       ├── Pagination.test.tsx
 │   │   │       ├── SortButton.test.tsx
 │   │   │       ├── Loading.test.tsx
