@@ -70,10 +70,10 @@ class RateController extends Controller
         // Filter by date range
         if ($request->has('date')) {
             $date = $request->date;
-            $query->where('effective_from', '<=', $date)
+            $query->whereDate('effective_from', '<=', $date)
                 ->where(function ($q) use ($date) {
                     $q->whereNull('effective_to')
-                        ->orWhere('effective_to', '>=', $date);
+                        ->orWhereDate('effective_to', '>=', $date);
                 });
         }
 

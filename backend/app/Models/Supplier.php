@@ -52,11 +52,11 @@ class Supplier extends Model
         $query = $this->collections();
 
         if ($startDate) {
-            $query->where('collection_date', '>=', $startDate);
+            $query->whereDate('collection_date', '>=', $startDate);
         }
 
         if ($endDate) {
-            $query->where('collection_date', '<=', $endDate);
+            $query->whereDate('collection_date', '<=', $endDate);
         }
 
         return $query->sum('total_amount');
@@ -70,11 +70,11 @@ class Supplier extends Model
         $query = $this->payments();
 
         if ($startDate) {
-            $query->where('payment_date', '>=', $startDate);
+            $query->whereDate('payment_date', '>=', $startDate);
         }
 
         if ($endDate) {
-            $query->where('payment_date', '<=', $endDate);
+            $query->whereDate('payment_date', '<=', $endDate);
         }
 
         return $query->sum('amount');

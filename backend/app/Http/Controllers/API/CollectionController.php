@@ -71,11 +71,11 @@ class CollectionController extends Controller
 
         // Filter by date range
         if ($request->has('start_date')) {
-            $query->where('collection_date', '>=', $request->start_date);
+            $query->whereDate('collection_date', '>=', $request->start_date);
         }
 
         if ($request->has('end_date')) {
-            $query->where('collection_date', '<=', $request->end_date);
+            $query->whereDate('collection_date', '<=', $request->end_date);
         }
 
         // Sorting

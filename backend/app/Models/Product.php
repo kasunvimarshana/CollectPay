@@ -54,10 +54,10 @@ class Product extends Model
         return $this->rates()
             ->where('is_active', true)
             ->where('unit', $unit)
-            ->where('effective_from', '<=', $date)
+            ->whereDate('effective_from', '<=', $date)
             ->where(function ($query) use ($date) {
                 $query->whereNull('effective_to')
-                    ->orWhere('effective_to', '>=', $date);
+                    ->orWhereDate('effective_to', '>=', $date);
             })
             ->orderBy('effective_from', 'desc')
             ->first();

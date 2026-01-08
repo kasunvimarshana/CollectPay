@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed roles first
+        // Seed roles first (required for users)
         $this->call(RoleSeeder::class);
 
         // Create admin user
@@ -38,5 +38,16 @@ class DatabaseSeeder extends Seeder
             'role_id' => $collectorRole->id,
             'is_active' => true,
         ]);
+
+        // Seed core entities
+        $this->call([
+            SupplierSeeder::class,
+            ProductSeeder::class,
+            RateSeeder::class,
+            CollectionSeeder::class,
+            PaymentSeeder::class,
+        ]);
+
+        $this->command->info('All seeders completed successfully!');
     }
 }

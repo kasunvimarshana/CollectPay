@@ -36,7 +36,7 @@ class RateManagementService
         Rate::where('product_id', $productId)
             ->where('unit', $unit)
             ->whereNull('effective_to')
-            ->where('effective_from', '<', $newEffectiveFrom)
+            ->whereDate('effective_from', '<', $newEffectiveFrom)
             ->update(['effective_to' => $previousDay]);
     }
 
@@ -49,10 +49,10 @@ class RateManagementService
 
         return Rate::where('product_id', $productId)
             ->where('unit', $unit)
-            ->where('effective_from', '<=', $date)
+            ->whereDate('effective_from', '<=', $date)
             ->where(function ($query) use ($date) {
                 $query->whereNull('effective_to')
-                    ->orWhere('effective_to', '>=', $date);
+                    ->orWhereDate('effective_to', '>=', $date);
             })
             ->orderBy('effective_from', 'desc')
             ->first();

@@ -232,11 +232,11 @@ class ReportController extends Controller
         $query = Collection::query();
 
         if ($request->has('start_date')) {
-            $query->where('collection_date', '>=', $request->input('start_date'));
+            $query->whereDate('collection_date', '>=', $request->input('start_date'));
         }
 
         if ($request->has('end_date')) {
-            $query->where('collection_date', '<=', $request->input('end_date'));
+            $query->whereDate('collection_date', '<=', $request->input('end_date'));
         }
 
         if ($request->has('supplier_id')) {
@@ -260,10 +260,10 @@ class ReportController extends Controller
         ])
             ->join('products', 'collections.product_id', '=', 'products.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '>=', $request->input('start_date'));
+                return $q->whereDate('collection_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '<=', $request->input('end_date'));
+                return $q->whereDate('collection_date', '<=', $request->input('end_date'));
             })
             ->when($request->has('supplier_id'), function ($q) use ($request) {
                 return $q->where('supplier_id', $request->input('supplier_id'));
@@ -291,10 +291,10 @@ class ReportController extends Controller
         ])
             ->join('suppliers', 'collections.supplier_id', '=', 'suppliers.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '>=', $request->input('start_date'));
+                return $q->whereDate('collection_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '<=', $request->input('end_date'));
+                return $q->whereDate('collection_date', '<=', $request->input('end_date'));
             })
             ->when($request->has('product_id'), function ($q) use ($request) {
                 return $q->where('product_id', $request->input('product_id'));
@@ -369,11 +369,11 @@ class ReportController extends Controller
         $query = Payment::query();
 
         if ($request->has('start_date')) {
-            $query->where('payment_date', '>=', $request->input('start_date'));
+            $query->whereDate('payment_date', '>=', $request->input('start_date'));
         }
 
         if ($request->has('end_date')) {
-            $query->where('payment_date', '<=', $request->input('end_date'));
+            $query->whereDate('payment_date', '<=', $request->input('end_date'));
         }
 
         if ($request->has('supplier_id')) {
@@ -389,10 +389,10 @@ class ReportController extends Controller
             DB::raw('SUM(amount) as total_amount'),
         ])
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '>=', $request->input('start_date'));
+                return $q->whereDate('payment_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '<=', $request->input('end_date'));
+                return $q->whereDate('payment_date', '<=', $request->input('end_date'));
             })
             ->when($request->has('supplier_id'), function ($q) use ($request) {
                 return $q->where('supplier_id', $request->input('supplier_id'));
@@ -416,10 +416,10 @@ class ReportController extends Controller
         ])
             ->join('suppliers', 'payments.supplier_id', '=', 'suppliers.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '>=', $request->input('start_date'));
+                return $q->whereDate('payment_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '<=', $request->input('end_date'));
+                return $q->whereDate('payment_date', '<=', $request->input('end_date'));
             })
             ->groupBy('suppliers.id', 'suppliers.name', 'suppliers.code')
             ->orderBy('total_amount', 'desc')
@@ -562,13 +562,13 @@ class ReportController extends Controller
         $paymentsQuery = Payment::query();
 
         if ($request->has('start_date')) {
-            $collectionsQuery->where('collection_date', '>=', $request->input('start_date'));
-            $paymentsQuery->where('payment_date', '>=', $request->input('start_date'));
+            $collectionsQuery->whereDate('collection_date', '>=', $request->input('start_date'));
+            $paymentsQuery->whereDate('payment_date', '>=', $request->input('start_date'));
         }
 
         if ($request->has('end_date')) {
-            $collectionsQuery->where('collection_date', '<=', $request->input('end_date'));
-            $paymentsQuery->where('payment_date', '<=', $request->input('end_date'));
+            $collectionsQuery->whereDate('collection_date', '<=', $request->input('end_date'));
+            $paymentsQuery->whereDate('payment_date', '<=', $request->input('end_date'));
         }
 
         $totalCollections = $collectionsQuery->sum('total_amount');
@@ -582,10 +582,10 @@ class ReportController extends Controller
             DB::raw('0 as payments'),
         ])
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '>=', $request->input('start_date'));
+                return $q->whereDate('collection_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '<=', $request->input('end_date'));
+                return $q->whereDate('collection_date', '<=', $request->input('end_date'));
             })
             ->groupBy('month')
             ->get()
@@ -596,10 +596,10 @@ class ReportController extends Controller
             DB::raw('COALESCE(SUM(amount), 0) as payments'),
         ])
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '>=', $request->input('start_date'));
+                return $q->whereDate('payment_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '<=', $request->input('end_date'));
+                return $q->whereDate('payment_date', '<=', $request->input('end_date'));
             })
             ->groupBy('month')
             ->get()
@@ -891,11 +891,11 @@ class ReportController extends Controller
         $query = Collection::query();
 
         if ($request->has('start_date')) {
-            $query->where('collection_date', '>=', $request->input('start_date'));
+            $query->whereDate('collection_date', '>=', $request->input('start_date'));
         }
 
         if ($request->has('end_date')) {
-            $query->where('collection_date', '<=', $request->input('end_date'));
+            $query->whereDate('collection_date', '<=', $request->input('end_date'));
         }
 
         $totalCount = $query->count();
@@ -911,10 +911,10 @@ class ReportController extends Controller
         ])
             ->join('products', 'collections.product_id', '=', 'products.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '>=', $request->input('start_date'));
+                return $q->whereDate('collection_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '<=', $request->input('end_date'));
+                return $q->whereDate('collection_date', '<=', $request->input('end_date'));
             })
             ->groupBy('products.id', 'products.name')
             ->orderBy('total_amount', 'desc')
@@ -940,10 +940,10 @@ class ReportController extends Controller
         ])
             ->join('suppliers', 'collections.supplier_id', '=', 'suppliers.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '>=', $request->input('start_date'));
+                return $q->whereDate('collection_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '<=', $request->input('end_date'));
+                return $q->whereDate('collection_date', '<=', $request->input('end_date'));
             })
             ->groupBy('suppliers.id', 'suppliers.name', 'suppliers.code')
             ->orderBy('total_amount', 'desc')
@@ -976,11 +976,11 @@ class ReportController extends Controller
         $query = Payment::query();
 
         if ($request->has('start_date')) {
-            $query->where('payment_date', '>=', $request->input('start_date'));
+            $query->whereDate('payment_date', '>=', $request->input('start_date'));
         }
 
         if ($request->has('end_date')) {
-            $query->where('payment_date', '<=', $request->input('end_date'));
+            $query->whereDate('payment_date', '<=', $request->input('end_date'));
         }
 
         $totalCount = $query->count();
@@ -992,10 +992,10 @@ class ReportController extends Controller
             DB::raw('SUM(amount) as total_amount'),
         ])
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '>=', $request->input('start_date'));
+                return $q->whereDate('payment_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '<=', $request->input('end_date'));
+                return $q->whereDate('payment_date', '<=', $request->input('end_date'));
             })
             ->groupBy('type')
             ->get()
@@ -1017,10 +1017,10 @@ class ReportController extends Controller
         ])
             ->join('suppliers', 'payments.supplier_id', '=', 'suppliers.id')
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '>=', $request->input('start_date'));
+                return $q->whereDate('payment_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '<=', $request->input('end_date'));
+                return $q->whereDate('payment_date', '<=', $request->input('end_date'));
             })
             ->groupBy('suppliers.id', 'suppliers.name', 'suppliers.code')
             ->orderBy('total_amount', 'desc')
@@ -1091,13 +1091,13 @@ class ReportController extends Controller
         $paymentsQuery = Payment::query();
 
         if ($request->has('start_date')) {
-            $collectionsQuery->where('collection_date', '>=', $request->input('start_date'));
-            $paymentsQuery->where('payment_date', '>=', $request->input('start_date'));
+            $collectionsQuery->whereDate('collection_date', '>=', $request->input('start_date'));
+            $paymentsQuery->whereDate('payment_date', '>=', $request->input('start_date'));
         }
 
         if ($request->has('end_date')) {
-            $collectionsQuery->where('collection_date', '<=', $request->input('end_date'));
-            $paymentsQuery->where('payment_date', '<=', $request->input('end_date'));
+            $collectionsQuery->whereDate('collection_date', '<=', $request->input('end_date'));
+            $paymentsQuery->whereDate('payment_date', '<=', $request->input('end_date'));
         }
 
         $totalCollections = $collectionsQuery->sum('total_amount');
@@ -1110,10 +1110,10 @@ class ReportController extends Controller
             DB::raw('0 as payments'),
         ])
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '>=', $request->input('start_date'));
+                return $q->whereDate('collection_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('collection_date', '<=', $request->input('end_date'));
+                return $q->whereDate('collection_date', '<=', $request->input('end_date'));
             })
             ->groupBy('month')
             ->get()
@@ -1124,10 +1124,10 @@ class ReportController extends Controller
             DB::raw('COALESCE(SUM(amount), 0) as payments'),
         ])
             ->when($request->has('start_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '>=', $request->input('start_date'));
+                return $q->whereDate('payment_date', '>=', $request->input('start_date'));
             })
             ->when($request->has('end_date'), function ($q) use ($request) {
-                return $q->where('payment_date', '<=', $request->input('end_date'));
+                return $q->whereDate('payment_date', '<=', $request->input('end_date'));
             })
             ->groupBy('month')
             ->get()

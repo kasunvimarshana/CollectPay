@@ -1,6 +1,30 @@
 # Frontend Testing Guide
 
-## Testing Strategy
+## Automated Testing
+
+### Quick Start
+```bash
+cd frontend
+npm test                    # Run all automated tests
+npm run test:coverage      # Run tests with coverage report
+npm run test:watch         # Run tests in watch mode
+```
+
+### Current Test Coverage
+- **84 automated tests** covering:
+  - Authentication services
+  - Conflict resolution
+  - UI components (Pagination, SortButton, Loading, ErrorMessage, EmptyState)
+  - AuthContext state management
+
+### Documentation
+- See **TESTING_QUICK_START.md** for automated testing guide
+- See **TESTING_IMPLEMENTATION.md** for detailed test report
+- Continue below for manual testing procedures
+
+---
+
+## Manual Testing Strategy
 
 This document outlines the testing approach for the React Native (Expo) frontend of the Data Collection and Payment Management System.
 
