@@ -53,7 +53,7 @@ export const LoginScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.content, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: insets.bottom + THEME.spacing.lg }]}>
-        <Text style={styles.title} accessibilityRole="header">Ledger</Text>
+        <Text style={styles.title} accessibilityRole="header">CollectPay</Text>
         <Text style={styles.subtitle}>Data Collection & Payment Management</Text>
 
         <View style={styles.form}>
@@ -107,11 +107,11 @@ export const LoginScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.testCredentials}>
+          {/* <View style={styles.testCredentials}>
             <Text style={styles.testCredentialsTitle}>Test Credentials:</Text>
-            <Text style={styles.testCredentialsText}>Admin: admin@ledger.com / password</Text>
-            <Text style={styles.testCredentialsText}>Collector: collector@ledger.com / password</Text>
-          </View>
+            <Text style={styles.testCredentialsText}>Admin: admin@email.com / password</Text>
+            <Text style={styles.testCredentialsText}>Collector: collector@email.com / password</Text>
+          </View> */}
         </View>
       </View>
     </KeyboardAvoidingView>

@@ -90,7 +90,7 @@ export const RegisterScreen: React.FC = () => {
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: insets.bottom + THEME.spacing.lg }]}>
         <View style={styles.content}>
           <Text style={styles.title} accessibilityRole="header">Create Account</Text>
-          <Text style={styles.subtitle}>Join Ledger Management System</Text>
+          <Text style={styles.subtitle}>Join the Management System</Text>
 
           <View style={styles.form}>
             <TextInput

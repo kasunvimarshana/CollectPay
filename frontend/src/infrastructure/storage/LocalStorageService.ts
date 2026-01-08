@@ -3,12 +3,12 @@
  * Provides offline data persistence
  */
 
-import * as SQLite from 'expo-sqlite';
+import * as SQLite from "expo-sqlite";
 
 export interface PendingSync {
   id?: number;
   entity: string;
-  action: 'create' | 'update' | 'delete';
+  action: "create" | "update" | "delete";
   data: string;
   timestamp: number;
   synced: number;
@@ -43,12 +43,12 @@ class LocalStorageService {
    */
   private async performInitialization(): Promise<void> {
     try {
-      this.db = await SQLite.openDatabaseAsync('ledger.db');
+      this.db = await SQLite.openDatabaseAsync("app.db");
       await this.createTables();
       this.isInitialized = true;
-      console.log('Database initialized successfully');
+      console.log("Database initialized successfully");
     } catch (error) {
-      console.error('Database initialization error:', error);
+      console.error("Database initialization error:", error);
       this.db = null;
       this.isInitialized = false;
       this.initializationPromise = null;
@@ -70,7 +70,7 @@ class LocalStorageService {
    */
   private async createTables(): Promise<void> {
     if (!this.db) {
-      throw new Error('Database not initialized');
+      throw new Error("Database not initialized");
     }
 
     // Create pending sync queue table
@@ -162,12 +162,16 @@ class LocalStorageService {
   /**
    * Add item to sync queue
    */
-  async addToSyncQueue(entity: string, action: 'create' | 'update' | 'delete', data: any): Promise<void> {
+  async addToSyncQueue(
+    entity: string,
+    action: "create" | "update" | "delete",
+    data: any
+  ): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     await this.db.runAsync(
-      'INSERT INTO pending_sync (entity, action, data, timestamp, synced) VALUES (?, ?, ?, ?, ?)',
+      "INSERT INTO pending_sync (entity, action, data, timestamp, synced) VALUES (?, ?, ?, ?, ?)",
       [entity, action, JSON.stringify(data), Date.now(), 0]
     );
   }
@@ -177,15 +181,15 @@ class LocalStorageService {
    */
   async getPendingSyncItems(): Promise<PendingSync[]> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     const result = await this.db.getAllAsync<PendingSync>(
-      'SELECT * FROM pending_sync WHERE synced = 0 ORDER BY timestamp ASC'
+      "SELECT * FROM pending_sync WHERE synced = 0 ORDER BY timestamp ASC"
     );
 
-    return result.map(row => ({
+    return result.map((row) => ({
       ...row,
-      data: typeof row.data === 'string' ? row.data : JSON.stringify(row.data)
+      data: typeof row.data === "string" ? row.data : JSON.stringify(row.data),
     }));
   }
 
@@ -194,12 +198,11 @@ class LocalStorageService {
    */
   async markSynced(id: number): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
-    await this.db.runAsync(
-      'UPDATE pending_sync SET synced = 1 WHERE id = ?',
-      [id]
-    );
+    await this.db.runAsync("UPDATE pending_sync SET synced = 1 WHERE id = ?", [
+      id,
+    ]);
   }
 
   /**
@@ -207,9 +210,9 @@ class LocalStorageService {
    */
   async deleteSyncedItems(): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
-    await this.db.runAsync('DELETE FROM pending_sync WHERE synced = 1');
+    await this.db.runAsync("DELETE FROM pending_sync WHERE synced = 1");
   }
 
   /**
@@ -217,7 +220,7 @@ class LocalStorageService {
    */
   async cacheSuppliers(suppliers: any[]): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     for (const supplier of suppliers) {
       await this.db.runAsync(
@@ -233,7 +236,7 @@ class LocalStorageService {
           supplier.region,
           supplier.is_active ? 1 : 0,
           JSON.stringify(supplier),
-          Date.now()
+          Date.now(),
         ]
       );
     }
@@ -244,20 +247,22 @@ class LocalStorageService {
    */
   async getCachedSuppliers(): Promise<any[]> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     const result = await this.db.getAllAsync<any>(
-      'SELECT data FROM suppliers WHERE is_active = 1 ORDER BY name'
+      "SELECT data FROM suppliers WHERE is_active = 1 ORDER BY name"
     );
 
-    return result.map(row => {
-      try {
-        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      } catch (error) {
-        console.error('Error parsing supplier data:', error);
-        return null;
-      }
-    }).filter(item => item !== null);
+    return result
+      .map((row) => {
+        try {
+          return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        } catch (error) {
+          console.error("Error parsing supplier data:", error);
+          return null;
+        }
+      })
+      .filter((item) => item !== null);
   }
 
   /**
@@ -265,7 +270,7 @@ class LocalStorageService {
    */
   async cacheProducts(products: any[]): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     for (const product of products) {
       await this.db.runAsync(
@@ -279,7 +284,7 @@ class LocalStorageService {
           product.base_unit,
           product.is_active ? 1 : 0,
           JSON.stringify(product),
-          Date.now()
+          Date.now(),
         ]
       );
     }
@@ -290,20 +295,22 @@ class LocalStorageService {
    */
   async getCachedProducts(): Promise<any[]> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     const result = await this.db.getAllAsync<any>(
-      'SELECT data FROM products WHERE is_active = 1 ORDER BY name'
+      "SELECT data FROM products WHERE is_active = 1 ORDER BY name"
     );
 
-    return result.map(row => {
-      try {
-        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      } catch (error) {
-        console.error('Error parsing product data:', error);
-        return null;
-      }
-    }).filter(item => item !== null);
+    return result
+      .map((row) => {
+        try {
+          return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        } catch (error) {
+          console.error("Error parsing product data:", error);
+          return null;
+        }
+      })
+      .filter((item) => item !== null);
   }
 
   /**
@@ -311,7 +318,7 @@ class LocalStorageService {
    */
   async cacheRates(rates: any[]): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     for (const rate of rates) {
       await this.db.runAsync(
@@ -327,7 +334,7 @@ class LocalStorageService {
           rate.effective_to,
           rate.is_active ? 1 : 0,
           JSON.stringify(rate),
-          Date.now()
+          Date.now(),
         ]
       );
     }
@@ -338,33 +345,38 @@ class LocalStorageService {
    */
   async getCachedRates(productId?: number): Promise<any[]> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     // Validate productId if provided
-    if (productId !== undefined && (!Number.isInteger(productId) || productId < 0)) {
-      throw new Error('Invalid productId: must be a positive integer');
+    if (
+      productId !== undefined &&
+      (!Number.isInteger(productId) || productId < 0)
+    ) {
+      throw new Error("Invalid productId: must be a positive integer");
     }
 
-    let query = 'SELECT data FROM rates WHERE is_active = 1';
+    let query = "SELECT data FROM rates WHERE is_active = 1";
     const params: any[] = [];
 
     if (productId !== undefined) {
-      query += ' AND product_id = ?';
+      query += " AND product_id = ?";
       params.push(productId);
     }
 
-    query += ' ORDER BY effective_from DESC';
+    query += " ORDER BY effective_from DESC";
 
     const result = await this.db.getAllAsync<any>(query, params);
 
-    return result.map(row => {
-      try {
-        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      } catch (error) {
-        console.error('Error parsing rate data:', error);
-        return null;
-      }
-    }).filter(item => item !== null);
+    return result
+      .map((row) => {
+        try {
+          return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        } catch (error) {
+          console.error("Error parsing rate data:", error);
+          return null;
+        }
+      })
+      .filter((item) => item !== null);
   }
 
   /**
@@ -372,7 +384,7 @@ class LocalStorageService {
    */
   async cacheCollections(collections: any[]): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     for (const collection of collections) {
       await this.db.runAsync(
@@ -389,7 +401,7 @@ class LocalStorageService {
           collection.total_amount,
           JSON.stringify(collection),
           Date.now(),
-          0
+          0,
         ]
       );
     }
@@ -400,20 +412,22 @@ class LocalStorageService {
    */
   async getCachedCollections(): Promise<any[]> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     const result = await this.db.getAllAsync<any>(
-      'SELECT data FROM collections WHERE pending_sync = 0 ORDER BY collection_date DESC'
+      "SELECT data FROM collections WHERE pending_sync = 0 ORDER BY collection_date DESC"
     );
 
-    return result.map(row => {
-      try {
-        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      } catch (error) {
-        console.error('Error parsing collection data:', error);
-        return null;
-      }
-    }).filter(item => item !== null);
+    return result
+      .map((row) => {
+        try {
+          return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        } catch (error) {
+          console.error("Error parsing collection data:", error);
+          return null;
+        }
+      })
+      .filter((item) => item !== null);
   }
 
   /**
@@ -421,7 +435,7 @@ class LocalStorageService {
    */
   async cachePayments(payments: any[]): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     for (const payment of payments) {
       await this.db.runAsync(
@@ -436,7 +450,7 @@ class LocalStorageService {
           payment.type,
           JSON.stringify(payment),
           Date.now(),
-          0
+          0,
         ]
       );
     }
@@ -447,20 +461,22 @@ class LocalStorageService {
    */
   async getCachedPayments(): Promise<any[]> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     const result = await this.db.getAllAsync<any>(
-      'SELECT data FROM payments WHERE pending_sync = 0 ORDER BY payment_date DESC'
+      "SELECT data FROM payments WHERE pending_sync = 0 ORDER BY payment_date DESC"
     );
 
-    return result.map(row => {
-      try {
-        return typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      } catch (error) {
-        console.error('Error parsing payment data:', error);
-        return null;
-      }
-    }).filter(item => item !== null);
+    return result
+      .map((row) => {
+        try {
+          return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        } catch (error) {
+          console.error("Error parsing payment data:", error);
+          return null;
+        }
+      })
+      .filter((item) => item !== null);
   }
 
   /**
@@ -468,7 +484,7 @@ class LocalStorageService {
    */
   async clearCache(): Promise<void> {
     await this.ensureInitialized();
-    if (!this.db) throw new Error('Database initialization failed');
+    if (!this.db) throw new Error("Database initialization failed");
 
     await this.db.execAsync(`
       DELETE FROM suppliers;

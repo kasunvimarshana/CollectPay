@@ -71,7 +71,7 @@ export const HomeScreen: React.FC = () => {
       <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.lg }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.title}>Ledger Dashboard</Text>
+            <Text style={styles.title}>Dashboard</Text>
             <Text style={styles.subtitle}>Welcome, {String(user?.name || 'User')}</Text>
             <Text style={styles.role}>Role: {String(user?.role?.display_name || 'N/A')}</Text>
           </View>
