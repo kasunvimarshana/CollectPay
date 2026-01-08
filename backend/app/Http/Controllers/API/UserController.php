@@ -75,7 +75,46 @@ class UserController extends Controller
      *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
      *     ),
      *
-     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 description="Paginated user list",
+     *                 @OA\Property(property="current_page", type="integer", example=1),
+     *                 @OA\Property(property="data", type="array", @OA\Items(
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="name", type="string", example="John Doe"),
+     *                     @OA\Property(property="email", type="string", example="john@example.com"),
+     *                     @OA\Property(property="role_id", type="integer", example=2),
+     *                     @OA\Property(property="is_active", type="boolean", example=true),
+     *                     @OA\Property(property="created_at", type="string", format="date-time"),
+     *                     @OA\Property(property="updated_at", type="string", format="date-time"),
+     *                     @OA\Property(property="role", type="object",
+     *                         @OA\Property(property="id", type="integer", example=2),
+     *                         @OA\Property(property="name", type="string", example="manager"),
+     *                         @OA\Property(property="display_name", type="string", example="Manager")
+     *                     )
+     *                 )),
+     *                 @OA\Property(property="first_page_url", type="string"),
+     *                 @OA\Property(property="from", type="integer"),
+     *                 @OA\Property(property="last_page", type="integer"),
+     *                 @OA\Property(property="last_page_url", type="string"),
+     *                 @OA\Property(property="next_page_url", type="string", nullable=true),
+     *                 @OA\Property(property="path", type="string"),
+     *                 @OA\Property(property="per_page", type="integer", example=15),
+     *                 @OA\Property(property="prev_page_url", type="string", nullable=true),
+     *                 @OA\Property(property="to", type="integer"),
+     *                 @OA\Property(property="total", type="integer")
+     *             )
+     *         )
+     *     ),
+     *
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
@@ -149,8 +188,39 @@ class UserController extends Controller
      *         )
      *     ),
      *
-     *     @OA\Response(response=201, description="User created"),
-     *     @OA\Response(response=422, description="Validation error")
+     *     @OA\Response(
+     *         response=201,
+     *         description="User created",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="User created successfully"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="name", type="string", example="John Doe"),
+     *                 @OA\Property(property="email", type="string", example="user@example.com"),
+     *                 @OA\Property(property="role_id", type="integer", example=2),
+     *                 @OA\Property(property="is_active", type="boolean", example=true),
+     *                 @OA\Property(property="created_at", type="string", format="date-time"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time"),
+     *                 @OA\Property(property="role", type="object")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="errors", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function store(Request $request)
@@ -200,8 +270,33 @@ class UserController extends Controller
      *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *
-     *     @OA\Response(response=200, description="Success"),
-     *     @OA\Response(response=404, description="User not found")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="name", type="string", example="John Doe"),
+     *                 @OA\Property(property="email", type="string", example="john@example.com"),
+     *                 @OA\Property(property="role_id", type="integer", example=2),
+     *                 @OA\Property(property="is_active", type="boolean", example=true),
+     *                 @OA\Property(property="created_at", type="string", format="date-time"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time"),
+     *                 @OA\Property(property="role", type="object",
+     *                     @OA\Property(property="id", type="integer", example=2),
+     *                     @OA\Property(property="name", type="string", example="manager"),
+     *                     @OA\Property(property="display_name", type="string", example="Manager"),
+     *                     @OA\Property(property="description", type="string", nullable=true)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="User not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function show(User $user)
@@ -241,8 +336,31 @@ class UserController extends Controller
      *         )
      *     ),
      *
-     *     @OA\Response(response=200, description="User updated"),
-     *     @OA\Response(response=422, description="Validation error")
+     *     @OA\Response(
+     *         response=200,
+     *         description="User updated",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="User updated successfully"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="errors", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="User not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function update(Request $request, User $user)
@@ -291,8 +409,19 @@ class UserController extends Controller
      *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *
-     *     @OA\Response(response=200, description="User deleted"),
-     *     @OA\Response(response=404, description="User not found")
+     *     @OA\Response(
+     *         response=200,
+     *         description="User deleted",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="User deleted successfully")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="User not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function destroy(User $user)

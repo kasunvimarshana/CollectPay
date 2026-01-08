@@ -97,17 +97,17 @@ export const ReportsScreen: React.FC = () => {
       const response = await apiClient.get<any>('/reports/summary');
       
       setSummary({
-        totalSuppliers: response?.totalSuppliers || 0,
-        activeSuppliers: response?.activeSuppliers || 0,
-        totalProducts: response?.totalProducts || 0,
-        activeProducts: response?.activeProducts || 0,
-        totalCollections: response?.totalCollections || 0,
-        totalCollectionAmount: response?.totalCollectionAmount || 0,
-        totalPayments: response?.totalPayments || 0,
-        totalPaymentAmount: response?.totalPaymentAmount || 0,
-        outstandingBalance: response?.outstandingBalance || 0,
-        collectionsThisMonth: response?.collectionsThisMonth || 0,
-        paymentsThisMonth: response?.paymentsThisMonth || 0,
+        totalSuppliers: response.data?.totalSuppliers || 0,
+        activeSuppliers: response.data?.activeSuppliers || 0,
+        totalProducts: response.data?.totalProducts || 0,
+        activeProducts: response.data?.activeProducts || 0,
+        totalCollections: response.data?.totalCollections || 0,
+        totalCollectionAmount: response.data?.totalCollectionAmount || 0,
+        totalPayments: response.data?.totalPayments || 0,
+        totalPaymentAmount: response.data?.totalPaymentAmount || 0,
+        outstandingBalance: response.data?.outstandingBalance || 0,
+        collectionsThisMonth: response.data?.collectionsThisMonth || 0,
+        paymentsThisMonth: response.data?.paymentsThisMonth || 0,
       });
     } catch (error) {
       console.error('Error loading summary:', error);
@@ -118,7 +118,7 @@ export const ReportsScreen: React.FC = () => {
     try {
       // Use the new dedicated supplier balances endpoint
       const response = await apiClient.get<any>('/reports/supplier-balances?limit=5&sort=desc');
-      const balances = response || [];
+      const balances = response.data || [];
       
       setTopBalances(balances);
     } catch (error) {

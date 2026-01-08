@@ -23,32 +23,40 @@ class ReportController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/api/reports/summary",
+     *     path="/reports/summary",
      *     summary="Get overall system summary",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
      *
      *     @OA\Response(
      *         response=200,
-     *         description="Summary data retrieved successfully",
+     *         description="Success",
      *
      *         @OA\JsonContent(
      *
-     *             @OA\Property(property="totalSuppliers", type="integer", example=50),
-     *             @OA\Property(property="activeSuppliers", type="integer", example=45),
-     *             @OA\Property(property="totalProducts", type="integer", example=20),
-     *             @OA\Property(property="activeProducts", type="integer", example=18),
-     *             @OA\Property(property="totalCollections", type="integer", example=1500),
-     *             @OA\Property(property="totalCollectionAmount", type="number", format="float", example=125000.50),
-     *             @OA\Property(property="totalPayments", type="integer", example=300),
-     *             @OA\Property(property="totalPaymentAmount", type="number", format="float", example=100000.00),
-     *             @OA\Property(property="outstandingBalance", type="number", format="float", example=25000.50),
-     *             @OA\Property(property="collectionsThisMonth", type="integer", example=120),
-     *             @OA\Property(property="paymentsThisMonth", type="integer", example=25),
-     *             @OA\Property(property="collectionAmountThisMonth", type="number", format="float", example=10000.00),
-     *             @OA\Property(property="paymentAmountThisMonth", type="number", format="float", example=8000.00)
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="totalSuppliers", type="integer", example=50),
+     *                 @OA\Property(property="activeSuppliers", type="integer", example=45),
+     *                 @OA\Property(property="totalProducts", type="integer", example=20),
+     *                 @OA\Property(property="activeProducts", type="integer", example=18),
+     *                 @OA\Property(property="totalCollections", type="integer", example=1500),
+     *                 @OA\Property(property="totalCollectionAmount", type="number", format="float", example=125000.50),
+     *                 @OA\Property(property="totalPayments", type="integer", example=300),
+     *                 @OA\Property(property="totalPaymentAmount", type="number", format="float", example=100000.00),
+     *                 @OA\Property(property="outstandingBalance", type="number", format="float", example=25000.50),
+     *                 @OA\Property(property="collectionsThisMonth", type="integer", example=120),
+     *                 @OA\Property(property="paymentsThisMonth", type="integer", example=25),
+     *                 @OA\Property(property="collectionAmountThisMonth", type="number", format="float", example=10000.00),
+     *                 @OA\Property(property="paymentAmountThisMonth", type="number", format="float", example=8000.00)
+     *             )
      *         )
-     *     )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function summary(Request $request): JsonResponse
@@ -78,25 +86,28 @@ class ReportController extends Controller
         $paymentAmountThisMonth = Payment::whereBetween('payment_date', [$startOfMonth, $endOfMonth])->sum('amount');
 
         return response()->json([
-            'totalSuppliers' => $totalSuppliers,
-            'activeSuppliers' => $activeSuppliers,
-            'totalProducts' => $totalProducts,
-            'activeProducts' => $activeProducts,
-            'totalCollections' => $totalCollections,
-            'totalCollectionAmount' => round($totalCollectionAmount, 2),
-            'totalPayments' => $totalPayments,
-            'totalPaymentAmount' => round($totalPaymentAmount, 2),
-            'outstandingBalance' => round($outstandingBalance, 2),
-            'collectionsThisMonth' => $collectionsThisMonth,
-            'paymentsThisMonth' => $paymentsThisMonth,
-            'collectionAmountThisMonth' => round($collectionAmountThisMonth, 2),
-            'paymentAmountThisMonth' => round($paymentAmountThisMonth, 2),
+            'success' => true,
+            'data' => [
+                'totalSuppliers' => $totalSuppliers,
+                'activeSuppliers' => $activeSuppliers,
+                'totalProducts' => $totalProducts,
+                'activeProducts' => $activeProducts,
+                'totalCollections' => $totalCollections,
+                'totalCollectionAmount' => round($totalCollectionAmount, 2),
+                'totalPayments' => $totalPayments,
+                'totalPaymentAmount' => round($totalPaymentAmount, 2),
+                'outstandingBalance' => round($outstandingBalance, 2),
+                'collectionsThisMonth' => $collectionsThisMonth,
+                'paymentsThisMonth' => $paymentsThisMonth,
+                'collectionAmountThisMonth' => round($collectionAmountThisMonth, 2),
+                'paymentAmountThisMonth' => round($paymentAmountThisMonth, 2),
+            ],
         ]);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/reports/supplier-balances",
+     *     path="/reports/supplier-balances",
      *     summary="Get supplier balances report",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -124,21 +135,29 @@ class ReportController extends Controller
      *         description="Supplier balances retrieved successfully",
      *
      *         @OA\JsonContent(
-     *             type="array",
      *
-     *             @OA\Items(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
      *
-     *                 @OA\Property(property="supplier_id", type="integer", example=1),
-     *                 @OA\Property(property="supplier_name", type="string", example="John Supplier"),
-     *                 @OA\Property(property="supplier_code", type="string", example="SUP001"),
-     *                 @OA\Property(property="total_collections", type="number", format="float", example=50000.00),
-     *                 @OA\Property(property="total_payments", type="number", format="float", example=45000.00),
-     *                 @OA\Property(property="balance", type="number", format="float", example=5000.00),
-     *                 @OA\Property(property="collection_count", type="integer", example=50),
-     *                 @OA\Property(property="payment_count", type="integer", example=10)
+     *                 @OA\Items(
+     *
+     *                     @OA\Property(property="supplier_id", type="integer", example=1),
+     *                     @OA\Property(property="supplier_name", type="string", example="John Supplier"),
+     *                     @OA\Property(property="supplier_code", type="string", example="SUP001"),
+     *                     @OA\Property(property="total_collections", type="number", format="float", example=50000.00),
+     *                     @OA\Property(property="total_payments", type="number", format="float", example=45000.00),
+     *                     @OA\Property(property="balance", type="number", format="float", example=5000.00),
+     *                     @OA\Property(property="collection_count", type="integer", example=50),
+     *                     @OA\Property(property="payment_count", type="integer", example=10)
+     *                 )
      *             )
      *         )
-     *     )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function supplierBalances(Request $request): JsonResponse
@@ -175,12 +194,15 @@ class ReportController extends Controller
                 ];
             });
 
-        return response()->json($balances);
+        return response()->json([
+            'success' => true,
+            'data' => $balances,
+        ]);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/reports/collections-summary",
+     *     path="/reports/collections-summary",
      *     summary="Get collections summary by date range",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -223,8 +245,56 @@ class ReportController extends Controller
      *
      *     @OA\Response(
      *         response=200,
-     *         description="Collections summary retrieved successfully"
-     *     )
+     *         description="Collections summary retrieved successfully",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="summary",
+     *                     type="object",
+     *                     @OA\Property(property="total_count", type="integer", example=150),
+     *                     @OA\Property(property="total_amount", type="number", format="float", example=75000.00),
+     *                     @OA\Property(property="total_quantity", type="number", format="float", example=2500.500)
+     *                 ),
+     *                 @OA\Property(
+     *                     property="by_product",
+     *                     type="array",
+     *
+     *                     @OA\Items(
+     *                         type="object",
+     *
+     *                         @OA\Property(property="product_id", type="integer"),
+     *                         @OA\Property(property="product_name", type="string"),
+     *                         @OA\Property(property="count", type="integer"),
+     *                         @OA\Property(property="total_quantity", type="number", format="float"),
+     *                         @OA\Property(property="total_amount", type="number", format="float")
+     *                     )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="by_supplier",
+     *                     type="array",
+     *
+     *                     @OA\Items(
+     *                         type="object",
+     *
+     *                         @OA\Property(property="supplier_id", type="integer"),
+     *                         @OA\Property(property="supplier_name", type="string"),
+     *                         @OA\Property(property="supplier_code", type="string"),
+     *                         @OA\Property(property="count", type="integer"),
+     *                         @OA\Property(property="total_quantity", type="number", format="float"),
+     *                         @OA\Property(property="total_amount", type="number", format="float")
+     *                     )
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function collectionsSummary(Request $request): JsonResponse
@@ -314,19 +384,22 @@ class ReportController extends Controller
             });
 
         return response()->json([
-            'summary' => [
-                'total_count' => $totalCount,
-                'total_amount' => round($totalAmount, 2),
-                'total_quantity' => round($totalQuantity, 3),
+            'success' => true,
+            'data' => [
+                'summary' => [
+                    'total_count' => $totalCount,
+                    'total_amount' => round($totalAmount, 2),
+                    'total_quantity' => round($totalQuantity, 3),
+                ],
+                'by_product' => $byProduct,
+                'by_supplier' => $bySupplier,
             ],
-            'by_product' => $byProduct,
-            'by_supplier' => $bySupplier,
         ]);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/reports/payments-summary",
+     *     path="/reports/payments-summary",
      *     summary="Get payments summary by date range",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -360,8 +433,52 @@ class ReportController extends Controller
      *
      *     @OA\Response(
      *         response=200,
-     *         description="Payments summary retrieved successfully"
-     *     )
+     *         description="Payments summary retrieved successfully",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="summary",
+     *                     type="object",
+     *                     @OA\Property(property="total_count", type="integer", example=50),
+     *                     @OA\Property(property="total_amount", type="number", format="float", example=50000.00)
+     *                 ),
+     *                 @OA\Property(
+     *                     property="by_type",
+     *                     type="array",
+     *
+     *                     @OA\Items(
+     *                         type="object",
+     *
+     *                         @OA\Property(property="type", type="string", example="partial"),
+     *                         @OA\Property(property="count", type="integer", example=30),
+     *                         @OA\Property(property="total_amount", type="number", format="float", example=30000.00)
+     *                     )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="by_supplier",
+     *                     type="array",
+     *
+     *                     @OA\Items(
+     *                         type="object",
+     *
+     *                         @OA\Property(property="supplier_id", type="integer"),
+     *                         @OA\Property(property="supplier_name", type="string"),
+     *                         @OA\Property(property="supplier_code", type="string"),
+     *                         @OA\Property(property="count", type="integer"),
+     *                         @OA\Property(property="total_amount", type="number", format="float")
+     *                     )
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function paymentsSummary(Request $request): JsonResponse
@@ -435,18 +552,21 @@ class ReportController extends Controller
             });
 
         return response()->json([
-            'summary' => [
-                'total_count' => $totalCount,
-                'total_amount' => round($totalAmount, 2),
+            'success' => true,
+            'data' => [
+                'summary' => [
+                    'total_count' => $totalCount,
+                    'total_amount' => round($totalAmount, 2),
+                ],
+                'by_type' => $byType,
+                'by_supplier' => $bySupplier,
             ],
-            'by_type' => $byType,
-            'by_supplier' => $bySupplier,
         ]);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/reports/product-performance",
+     *     path="/reports/product-performance",
      *     summary="Get product performance report",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -471,8 +591,33 @@ class ReportController extends Controller
      *
      *     @OA\Response(
      *         response=200,
-     *         description="Product performance retrieved successfully"
-     *     )
+     *         description="Product performance retrieved successfully",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *
+     *                 @OA\Items(
+     *                     type="object",
+     *
+     *                     @OA\Property(property="product_id", type="integer", example=1),
+     *                     @OA\Property(property="product_name", type="string", example="Tea Leaves"),
+     *                     @OA\Property(property="product_code", type="string", example="PROD001"),
+     *                     @OA\Property(property="collection_count", type="integer", example=150),
+     *                     @OA\Property(property="total_quantity", type="number", format="float", example=2500.500),
+     *                     @OA\Property(property="total_amount", type="number", format="float", example=75000.00),
+     *                     @OA\Property(property="unique_suppliers", type="integer", example=5),
+     *                     @OA\Property(property="avg_rate", type="number", format="float", example=30.00)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function productPerformance(Request $request): JsonResponse
@@ -512,7 +657,10 @@ class ReportController extends Controller
                 ];
             });
 
-        return response()->json($products);
+        return response()->json([
+            'success' => true,
+            'data' => $products,
+        ]);
     }
 
     /**
@@ -527,7 +675,7 @@ class ReportController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/reports/financial-summary",
+     *     path="/reports/financial-summary",
      *     summary="Get comprehensive financial summary",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -552,8 +700,40 @@ class ReportController extends Controller
      *
      *     @OA\Response(
      *         response=200,
-     *         description="Financial summary retrieved successfully"
-     *     )
+     *         description="Financial summary retrieved successfully",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="summary",
+     *                     type="object",
+     *                     @OA\Property(property="total_collections", type="number", format="float", example=125000.00),
+     *                     @OA\Property(property="total_payments", type="number", format="float", example=100000.00),
+     *                     @OA\Property(property="net_balance", type="number", format="float", example=25000.00)
+     *                 ),
+     *                 @OA\Property(
+     *                     property="monthly_breakdown",
+     *                     type="array",
+     *
+     *                     @OA\Items(
+     *                         type="object",
+     *
+     *                         @OA\Property(property="month", type="string", example="2025-01"),
+     *                         @OA\Property(property="collections", type="number", format="float", example=10000.00),
+     *                         @OA\Property(property="payments", type="number", format="float", example=8000.00),
+     *                         @OA\Property(property="net", type="number", format="float", example=2000.00)
+     *                     )
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function financialSummary(Request $request): JsonResponse
@@ -625,18 +805,21 @@ class ReportController extends Controller
         })->values();
 
         return response()->json([
-            'summary' => [
-                'total_collections' => round($totalCollections, 2),
-                'total_payments' => round($totalPayments, 2),
-                'net_balance' => round($netBalance, 2),
+            'success' => true,
+            'data' => [
+                'summary' => [
+                    'total_collections' => round($totalCollections, 2),
+                    'total_payments' => round($totalPayments, 2),
+                    'net_balance' => round($netBalance, 2),
+                ],
+                'monthly_breakdown' => $monthlyBreakdown,
             ],
-            'monthly_breakdown' => $monthlyBreakdown,
         ]);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/reports/summary/pdf",
+     *     path="/reports/summary/pdf",
      *     summary="Download system summary report as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -646,7 +829,10 @@ class ReportController extends Controller
      *         description="PDF downloaded successfully",
      *
      *         @OA\MediaType(mediaType="application/pdf")
-     *     )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function summaryPdf(Request $request)
@@ -664,7 +850,7 @@ class ReportController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/reports/supplier-balances/pdf",
+     *     path="/reports/supplier-balances/pdf",
      *     summary="Download supplier balances report as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -683,7 +869,10 @@ class ReportController extends Controller
      *         description="PDF downloaded successfully",
      *
      *         @OA\MediaType(mediaType="application/pdf")
-     *     )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function supplierBalancesPdf(Request $request)
@@ -701,7 +890,7 @@ class ReportController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/reports/collections-summary/pdf",
+     *     path="/reports/collections-summary/pdf",
      *     summary="Download collections summary as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -711,7 +900,10 @@ class ReportController extends Controller
      *         description="PDF downloaded successfully",
      *
      *         @OA\MediaType(mediaType="application/pdf")
-     *     )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function collectionsSummaryPdf(Request $request)
@@ -729,7 +921,7 @@ class ReportController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/reports/payments-summary/pdf",
+     *     path="/reports/payments-summary/pdf",
      *     summary="Download payments summary as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -739,7 +931,10 @@ class ReportController extends Controller
      *         description="PDF downloaded successfully",
      *
      *         @OA\MediaType(mediaType="application/pdf")
-     *     )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function paymentsSummaryPdf(Request $request)
@@ -757,7 +952,7 @@ class ReportController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/reports/product-performance/pdf",
+     *     path="/reports/product-performance/pdf",
      *     summary="Download product performance report as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -767,7 +962,10 @@ class ReportController extends Controller
      *         description="PDF downloaded successfully",
      *
      *         @OA\MediaType(mediaType="application/pdf")
-     *     )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function productPerformancePdf(Request $request)
@@ -785,7 +983,7 @@ class ReportController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/reports/financial-summary/pdf",
+     *     path="/reports/financial-summary/pdf",
      *     summary="Download financial summary as PDF",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
@@ -795,7 +993,10 @@ class ReportController extends Controller
      *         description="PDF downloaded successfully",
      *
      *         @OA\MediaType(mediaType="application/pdf")
-     *     )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=429, ref="#/components/responses/RateLimitExceeded")
      * )
      */
     public function financialSummaryPdf(Request $request)

@@ -15,29 +15,16 @@ import LocalStorageService from "../storage/LocalStorageService";
 // Cache indicator constant
 const CACHE_MESSAGE = "Data loaded from cache (offline)";
 
-// export interface ApiResponse<T = any> {
-//   success: boolean;
-//   data?: T;
-//   message?: string;
-//   errors?: Record<string, string[]>;
-//   conflict?: boolean;
-//   serverData?: any;
-//   fromCache?: boolean; // Flag to indicate cached data
-//   queued?: boolean; // Flag to indicate operation was queued for offline sync
-// }
-
-export type ApiResponse<T = any> =
-  | {
-      success: boolean;
-      data?: T;
-      message?: string;
-      errors?: Record<string, string[]>;
-      conflict?: boolean;
-      serverData?: any;
-      fromCache?: boolean; // Flag to indicate cached data
-      queued?: boolean; // Flag to indicate operation was queued for offline sync
-    }
-  | T;
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  errors?: Record<string, string[]>;
+  conflict?: boolean;
+  serverData?: any;
+  fromCache?: boolean; // Flag to indicate cached data
+  queued?: boolean; // Flag to indicate operation was queued for offline sync
+}
 
 class ApiClient {
   private axiosInstance: AxiosInstance;

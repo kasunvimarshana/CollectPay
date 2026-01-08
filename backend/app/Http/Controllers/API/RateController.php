@@ -44,7 +44,17 @@ class RateController extends Controller
      *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
      *     ),
      *
-     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object", description="Paginated rate list with product details")
+     *         )
+     *     ),
+     *
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
@@ -272,7 +282,17 @@ class RateController extends Controller
      *
      *     @OA\Response(response=422, description="Validation error"),
      *     @OA\Response(response=404, description="Rate not found"),
-     *     @OA\Response(response=401, description="Unauthenticated")
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(
+     *         response=409,
+     *         description="Version conflict - resource was modified by another user",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Version conflict detected")
+     *         )
+     *     )
      * )
      */
     public function update(Request $request, Rate $rate)

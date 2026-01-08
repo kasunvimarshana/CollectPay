@@ -56,7 +56,17 @@ class RoleController extends Controller
      *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
      *     ),
      *
-     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object", description="Paginated role list with user counts")
+     *         )
+     *     ),
+     *
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
@@ -118,8 +128,30 @@ class RoleController extends Controller
      *         )
      *     ),
      *
-     *     @OA\Response(response=201, description="Role created"),
-     *     @OA\Response(response=422, description="Validation error")
+     *     @OA\Response(
+     *         response=201,
+     *         description="Role created",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Role created successfully"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="errors", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function store(Request $request)
@@ -161,8 +193,19 @@ class RoleController extends Controller
      *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *
-     *     @OA\Response(response=200, description="Success"),
-     *     @OA\Response(response=404, description="Role not found")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="Role not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function show(Role $role)
@@ -200,8 +243,31 @@ class RoleController extends Controller
      *         )
      *     ),
      *
-     *     @OA\Response(response=200, description="Role updated"),
-     *     @OA\Response(response=422, description="Validation error")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Role updated",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Role updated successfully"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="errors", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="Role not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function update(Request $request, Role $role)
@@ -243,8 +309,30 @@ class RoleController extends Controller
      *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *
-     *     @OA\Response(response=200, description="Role deleted"),
-     *     @OA\Response(response=422, description="Cannot delete role with active users")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Role deleted",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Role deleted successfully")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=422,
+     *         description="Cannot delete role with active users",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Cannot delete role with active users")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="Role not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function destroy(Role $role)

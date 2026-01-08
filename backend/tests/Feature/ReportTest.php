@@ -59,29 +59,35 @@ class ReportTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'totalSuppliers',
-                'activeSuppliers',
-                'totalProducts',
-                'activeProducts',
-                'totalCollections',
-                'totalCollectionAmount',
-                'totalPayments',
-                'totalPaymentAmount',
-                'outstandingBalance',
-                'collectionsThisMonth',
-                'paymentsThisMonth',
-                'collectionAmountThisMonth',
-                'paymentAmountThisMonth',
+                'success',
+                'data' => [
+                    'totalSuppliers',
+                    'activeSuppliers',
+                    'totalProducts',
+                    'activeProducts',
+                    'totalCollections',
+                    'totalCollectionAmount',
+                    'totalPayments',
+                    'totalPaymentAmount',
+                    'outstandingBalance',
+                    'collectionsThisMonth',
+                    'paymentsThisMonth',
+                    'collectionAmountThisMonth',
+                    'paymentAmountThisMonth',
+                ],
             ])
             ->assertJson([
-                'totalSuppliers' => 8,
-                'activeSuppliers' => 6,
-                'totalCollections' => 1,
-                'totalPayments' => 1,
+                'success' => true,
+                'data' => [
+                    'totalSuppliers' => 8,
+                    'activeSuppliers' => 6,
+                    'totalCollections' => 1,
+                    'totalPayments' => 1,
+                ],
             ]);
 
         // Verify totals exist and are numeric
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertIsNumeric($data['totalProducts']);
         $this->assertIsNumeric($data['totalCollectionAmount']);
     }
@@ -120,20 +126,23 @@ class ReportTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                '*' => [
-                    'supplier_id',
-                    'supplier_name',
-                    'supplier_code',
-                    'total_collections',
-                    'total_payments',
-                    'balance',
-                    'collection_count',
-                    'payment_count',
+                'success',
+                'data' => [
+                    '*' => [
+                        'supplier_id',
+                        'supplier_name',
+                        'supplier_code',
+                        'total_collections',
+                        'total_payments',
+                        'balance',
+                        'collection_count',
+                        'payment_count',
+                    ],
                 ],
             ]);
 
         // Verify supplier 1 has higher balance and comes first (desc order)
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertEquals('Supplier 1', $data[0]['supplier_name']);
         $this->assertEquals(700.00, $data[0]['balance']);
         $this->assertEquals('Supplier 2', $data[1]['supplier_name']);
@@ -172,16 +181,19 @@ class ReportTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'summary' => [
-                    'total_count',
-                    'total_quantity',
-                    'total_amount',
+                'success',
+                'data' => [
+                    'summary' => [
+                        'total_count',
+                        'total_quantity',
+                        'total_amount',
+                    ],
+                    'by_product',
+                    'by_supplier',
                 ],
-                'by_product',
-                'by_supplier',
             ]);
 
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertEquals(2, $data['summary']['total_count']);
         $this->assertEquals(15, $data['summary']['total_quantity']);
         $this->assertEquals(1500.00, $data['summary']['total_amount']);
@@ -212,15 +224,18 @@ class ReportTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'summary' => [
-                    'total_count',
-                    'total_amount',
+                'success',
+                'data' => [
+                    'summary' => [
+                        'total_count',
+                        'total_amount',
+                    ],
+                    'by_type',
+                    'by_supplier',
                 ],
-                'by_type',
-                'by_supplier',
             ]);
 
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertEquals(2, $data['summary']['total_count']);
         $this->assertEquals(1500.00, $data['summary']['total_amount']);
     }
@@ -252,19 +267,22 @@ class ReportTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                '*' => [
-                    'product_id',
-                    'product_name',
-                    'product_code',
-                    'collection_count',
-                    'total_quantity',
-                    'total_amount',
-                    'unique_suppliers',
-                    'avg_rate',
+                'success',
+                'data' => [
+                    '*' => [
+                        'product_id',
+                        'product_name',
+                        'product_code',
+                        'collection_count',
+                        'total_quantity',
+                        'total_amount',
+                        'unique_suppliers',
+                        'avg_rate',
+                    ],
                 ],
             ]);
 
-        $data = $response->json();
+        $data = $response->json('data');
         // Find our specific test product in the results
         $testProduct = collect($data)->firstWhere('product_id', $product->id);
         $this->assertNotNull($testProduct, 'Test product not found in results');
@@ -305,15 +323,18 @@ class ReportTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'summary' => [
-                    'total_collections',
-                    'total_payments',
-                    'net_balance',
+                'success',
+                'data' => [
+                    'summary' => [
+                        'total_collections',
+                        'total_payments',
+                        'net_balance',
+                    ],
+                    'monthly_breakdown',
                 ],
-                'monthly_breakdown',
             ]);
 
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertEquals(3000.00, $data['summary']['total_collections']);
         $this->assertEquals(500.00, $data['summary']['total_payments']);
         $this->assertEquals(2500.00, $data['summary']['net_balance']);
@@ -379,7 +400,7 @@ class ReportTest extends TestCase
         ])->getJson('/api/reports/collections-summary?start_date=2025-01-01&end_date=2025-01-31');
 
         $response->assertStatus(200);
-        $data = $response->json();
+        $data = $response->json('data');
 
         // Should only include the January collection
         $this->assertEquals(1, $data['summary']['total_count']);
@@ -411,7 +432,7 @@ class ReportTest extends TestCase
             'Authorization' => "Bearer {$this->token}",
         ])->getJson('/api/reports/supplier-balances?sort=desc');
 
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertEquals('High Balance', $data[0]['supplier_name']);
 
         // Test ascending order
@@ -419,7 +440,7 @@ class ReportTest extends TestCase
             'Authorization' => "Bearer {$this->token}",
         ])->getJson('/api/reports/supplier-balances?sort=asc');
 
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertEquals('Low Balance', $data[0]['supplier_name']);
     }
 }

@@ -65,7 +65,17 @@ class SupplierController extends Controller
      *         @OA\Schema(type="string", enum={"asc","desc"}, default="desc")
      *     ),
      *
-     *     @OA\Response(response=200, description="Success"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object", description="Paginated supplier list")
+     *         )
+     *     ),
+     *
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
@@ -137,8 +147,30 @@ class SupplierController extends Controller
      *         )
      *     ),
      *
-     *     @OA\Response(response=201, description="Supplier created"),
-     *     @OA\Response(response=422, description="Validation error")
+     *     @OA\Response(
+     *         response=201,
+     *         description="Supplier created",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Supplier created successfully"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="errors", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function store(Request $request)
@@ -264,7 +296,17 @@ class SupplierController extends Controller
      *
      *     @OA\Response(response=422, description="Validation error"),
      *     @OA\Response(response=404, description="Supplier not found"),
-     *     @OA\Response(response=401, description="Unauthenticated")
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(
+     *         response=409,
+     *         description="Version conflict - resource was modified by another user",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Version conflict detected")
+     *         )
+     *     )
      * )
      */
     public function update(Request $request, Supplier $supplier)
