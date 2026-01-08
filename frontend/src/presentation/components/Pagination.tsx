@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import THEME from '../../core/constants/theme';
 
 interface PaginationProps {
   currentPage: number;
@@ -69,16 +70,16 @@ export const Pagination: React.FC<PaginationProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    padding: 12,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: THEME.colors.border,
   },
   info: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   controls: {
     flexDirection: 'row',
@@ -86,27 +87,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
     borderRadius: 6,
-    backgroundColor: '#007bff',
+    backgroundColor: THEME.colors.primary,
     minWidth: 100,
   },
   buttonDisabled: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: THEME.colors.border,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.semibold,
     textAlign: 'center',
   },
   buttonTextDisabled: {
-    color: '#999',
+    color: THEME.colors.textTertiary,
   },
   pageInfo: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
 });

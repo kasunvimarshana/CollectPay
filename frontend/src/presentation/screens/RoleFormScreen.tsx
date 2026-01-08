@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import THEME from '../../core/constants/theme';
 import {
   View,
   Text,
@@ -180,15 +181,15 @@ export const RoleFormScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading role...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
@@ -291,7 +292,7 @@ export const RoleFormScreen: React.FC = () => {
           disabled={submitting}
         >
           {submitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={THEME.colors.white} />
           ) : (
             <Text style={styles.submitButtonText}>
               {isEditMode ? 'Update Role' : 'Create Role'}
@@ -306,88 +307,88 @@ export const RoleFormScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   backButton: {
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   backButtonText: {
-    fontSize: 16,
-    color: '#007bff',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.primary,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
   form: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   formGroup: {
-    marginBottom: 20,
+    marginBottom: THEME.spacing.lg,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
+    marginBottom: THEME.spacing.sm,
   },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: THEME.colors.border,
   },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
   },
   helpText: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textSecondary,
     marginTop: 4,
   },
   permissionGroup: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: THEME.colors.border,
   },
   groupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   groupTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007bff',
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.primary,
   },
   groupCheckbox: {
     width: 24,
     height: 24,
-    borderRadius: 4,
+    borderRadius: THEME.borderRadius.sm,
     borderWidth: 2,
-    borderColor: '#007bff',
+    borderColor: THEME.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   groupCheckboxSelected: {
-    backgroundColor: '#007bff',
+    backgroundColor: THEME.colors.primary,
   },
   permissionItem: {
     flexDirection: 'row',
@@ -398,50 +399,50 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 20,
     height: 20,
-    borderRadius: 4,
+    borderRadius: THEME.borderRadius.sm,
     borderWidth: 2,
-    borderColor: '#007bff',
+    borderColor: THEME.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: THEME.spacing.md,
   },
   checkboxSelected: {
-    backgroundColor: '#007bff',
+    backgroundColor: THEME.colors.primary,
   },
   checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   permissionLabel: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
     textTransform: 'capitalize',
   },
   submitButton: {
-    backgroundColor: '#007bff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: THEME.spacing.lg,
   },
   submitButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: THEME.colors.gray300,
   },
   submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
 });

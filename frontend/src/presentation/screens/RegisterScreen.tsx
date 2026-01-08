@@ -87,7 +87,7 @@ export const RegisterScreen: React.FC = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: insets.bottom + THEME.spacing.lg }]}>
         <View style={styles.content}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join Ledger Management System</Text>
@@ -134,7 +134,7 @@ export const RegisterScreen: React.FC = () => {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={THEME.colors.white} />
               ) : (
                 <Text style={styles.buttonText}>Register</Text>
               )}
@@ -232,20 +232,20 @@ const styles = StyleSheet.create({
   infoBox: {
     marginTop: THEME.spacing.xl,
     padding: THEME.spacing.base,
-    backgroundColor: '#fff3cd',
+    backgroundColor: THEME.colors.gray100,
     borderRadius: THEME.borderRadius.base,
     borderWidth: 1,
-    borderColor: '#ffc107',
+    borderColor: THEME.colors.warning,
   },
   infoTitle: {
     fontSize: THEME.typography.fontSize.base,
     fontWeight: THEME.typography.fontWeight.bold,
-    color: '#856404',
+    color: THEME.colors.textSecondary,
     marginBottom: THEME.spacing.sm,
   },
   infoText: {
     fontSize: THEME.typography.fontSize.sm,
-    color: '#856404',
+    color: THEME.colors.textSecondary,
     marginBottom: THEME.spacing.xs,
   },
 });

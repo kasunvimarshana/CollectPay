@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import THEME from '../../core/constants/theme';
 import {
   View,
   Text,
@@ -128,13 +129,13 @@ export const SupplierDetailScreen: React.FC = () => {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+      contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
       {/* Header with action buttons */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
         <View style={styles.headerActions}>
           {canUpdate(user, 'suppliers') && (
             <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
@@ -155,7 +156,7 @@ export const SupplierDetailScreen: React.FC = () => {
           <Text style={styles.supplierName}>{supplier.name}</Text>
           <View style={[
             styles.statusBadge,
-            { backgroundColor: supplier.is_active ? '#4CAF50' : '#F44336' }
+            { backgroundColor: supplier.is_active ? THEME.colors.success : THEME.colors.error }
           ]}>
             <Text style={styles.statusText}>
               {supplier.is_active ? 'Active' : 'Inactive'}
@@ -229,7 +230,7 @@ export const SupplierDetailScreen: React.FC = () => {
             <Text style={styles.balanceLabelBold}>Outstanding Balance:</Text>
             <Text style={[
               styles.balanceValueBold,
-              { color: balance.balance > 0 ? '#F44336' : '#4CAF50' }
+              { color: balance.balance > 0 ? THEME.colors.error : THEME.colors.success }
             ]}>
               ${Math.abs(balance.balance || 0).toFixed(2)}
             </Text>
@@ -262,7 +263,7 @@ export const SupplierDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   centerContainer: {
     flex: 1,
@@ -271,17 +272,17 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    color: '#666',
+    color: THEME.colors.textSecondary,
   },
   errorText: {
-    fontSize: 16,
-    color: '#F44336',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.error,
   },
   header: {
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: THEME.spacing.base,
+    backgroundColor: THEME.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   headerActions: {
     flexDirection: 'row',
@@ -289,119 +290,115 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   editButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.sm,
+    backgroundColor: THEME.colors.primary,
+    borderRadius: THEME.borderRadius.base,
   },
   editButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   deleteButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.sm,
+    backgroundColor: THEME.colors.surface,
     borderWidth: 1,
-    borderColor: '#F44336',
-    borderRadius: 8,
+    borderColor: THEME.colors.error,
+    borderRadius: THEME.borderRadius.base,
   },
   deleteButtonText: {
-    color: '#F44336',
-    fontWeight: '600',
+    color: THEME.colors.error,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   card: {
-    backgroundColor: '#fff',
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: THEME.colors.surface,
+    margin: THEME.spacing.base,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.md,
+    ...THEME.shadows.base,
   },
   nameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: THEME.spacing.base,
   },
   supplierName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   statusBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: THEME.borderRadius.md,
   },
   statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   infoRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
     width: 120,
-    fontWeight: '500',
+    fontWeight: THEME.typography.fontWeight.medium,
   },
   infoValue: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
+    marginBottom: THEME.spacing.base,
   },
   balanceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
   },
   balanceLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
   },
   balanceValue: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
+    fontWeight: THEME.typography.fontWeight.medium,
   },
   balanceLabelBold: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: 'bold',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textPrimary,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   balanceValueBold: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: THEME.colors.border,
     marginVertical: 12,
   },
   actionButton: {
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
+    backgroundColor: THEME.colors.background,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.sm,
   },
   actionButtonText: {
-    color: '#2196F3',
-    fontSize: 16,
-    fontWeight: '600',
+    color: THEME.colors.primary,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
     textAlign: 'center',
   },
 });

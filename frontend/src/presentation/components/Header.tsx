@@ -1,6 +1,7 @@
 /**
  * ScreenHeader Component
- * Standardized header component for all screens with consistent layout and theming
+ * Unified header component for all screens with consistent layout and theming
+ * Supports both detail screens (with back button) and list screens (with add button)
  * 
  * @deprecated The old "Header" export name is deprecated. Use "ScreenHeader" instead.
  */
@@ -19,6 +20,10 @@ interface ScreenHeaderProps {
   variant?: 'primary' | 'light';
   style?: ViewStyle;
   onBackPress?: () => void;
+  // List screen specific props (from ListScreenHeader)
+  showAddButton?: boolean;
+  onAddPress?: () => void;
+  addButtonText?: string;
 }
 
 export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ 
@@ -29,6 +34,9 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   variant = 'primary',
   style,
   onBackPress,
+  showAddButton = false,
+  onAddPress,
+  addButtonText = '+ Add',
 }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -81,9 +89,17 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
             </Text>
           )}
         </View>
-        {rightComponent && (
-          <View style={styles.rightComponent}>
+        {(rightComponent || showAddButton) && (
+          <View style={styles.actionsContainer}>
             {rightComponent}
+            {showAddButton && onAddPress && (
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={onAddPress}
+              >
+                <Text style={styles.addButtonText}>{addButtonText}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
@@ -104,31 +120,43 @@ const styles = StyleSheet.create({
     borderBottomColor: THEME.colors.border,
   },
   headerContent: {
-    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   backButton: {
-    marginBottom: THEME.spacing.sm,
-    alignSelf: 'flex-start',
+    marginRight: THEME.spacing.sm,
   },
   backButtonText: {
     fontSize: THEME.typography.fontSize.md,
     fontWeight: THEME.typography.fontWeight.medium,
   },
   titleContainer: {
-    marginBottom: THEME.spacing.xs,
+    flex: 1,
   },
   title: {
     fontSize: THEME.typography.fontSize.xxl,
     fontWeight: THEME.typography.fontWeight.bold,
-    marginBottom: THEME.spacing.xs,
   },
   subtitle: {
     fontSize: THEME.typography.fontSize.base,
     marginTop: THEME.spacing.xs,
   },
-  rightComponent: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    marginLeft: THEME.spacing.sm,
+  },
+  addButton: {
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.base,
+  },
+  addButtonText: {
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
 });

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet, ViewStyle } from 'react-native';
+import THEME from '../../core/constants/theme';
 
 interface LoadingProps {
   message?: string;
@@ -30,13 +31,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: 20,
+    backgroundColor: THEME.colors.background,
+    padding: THEME.spacing.lg,
   },
   message: {
     marginTop: 15,
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
     textAlign: 'center',
   },
 });

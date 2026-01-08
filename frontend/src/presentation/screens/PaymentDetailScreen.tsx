@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import THEME from '../../core/constants/theme';
 import {
   View,
   Text,
@@ -93,7 +94,7 @@ export const PaymentDetailScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading payment...</Text>
       </View>
     );
@@ -111,8 +112,8 @@ export const PaymentDetailScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
@@ -199,148 +200,148 @@ export const PaymentDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   backButton: {
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   backButtonText: {
-    fontSize: 16,
-    color: '#007bff',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.primary,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
   section: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginTop: 12,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
+    marginTop: THEME.spacing.md,
   },
   typeRow: {
-    marginBottom: 16,
+    marginBottom: THEME.spacing.base,
   },
   typeBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.lg,
     alignSelf: 'flex-start',
   },
   typeText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
     width: 140,
-    fontWeight: '600',
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   detailValue: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   amountRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 16,
-    paddingVertical: 16,
+    paddingVertical: THEME.spacing.base,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: THEME.colors.border,
   },
   amountLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
   },
   amountValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4CAF50',
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.success,
   },
   notesContainer: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
+    marginTop: THEME.spacing.base,
+    padding: THEME.spacing.md,
+    backgroundColor: THEME.colors.gray50,
+    borderRadius: THEME.borderRadius.base,
   },
   notesLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textSecondary,
     marginBottom: 4,
   },
   notesText: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
   },
   actionButtons: {
     flexDirection: 'row',
-    padding: 16,
+    padding: THEME.spacing.base,
     gap: 12,
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#007bff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
   },
   editButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   deleteButton: {
     flex: 1,
-    backgroundColor: '#f44336',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.error,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
   },
   deleteButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: THEME.spacing.lg,
   },
   errorText: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 16,
+    fontSize: THEME.typography.fontSize.lg,
+    color: THEME.colors.textSecondary,
+    marginBottom: THEME.spacing.base,
   },
   backText: {
-    fontSize: 16,
-    color: '#007bff',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.primary,
   },
 });

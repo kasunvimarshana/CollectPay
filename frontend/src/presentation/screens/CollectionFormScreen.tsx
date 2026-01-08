@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import THEME from '../../core/constants/theme';
 import {
   View,
   Text,
@@ -18,8 +19,8 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
-import { Supplier } from '../../domain/entities/Supplier';
 import { Product, Rate } from '../../domain/entities/Product';
+import { DateTimePicker, SearchableSelector } from '../components';
 
 interface CollectionFormData {
   supplier_id: string;
@@ -38,8 +39,6 @@ export const CollectionFormScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(false);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [currentRate, setCurrentRate] = useState<Rate | null>(null);
   const [calculatedAmount, setCalculatedAmount] = useState<number>(0);
 
@@ -54,8 +53,6 @@ export const CollectionFormScreen: React.FC = () => {
   const [errors, setErrors] = useState<Partial<Record<keyof CollectionFormData, string>>>({});
 
   useEffect(() => {
-    loadSuppliers();
-    loadProducts();
     if (isEditMode) {
       loadCollection();
     }
@@ -70,36 +67,6 @@ export const CollectionFormScreen: React.FC = () => {
   useEffect(() => {
     calculateAmount();
   }, [formData.quantity, currentRate]);
-
-  const loadSuppliers = async () => {
-    try {
-      const response = await apiClient.get<{data: Supplier[]}>('/suppliers');
-      if (response.success && response.data) {
-        // Handle paginated response: response.data might be {data: [], ...pagination}
-        const suppliers = Array.isArray(response.data) 
-          ? response.data 
-          : ((response.data as any).data || response.data);
-        setSuppliers((suppliers as Supplier[]).filter((s: Supplier) => s.is_active));
-      }
-    } catch (error) {
-      console.error('Error loading suppliers:', error);
-    }
-  };
-
-  const loadProducts = async () => {
-    try {
-      const response = await apiClient.get<{data: Product[]}>('/products');
-      if (response.success && response.data) {
-        // Handle paginated response: response.data might be {data: [], ...pagination}
-        const products = Array.isArray(response.data) 
-          ? response.data 
-          : ((response.data as any).data || response.data);
-        setProducts((products as Product[]).filter((p: Product) => p.is_active));
-      }
-    } catch (error) {
-      console.error('Error loading products:', error);
-    }
-  };
 
   const loadCollection = async () => {
     try {
@@ -232,15 +199,15 @@ export const CollectionFormScreen: React.FC = () => {
   if (loading && isEditMode) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading collection...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + THEME.spacing.lg }}>
+      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
@@ -251,66 +218,26 @@ export const CollectionFormScreen: React.FC = () => {
 
       <View style={styles.form}>
         {/* Supplier Selection */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Supplier *</Text>
-          <View style={[styles.input, errors.supplier_id && styles.inputError]}>
-            <Text style={styles.selectText}>
-              {formData.supplier_id 
-                ? suppliers.find(s => s.id.toString() === formData.supplier_id)?.name || 'Select supplier'
-                : 'Select supplier'}
-            </Text>
-          </View>
-          {errors.supplier_id && <Text style={styles.errorText}>{errors.supplier_id}</Text>}
-          
-          {/* Simple supplier list */}
-          {suppliers.length > 0 && (
-            <View style={styles.optionsList}>
-              {suppliers.map((supplier) => (
-                <TouchableOpacity
-                  key={supplier.id}
-                  style={[
-                    styles.optionItem,
-                    formData.supplier_id === supplier.id.toString() && styles.optionItemSelected
-                  ]}
-                  onPress={() => updateField('supplier_id', supplier.id.toString())}
-                >
-                  <Text style={styles.optionText}>{supplier.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
+        <SearchableSelector
+          label="Supplier *"
+          placeholder="Select supplier"
+          value={formData.supplier_id}
+          onSelect={(value, option) => updateField('supplier_id', value)}
+          endpoint="/suppliers"
+          error={errors.supplier_id}
+          queryParams={{ is_active: 1 }}
+        />
 
         {/* Product Selection */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Product *</Text>
-          <View style={[styles.input, errors.product_id && styles.inputError]}>
-            <Text style={styles.selectText}>
-              {formData.product_id 
-                ? products.find(p => p.id.toString() === formData.product_id)?.name || 'Select product'
-                : 'Select product'}
-            </Text>
-          </View>
-          {errors.product_id && <Text style={styles.errorText}>{errors.product_id}</Text>}
-          
-          {/* Simple product list */}
-          {products.length > 0 && (
-            <View style={styles.optionsList}>
-              {products.map((product) => (
-                <TouchableOpacity
-                  key={product.id}
-                  style={[
-                    styles.optionItem,
-                    formData.product_id === product.id.toString() && styles.optionItemSelected
-                  ]}
-                  onPress={() => updateField('product_id', product.id.toString())}
-                >
-                  <Text style={styles.optionText}>{product.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
+        <SearchableSelector
+          label="Product *"
+          placeholder="Select product"
+          value={formData.product_id}
+          onSelect={(value, option) => updateField('product_id', value)}
+          endpoint="/products"
+          error={errors.product_id}
+          queryParams={{ is_active: 1 }}
+        />
 
         {/* Current Rate Display */}
         {currentRate && (
@@ -322,18 +249,14 @@ export const CollectionFormScreen: React.FC = () => {
         )}
 
         {/* Collection Date */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Collection Date *</Text>
-          <TextInput
-            style={[styles.input, errors.collection_date && styles.inputError]}
-            placeholder="YYYY-MM-DD"
-            value={formData.collection_date}
-            onChangeText={(value) => updateField('collection_date', value)}
-          />
-          {errors.collection_date && (
-            <Text style={styles.errorText}>{errors.collection_date}</Text>
-          )}
-        </View>
+        <DateTimePicker
+          label="Collection Date *"
+          value={formData.collection_date}
+          onChange={(value) => updateField('collection_date', value)}
+          mode="date"
+          placeholder="Select collection date"
+          error={errors.collection_date}
+        />
 
         {/* Quantity */}
         <View style={styles.formGroup}>
@@ -388,7 +311,7 @@ export const CollectionFormScreen: React.FC = () => {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={THEME.colors.white} />
           ) : (
             <Text style={styles.submitButtonText}>
               {isEditMode ? 'Update Collection' : 'Create Collection'}
@@ -403,60 +326,60 @@ export const CollectionFormScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   backButton: {
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   backButtonText: {
-    fontSize: 16,
-    color: '#007bff',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.primary,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
   form: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   formGroup: {
-    marginBottom: 20,
+    marginBottom: THEME.spacing.lg,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
+    marginBottom: THEME.spacing.sm,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.colors.surface,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderColor: THEME.colors.border,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
   },
   inputError: {
-    borderColor: '#f44336',
+    borderColor: THEME.colors.error,
   },
   selectText: {
-    color: '#333',
-    fontSize: 16,
+    color: THEME.colors.textPrimary,
+    fontSize: THEME.typography.fontSize.md,
   },
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
   },
   errorText: {
-    color: '#f44336',
-    fontSize: 14,
+    color: THEME.colors.error,
+    fontSize: THEME.typography.fontSize.base,
     marginTop: 4,
   },
   optionsList: {
@@ -464,75 +387,75 @@ const styles = StyleSheet.create({
     maxHeight: 200,
   },
   optionItem: {
-    backgroundColor: '#fff',
-    padding: 12,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
+    borderColor: THEME.colors.border,
+    borderRadius: THEME.borderRadius.sm,
     marginBottom: 4,
   },
   optionItemSelected: {
-    backgroundColor: '#e3f2fd',
-    borderColor: '#007bff',
+    backgroundColor: THEME.colors.gray100,
+    borderColor: THEME.colors.primary,
   },
   optionText: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
   },
   rateInfo: {
-    backgroundColor: '#e8f5e9',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    backgroundColor: THEME.colors.gray100,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.base,
   },
   rateInfoText: {
-    fontSize: 14,
-    color: '#2e7d32',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.success,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   amountInfo: {
-    backgroundColor: '#e3f2fd',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    backgroundColor: THEME.colors.gray100,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.base,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   amountLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
   },
   amountValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007bff',
+    fontSize: THEME.typography.fontSize.xl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.primary,
   },
   submitButton: {
-    backgroundColor: '#007bff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: THEME.spacing.lg,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
 });

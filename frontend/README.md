@@ -128,7 +128,7 @@ export EXPO_PUBLIC_API_URL=http://your-backend-url:8000/api
 - ✅ Offline support with SQLite storage
 - ✅ Sync service for offline-online data synchronization
 - ✅ Conflict resolution service
-- ✅ Reusable UI components (Pagination, SortButton, Loading, EmptyState, ErrorMessage, Card, Header)
+- ✅ Reusable UI components (Pagination, SortButton, Loading, EmptyState, ErrorMessage, Card, Header, DateTimePicker)
 - ✅ Reports and analytics dashboard
 - ✅ Multi-unit tracking for products and collections
 - ✅ Rate versioning with historical preservation
@@ -195,6 +195,7 @@ npm test
 - [API Client](src/infrastructure/api/apiClient.ts)
 - [RBAC/ABAC Permissions](src/core/utils/permissions.ts)
 - [Reusable Components](src/presentation/components/)
+- [DateTimePicker Component Guide](DATETIMEPICKER_GUIDE.md) - Native date/time picker
 
 ## 📱 Complete Screen List
 

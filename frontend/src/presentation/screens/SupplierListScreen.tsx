@@ -22,7 +22,7 @@ import LocalStorageService from '../../infrastructure/storage/LocalStorageServic
 import { Supplier } from '../../domain/entities/Supplier';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { Pagination, SortButton, ListScreenHeader, SyncStatusIndicator } from '../components';
+import { Pagination, SortButton, ScreenHeader, SyncStatusIndicator } from '../components';
 import THEME from '../../core/constants/theme';
 
 export const SupplierListScreen: React.FC = () => {
@@ -146,7 +146,7 @@ export const SupplierListScreen: React.FC = () => {
         <Text style={styles.supplierName}>{item.name}</Text>
         <View style={[
           styles.statusBadge,
-          { backgroundColor: item.is_active ? '#4CAF50' : '#F44336' }
+          { backgroundColor: item.is_active ? THEME.colors.success : THEME.colors.error }
         ]}>
           <Text style={styles.statusText}>
             {item.is_active ? 'Active' : 'Inactive'}
@@ -177,8 +177,9 @@ export const SupplierListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ListScreenHeader
+      <ScreenHeader
         title="Suppliers"
+        variant="light"
         showAddButton={canCreate(user, 'suppliers')}
         onAddPress={handleAddSupplier}
         addButtonText="+ Add Supplier"
@@ -217,7 +218,7 @@ export const SupplierListScreen: React.FC = () => {
         data={suppliers}
         renderItem={renderSupplierItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[styles.listContainer, { paddingBottom: insets.bottom + 16 }]}
+        contentContainerStyle={[styles.listContainer, { paddingBottom: insets.bottom + THEME.spacing.base }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

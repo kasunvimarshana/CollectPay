@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import THEME from '../../core/constants/theme';
 
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -35,15 +36,15 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   label: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textSecondary,
+    fontWeight: THEME.typography.fontWeight.medium,
   },
   activeLabel: {
-    color: '#007bff',
-    fontWeight: '600',
+    color: THEME.colors.primary,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   icon: {
-    fontSize: 14,
+    fontSize: THEME.typography.fontSize.base,
   },
 });

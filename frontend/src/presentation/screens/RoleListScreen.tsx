@@ -144,7 +144,7 @@ export const RoleListScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading roles...</Text>
       </View>
     );
@@ -156,13 +156,9 @@ export const RoleListScreen: React.FC = () => {
         title="Roles"
         showBackButton={true}
         variant="light"
-        rightComponent={
-          canCreate(currentUser, 'roles') ? (
-            <TouchableOpacity style={styles.addButton} onPress={handleAddRole}>
-              <Text style={styles.addButtonText}>+ Add Role</Text>
-            </TouchableOpacity>
-          ) : undefined
-        }
+        showAddButton={canCreate(currentUser, 'roles')}
+        onAddPress={handleAddRole}
+        addButtonText="+ Add Role"
       />
 
       <View style={styles.searchContainer}>
@@ -192,7 +188,7 @@ export const RoleListScreen: React.FC = () => {
         data={roles}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderRoleItem}
-        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 16 }]}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + THEME.spacing.base }]}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No roles found</Text>
@@ -218,128 +214,94 @@ export const RoleListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    marginBottom: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#007bff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    backgroundColor: THEME.colors.background,
   },
   searchContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   searchInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    backgroundColor: THEME.colors.background,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
   },
   listContent: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   roleCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.base,
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.base,
   },
   roleHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   roleName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   userCountBadge: {
-    backgroundColor: '#007bff',
-    paddingHorizontal: 12,
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: THEME.borderRadius.md,
   },
   userCountText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   roleSystemName: {
-    fontSize: 13,
-    color: '#888',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textTertiary,
     marginBottom: 6,
   },
   roleDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
+    marginBottom: THEME.spacing.sm,
   },
   permissionCount: {
-    fontSize: 13,
-    color: '#007bff',
-    fontWeight: '600',
-  },
-  addButton: {
-    backgroundColor: '#007bff',
-    padding: 16,
-    margin: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.primary,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   emptyContainer: {
-    padding: 20,
+    padding: THEME.spacing.lg,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   sortContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    backgroundColor: THEME.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
     justifyContent: 'flex-start',
   },
 });

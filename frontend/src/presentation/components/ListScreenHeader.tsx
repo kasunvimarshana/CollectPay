@@ -1,6 +1,9 @@
 /**
  * ListScreenHeader Component
  * Specialized header for list screens with add button and sync indicator
+ * 
+ * @deprecated Use ScreenHeader instead. This component is maintained for backward compatibility only.
+ * ScreenHeader now supports all ListScreenHeader functionality through its props.
  */
 
 import React from 'react';
@@ -16,6 +19,9 @@ interface ListScreenHeaderProps {
   rightComponent?: React.ReactNode;
 }
 
+/**
+ * @deprecated Use ScreenHeader with variant="light" instead
+ */
 export const ListScreenHeader: React.FC<ListScreenHeaderProps> = ({ 
   title,
   onAddPress,

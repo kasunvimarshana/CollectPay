@@ -103,7 +103,7 @@ export const ProductDetailScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading product...</Text>
       </View>
     );
@@ -132,7 +132,7 @@ export const ProductDetailScreen: React.FC = () => {
         <View style={styles.statusRow}>
           <View style={[
             styles.statusBadge,
-            { backgroundColor: product.is_active ? '#4CAF50' : '#F44336' }
+            { backgroundColor: product.is_active ? THEME.colors.success : THEME.colors.error }
           ]}>
             <Text style={styles.statusText}>
               {product.is_active ? 'Active' : 'Inactive'}
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteButtonText: {
-    color: '#fff',
+    color: THEME.colors.white,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -311,26 +311,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: THEME.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: THEME.spacing.lg,
   },
   errorText: {
     fontSize: 18,
-    color: '#666',
+    color: THEME.colors.textSecondary,
     marginBottom: 16,
   },
   backText: {
     fontSize: 16,
-    color: '#007bff',
+    color: THEME.colors.primary,
   },
 });

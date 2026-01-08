@@ -26,7 +26,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import apiClient from '../../infrastructure/api/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 import { TOKEN_STORAGE_KEY, API_BASE_URL } from '../../core/constants/api';
-import { ScreenHeader } from '../components';
+import { ScreenHeader, DateTimePicker } from '../components';
 import THEME from '../../core/constants/theme';
 
 interface ReportSummary {
@@ -478,7 +478,7 @@ export const ReportsScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
       </View>
     );
   }
@@ -679,22 +679,22 @@ export const ReportsScreen: React.FC = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Custom Date Range</Text>
             
-            <Text style={styles.inputLabel}>Start Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.input}
+            <DateTimePicker
+              label="Start Date"
               value={dateFilter.startDate}
-              onChangeText={(text) => setDateFilter({...dateFilter, startDate: text})}
-              placeholder="2025-01-01"
-              placeholderTextColor="#999"
+              onChange={(date) => setDateFilter({...dateFilter, startDate: date})}
+              mode="date"
+              placeholder="Select start date"
+              containerStyle={styles.datePickerContainer}
             />
             
-            <Text style={styles.inputLabel}>End Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.input}
+            <DateTimePicker
+              label="End Date"
               value={dateFilter.endDate}
-              onChangeText={(text) => setDateFilter({...dateFilter, endDate: text})}
-              placeholder="2025-12-31"
-              placeholderTextColor="#999"
+              onChange={(date) => setDateFilter({...dateFilter, endDate: date})}
+              mode="date"
+              placeholder="Select end date"
+              containerStyle={styles.datePickerContainer}
             />
             
             <View style={styles.modalButtons}>
@@ -727,224 +727,212 @@ export const ReportsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   header: {
-    backgroundColor: '#007bff',
-    padding: 20,
+    backgroundColor: THEME.colors.primary,
+    padding: THEME.spacing.lg,
   },
   backButton: {
-    marginBottom: 10,
+    marginBottom: THEME.spacing.sm,
   },
   backButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.white,
   },
   content: {
     flex: 1,
   },
   section: {
-    padding: 15,
+    padding: THEME.spacing.base,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
+    marginBottom: THEME.spacing.base,
   },
   cardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: THEME.spacing.base,
   },
   card: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.md,
     alignItems: 'center',
-    marginHorizontal: 5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginHorizontal: THEME.spacing.xs,
+    ...THEME.shadows.base,
   },
   cardBlue: {
     borderLeftWidth: 4,
-    borderLeftColor: '#007bff',
+    borderLeftColor: THEME.colors.primary,
   },
   cardGreen: {
     borderLeftWidth: 4,
-    borderLeftColor: '#28a745',
+    borderLeftColor: THEME.colors.success,
   },
   cardOrange: {
     borderLeftWidth: 4,
-    borderLeftColor: '#fd7e14',
+    borderLeftColor: THEME.colors.warning,
   },
   cardPurple: {
     borderLeftWidth: 4,
-    borderLeftColor: '#6f42c1',
+    borderLeftColor: THEME.colors.info,
   },
   cardInfo: {
     borderLeftWidth: 4,
-    borderLeftColor: '#17a2b8',
+    borderLeftColor: THEME.colors.info,
   },
   cardValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
+    fontSize: THEME.typography.fontSize.huge,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
+    marginBottom: THEME.spacing.xs,
   },
   cardLabel: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textSecondary,
     textAlign: 'center',
   },
   financialCard: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.md,
+    ...THEME.shadows.base,
   },
   financialRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: THEME.spacing.sm,
   },
   financialLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
   },
   financialLabelBold: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
   financialValue: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textPrimary,
   },
   financialValueBold: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 10,
+    backgroundColor: THEME.colors.border,
+    marginVertical: THEME.spacing.sm,
   },
   textGreen: {
-    color: '#28a745',
+    color: THEME.colors.success,
   },
   textRed: {
-    color: '#dc3545',
+    color: THEME.colors.error,
   },
   balanceCard: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.sm,
+    ...THEME.shadows.sm,
   },
   balanceHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: THEME.spacing.sm,
   },
   balanceName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   balanceCode: {
-    fontSize: 12,
-    color: '#666',
-    backgroundColor: '#e9ecef',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textSecondary,
+    backgroundColor: THEME.colors.gray100,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.sm,
   },
   balanceDetails: {
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   balanceDetailText: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textSecondary,
     marginBottom: 2,
   },
   balanceAmount: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   emptyState: {
-    backgroundColor: '#fff',
-    padding: 40,
-    borderRadius: 12,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.xxxl,
+    borderRadius: THEME.borderRadius.md,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textTertiary,
   },
   footer: {
-    padding: 20,
+    padding: THEME.spacing.lg,
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textTertiary,
     fontStyle: 'italic',
   },
   filterBar: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    paddingHorizontal: 5,
+    backgroundColor: THEME.colors.surface,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginHorizontal: 5,
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    marginHorizontal: THEME.spacing.xs,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: THEME.colors.gray100,
   },
   filterButtonActive: {
-    backgroundColor: '#007bff',
+    backgroundColor: THEME.colors.primary,
   },
   filterButtonCustom: {
-    backgroundColor: '#6c757d',
+    backgroundColor: THEME.colors.gray500,
   },
   filterButtonText: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
   },
   filterButtonTextActive: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: THEME.colors.white,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   modalOverlay: {
     flex: 1,
@@ -953,103 +941,106 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.md,
+    padding: THEME.spacing.lg,
     width: '90%',
     maxWidth: 400,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
+    fontSize: THEME.typography.fontSize.xl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
+    marginBottom: THEME.spacing.lg,
     textAlign: 'center',
   },
+  datePickerContainer: {
+    marginBottom: THEME.spacing.md,
+  },
   inputLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    marginTop: 10,
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
+    marginBottom: THEME.spacing.sm,
+    marginTop: THEME.spacing.sm,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#333',
-    backgroundColor: '#fff',
+    borderColor: THEME.colors.border,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textPrimary,
+    backgroundColor: THEME.colors.surface,
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: THEME.spacing.lg,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginHorizontal: 5,
+    paddingVertical: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.base,
+    marginHorizontal: THEME.spacing.xs,
     alignItems: 'center',
   },
   modalButtonPrimary: {
-    backgroundColor: '#007bff',
+    backgroundColor: THEME.colors.primary,
   },
   modalButtonSecondary: {
-    backgroundColor: '#6c757d',
+    backgroundColor: THEME.colors.gray500,
   },
   modalButtonCancel: {
-    backgroundColor: '#dc3545',
+    backgroundColor: THEME.colors.error,
   },
   modalButtonTextPrimary: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   modalButtonTextSecondary: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   modalButtonTextCancel: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
   actionBar: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.base,
+    backgroundColor: THEME.colors.gray100,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionButtonPrimary: {
-    backgroundColor: '#007bff',
+    backgroundColor: THEME.colors.primary,
   },
   actionButtonSuccess: {
-    backgroundColor: '#28a745',
+    backgroundColor: THEME.colors.success,
   },
   actionButtonText: {
-    fontSize: 13,
-    color: '#333',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textPrimary,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   actionButtonTextWhite: {
-    fontSize: 13,
-    color: '#fff',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.white,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
 });

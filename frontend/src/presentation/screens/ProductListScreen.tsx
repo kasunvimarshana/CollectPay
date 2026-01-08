@@ -22,7 +22,7 @@ import LocalStorageService from '../../infrastructure/storage/LocalStorageServic
 import { Product } from '../../domain/entities/Product';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { Pagination, SortButton, ListScreenHeader } from '../components';
+import { Pagination, SortButton, ScreenHeader } from '../components';
 import THEME from '../../core/constants/theme';
 
 export const ProductListScreen: React.FC = () => {
@@ -138,7 +138,7 @@ export const ProductListScreen: React.FC = () => {
         <Text style={styles.productName}>{item.name}</Text>
         <View style={[
           styles.statusBadge,
-          { backgroundColor: item.is_active ? '#4CAF50' : '#F44336' }
+          { backgroundColor: item.is_active ? THEME.colors.success : THEME.colors.error }
         ]}>
           <Text style={styles.statusText}>
             {item.is_active ? 'Active' : 'Inactive'}
@@ -172,7 +172,7 @@ export const ProductListScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading products...</Text>
       </View>
     );
@@ -180,8 +180,9 @@ export const ProductListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ListScreenHeader
+      <ScreenHeader
         title="Products"
+        variant="light"
         showAddButton={canCreate(user, 'products')}
         onAddPress={handleAddProduct}
         addButtonText="+ Add Product"

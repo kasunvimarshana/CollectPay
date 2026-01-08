@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import THEME from '../../core/constants/theme';
 import {
   View,
   Text,
@@ -98,7 +99,7 @@ export const RateHistoryScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading rate history...</Text>
       </View>
     );
@@ -106,7 +107,7 @@ export const RateHistoryScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + THEME.spacing.base }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
@@ -123,7 +124,7 @@ export const RateHistoryScreen: React.FC = () => {
           data={rates}
           keyExtractor={(item, index) => item.id?.toString() || `rate-${index}`}
           renderItem={renderRateItem}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 16 }]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + THEME.spacing.base }]}
         />
       )}
     </View>
@@ -133,69 +134,65 @@ export const RateHistoryScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   backButton: {
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   backButtonText: {
-    fontSize: 16,
-    color: '#007bff',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.primary,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
     marginTop: 4,
   },
   listContent: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   rateCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.base,
+    padding: THEME.spacing.base,
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.base,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   rateAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007bff',
+    fontSize: THEME.typography.fontSize.xl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.primary,
   },
   activeBadge: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
+    backgroundColor: THEME.colors.success,
+    paddingHorizontal: THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: THEME.borderRadius.md,
   },
   activeBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   cardBody: {
     marginTop: 4,
@@ -203,16 +200,16 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   detailValue: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
     flex: 1,
     textAlign: 'right',
   },
@@ -220,21 +217,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: THEME.spacing.lg,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
 });

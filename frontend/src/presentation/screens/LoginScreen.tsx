@@ -52,7 +52,7 @@ export const LoginScreen: React.FC = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.content, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: insets.bottom + THEME.spacing.lg }]}>
         <Text style={styles.title}>Ledger</Text>
         <Text style={styles.subtitle}>Data Collection & Payment Management</Text>
 
@@ -81,7 +81,7 @@ export const LoginScreen: React.FC = () => {
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={THEME.colors.white} />
             ) : (
               <Text style={styles.buttonText}>Login</Text>
             )}
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   testCredentials: {
     marginTop: THEME.spacing.xl,
     padding: THEME.spacing.base,
-    backgroundColor: '#e3f2fd',
+    backgroundColor: THEME.colors.gray100,
     borderRadius: THEME.borderRadius.base,
   },
   testCredentialsTitle: {

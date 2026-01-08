@@ -8,6 +8,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useNetworkStatus } from '../../application/hooks/useNetworkStatus';
 import { COLORS } from '../../core/constants/colors';
+import THEME from '../../core/constants/theme';
 
 interface SyncStatusIndicatorProps {
   showDetails?: boolean;
@@ -99,34 +100,34 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statusText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.medium,
   },
   syncButton: {
-    padding: 4,
+    padding: THEME.spacing.xs,
   },
   offlineBadge: {
     backgroundColor: COLORS.warning,
-    borderRadius: 12,
+    borderRadius: THEME.borderRadius.md,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginTop: 4,
   },
   offlineText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   pendingBadge: {
     backgroundColor: COLORS.info,
-    borderRadius: 12,
+    borderRadius: THEME.borderRadius.md,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginTop: 4,
   },
   pendingText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
 });

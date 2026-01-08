@@ -127,7 +127,7 @@ export const UserListScreen: React.FC = () => {
         <Text style={styles.userName}>{item.name}</Text>
         <View style={[
           styles.statusBadge,
-          { backgroundColor: item.is_active ? '#4CAF50' : '#F44336' }
+          { backgroundColor: item.is_active ? THEME.colors.success : THEME.colors.error }
         ]}>
           <Text style={styles.statusText}>
             {item.is_active ? 'Active' : 'Inactive'}
@@ -144,7 +144,7 @@ export const UserListScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading users...</Text>
       </View>
     );
@@ -156,13 +156,9 @@ export const UserListScreen: React.FC = () => {
         title="Users"
         showBackButton={true}
         variant="light"
-        rightComponent={
-          canCreate(currentUser, 'users') ? (
-            <TouchableOpacity style={styles.addButton} onPress={handleAddUser}>
-              <Text style={styles.addButtonText}>+ Add User</Text>
-            </TouchableOpacity>
-          ) : undefined
-        }
+        showAddButton={canCreate(currentUser, 'users')}
+        onAddPress={handleAddUser}
+        addButtonText="+ Add User"
       />
 
       <View style={styles.searchContainer}>
@@ -192,7 +188,7 @@ export const UserListScreen: React.FC = () => {
         data={users}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderUserItem}
-        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 16 }]}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + THEME.spacing.base }]}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No users found</Text>
@@ -220,17 +216,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.background,
   },
-  addButton: {
-    backgroundColor: THEME.colors.primary,
-    paddingHorizontal: THEME.spacing.base,
-    paddingVertical: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.base,
-  },
-  addButtonText: {
-    color: THEME.colors.white,
-    fontSize: THEME.typography.fontSize.base,
-    fontWeight: THEME.typography.fontWeight.semibold,
-  },
   searchContainer: {
     backgroundColor: THEME.colors.surface,
     padding: THEME.spacing.base,
@@ -251,81 +236,65 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.base,
     padding: THEME.spacing.base,
     marginBottom: THEME.spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...THEME.shadows.base,
   },
   userHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   userName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   statusBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: THEME.borderRadius.md,
   },
   statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   userEmail: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
     marginBottom: 4,
   },
   userRole: {
-    fontSize: 14,
-    color: '#007bff',
-  },
-  addButton: {
-    backgroundColor: '#007bff',
-    padding: 16,
-    margin: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.primary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   emptyContainer: {
-    padding: 20,
+    padding: THEME.spacing.lg,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   sortContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    backgroundColor: THEME.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
     justifyContent: 'flex-start',
     gap: 8,
   },

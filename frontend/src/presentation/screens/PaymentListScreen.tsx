@@ -21,7 +21,7 @@ import apiClient from '../../infrastructure/api/apiClient';
 import { Payment } from '../../domain/entities/Payment';
 import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
-import { Pagination, SortButton, ListScreenHeader, SyncStatusIndicator } from '../components';
+import { Pagination, SortButton, ScreenHeader, SyncStatusIndicator } from '../components';
 import THEME from '../../core/constants/theme';
 
 export const PaymentListScreen: React.FC = () => {
@@ -182,7 +182,7 @@ export const PaymentListScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color={THEME.colors.primary} />
         <Text style={styles.loadingText}>Loading payments...</Text>
       </View>
     );
@@ -190,8 +190,9 @@ export const PaymentListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ListScreenHeader
+      <ScreenHeader
         title="Payments"
+        variant="light"
         showAddButton={canCreate(user, 'payments')}
         onAddPress={handleAddPayment}
         addButtonText="+ Add Payment"
@@ -225,7 +226,7 @@ export const PaymentListScreen: React.FC = () => {
         data={payments}
         renderItem={renderPaymentItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 16 }]}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + THEME.spacing.base }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -254,139 +255,135 @@ export const PaymentListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   header: {
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: THEME.spacing.base,
+    backgroundColor: THEME.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.xxl,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
   addButton: {
-    backgroundColor: '#007bff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.base,
   },
   addButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   searchContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: THEME.spacing.base,
+    backgroundColor: THEME.colors.surface,
   },
   searchInput: {
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 16,
+    backgroundColor: THEME.colors.background,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.base,
+    fontSize: THEME.typography.fontSize.md,
   },
   listContent: {
-    padding: 16,
+    padding: THEME.spacing.base,
   },
   paymentCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.base,
   },
   paymentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: THEME.spacing.md,
   },
   supplierName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: THEME.typography.fontSize.lg,
+    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   typeBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: THEME.spacing.md,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: THEME.borderRadius.md,
   },
   typeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.xs,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   paymentDetails: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: THEME.spacing.sm,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
     width: 80,
   },
   detailValue: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
     flex: 1,
   },
   amountValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4CAF50',
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.success,
     flex: 1,
   },
   notesContainer: {
     marginTop: 8,
-    padding: 8,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 4,
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.gray50,
+    borderRadius: THEME.borderRadius.sm,
   },
   notesText: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.textSecondary,
     fontStyle: 'italic',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: THEME.colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: THEME.spacing.md,
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textSecondary,
   },
   emptyContainer: {
-    padding: 32,
+    padding: THEME.spacing.xxl,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
+    fontSize: THEME.typography.fontSize.md,
+    color: THEME.colors.textTertiary,
   },
   sortContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    backgroundColor: THEME.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: THEME.colors.border,
     justifyContent: 'flex-start',
     gap: 8,
   },

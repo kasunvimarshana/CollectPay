@@ -5,6 +5,7 @@
 
 import React, { ReactNode } from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
+import THEME from '../../core/constants/theme';
 
 interface CardProps {
   children: ReactNode;
@@ -21,14 +22,10 @@ export const Card: React.FC<CardProps> = ({ children, style }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginVertical: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.md,
+    padding: THEME.spacing.base,
+    marginVertical: THEME.spacing.sm,
+    ...THEME.shadows.base,
   },
 });
