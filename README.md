@@ -135,8 +135,10 @@ This system provides centralized management of users, suppliers, products, colle
 ### Prerequisites
 - PHP 8.3+ (Verified: 8.3.6) ✅
 - Composer 2.x (Verified: 2.9.2) ✅
-- Node.js 20.x+ (Verified: 20.19.6) ✅
-- npm 10.x+ (Verified: 10.8.2) ✅
+- Node.js 20.x (Verified: 20.19.6) ✅ **Important: Use Node v20.x, NOT v24.x**
+- npm 10.x (Verified: 10.8.2) ✅ **Important: Use npm v10.x, NOT v11.6.x**
+
+> ⚠️ **Critical**: Do NOT use Node.js v24.x with npm v11.6.x - it has a known bug causing "Class extends value undefined" error. Use Node.js v20.x with npm v10.x instead.
 
 ### Backend Setup (Laravel 11)
 
@@ -169,6 +171,13 @@ php artisan serve
 
 ```bash
 cd frontend
+
+# IMPORTANT: Verify you're using the correct Node/npm versions
+node --version  # Should show v20.x.x (NOT v24.x.x)
+npm --version   # Should show 10.x.x (NOT 11.6.x)
+
+# If using wrong version, switch to Node v20 with nvm:
+nvm use 20
 
 # Install dependencies (908 packages, 0 vulnerabilities)
 npm install

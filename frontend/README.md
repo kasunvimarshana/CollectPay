@@ -2,6 +2,8 @@
 
 React Native (Expo) mobile application following Clean Architecture principles.
 
+> **📌 Latest Update**: Upgraded to **Expo SDK 54** (latest stable version) with React 19.1.0 and React Native 0.81.5
+
 ## 📁 Project Structure
 
 ```
@@ -55,12 +57,35 @@ This project follows Clean Architecture principles with clear separation of conc
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 20.x+
-- npm 10.x+
-- Expo CLI
+- **Node.js 20.x** (v20.17.0 or later recommended)
+- **npm 10.x** (v10.0.0 or later)
+- **Expo SDK 54** (latest stable)
 - iOS Simulator (macOS) or Android Emulator
 
+> ⚠️ **Important**: This project requires Node.js v20.x and npm v10.x. Do NOT use Node.js v24.x with npm v11.6.x as it has a known bug that causes "Class extends value undefined is not a constructor or null" error.
+
 ### Installation
+
+#### Step 1: Verify Node and npm Versions
+
+```bash
+node --version  # Should show v20.x.x
+npm --version   # Should show 10.x.x
+```
+
+If you're using the wrong version, use nvm (Node Version Manager) to switch:
+
+```bash
+# Install nvm if you haven't already (see https://github.com/nvm-sh/nvm)
+
+# Use Node v20
+nvm use 20
+
+# Or install Node v20 if not available
+nvm install 20
+```
+
+#### Step 2: Install Dependencies
 
 ```bash
 # Install dependencies
@@ -139,19 +164,20 @@ export EXPO_PUBLIC_API_URL=http://your-backend-url:8000/api
 ## 📚 Dependencies
 
 ### Core
-- **React Native**: Mobile framework
-- **Expo**: Development platform
-- **TypeScript**: Type safety
+- **React 19.1.0**: UI library
+- **React Native 0.81.5**: Mobile framework
+- **Expo SDK 54**: Development platform and tooling
+- **TypeScript 5.9**: Type safety
 
 ### State Management
-- **React Context API**: Planned for state management
+- **React Context API**: State management
 
 ### Navigation
-- **React Navigation**: App navigation
+- **React Navigation 7**: App navigation
 
 ### Storage
-- **AsyncStorage**: Local key-value storage
-- **SQLite**: Planned for offline data
+- **AsyncStorage 2.2**: Local key-value storage
+- **SQLite 16**: Offline data persistence
 
 ## 🧪 Testing
 
@@ -221,3 +247,59 @@ Follow Clean Architecture principles:
 ## 📄 License
 
 [Specify your license here]
+
+## 🐛 Troubleshooting
+
+### Expo SDK 54 Migration Notes
+
+**Important Changes:**
+- **expo-file-system**: The legacy API (documentDirectory, createDownloadResumable) must be imported from `'expo-file-system/legacy'`
+- **React 19**: Upgraded from React 18 - minor behavioral changes may apply
+- **TypeScript 5.9**: Required for SDK 54 compatibility (was 5.3)
+- **moduleResolution**: Changed to "bundler" in tsconfig.json
+
+**If you encounter issues after upgrading:**
+1. Clean install:
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+2. Clear Metro bundler cache:
+   ```bash
+   npx expo start --clear
+   ```
+
+### npm Error: "Class extends value undefined is not a constructor or null"
+
+**Problem**: This error occurs when using npm v11.6.x (bundled with Node.js v24.x) due to a bug in the minizlib package.
+
+**Solution**:
+1. Switch to Node.js v20.x using nvm:
+   ```bash
+   nvm use 20
+   ```
+2. Verify your versions:
+   ```bash
+   node --version  # Should show v20.x.x
+   npm --version   # Should show 10.x.x
+   ```
+3. Clear npm cache and reinstall:
+   ```bash
+   npm cache clean --force
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+### Other Common Issues
+
+**Error: "Cannot find module 'expo'"**
+- Run `npm install` to install all dependencies
+
+**Metro bundler issues**
+- Clear Metro cache: `npx expo start --clear`
+- Clear node_modules: `rm -rf node_modules && npm install`
+
+**Network connectivity issues**
+- Check your backend API URL in `src/core/constants/api.ts`
+- Ensure your backend server is running
+- Check your firewall and network settings

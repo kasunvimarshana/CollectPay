@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system/build/legacy/FileSystem';
+import * as FileSystem from 'expo-file-system/legacy';
 import apiClient from '../../infrastructure/api/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 import { TOKEN_STORAGE_KEY, API_BASE_URL } from '../../core/constants/api';
