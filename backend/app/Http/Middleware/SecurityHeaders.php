@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Security Headers Middleware
- * 
+ *
  * Adds security headers to all HTTP responses
  */
 class SecurityHeaders

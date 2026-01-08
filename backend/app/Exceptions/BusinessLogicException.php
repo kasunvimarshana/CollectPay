@@ -6,7 +6,7 @@ use Exception;
 
 /**
  * Business Logic Exception
- * 
+ *
  * Used for business rule violations and domain-specific errors
  */
 class BusinessLogicException extends Exception
@@ -27,12 +27,6 @@ class BusinessLogicException extends Exception
 
     /**
      * Create a new business logic exception
-     *
-     * @param  string  $message
-     * @param  string|null  $errorCode
-     * @param  array  $errorData
-     * @param  int  $code
-     * @param  \Exception|null  $previous
      */
     public function __construct(
         string $message = 'A business logic error occurred',
@@ -42,15 +36,13 @@ class BusinessLogicException extends Exception
         ?\Exception $previous = null
     ) {
         parent::__construct($message, $code, $previous);
-        
+
         $this->errorCode = $errorCode;
         $this->errorData = $errorData;
     }
 
     /**
      * Get the error code
-     *
-     * @return string|null
      */
     public function getErrorCode(): ?string
     {
@@ -59,8 +51,6 @@ class BusinessLogicException extends Exception
 
     /**
      * Get the error data
-     *
-     * @return array
      */
     public function getErrorData(): array
     {
@@ -69,8 +59,6 @@ class BusinessLogicException extends Exception
 
     /**
      * Convert exception to array
-     *
-     * @return array
      */
     public function toArray(): array
     {
@@ -83,7 +71,7 @@ class BusinessLogicException extends Exception
             $result['error_code'] = $this->errorCode;
         }
 
-        if (!empty($this->errorData)) {
+        if (! empty($this->errorData)) {
             $result['data'] = $this->errorData;
         }
 

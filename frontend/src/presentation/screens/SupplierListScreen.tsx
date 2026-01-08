@@ -34,6 +34,7 @@ export const SupplierListScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTerm, setSearchTerm] = useState(''); // Debounced search term
+  const [showingCachedData, setShowingCachedData] = useState(false); // Track if viewing cached data
   
   // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,6 +86,9 @@ export const SupplierListScreen: React.FC = () => {
         setTotalItems(paginatedData.total || 0);
         setCurrentPage(paginatedData.current_page || 1);
         setPerPage(paginatedData.per_page || 10);
+        
+        // Track if this is cached data
+        setShowingCachedData(!!response.fromCache);
         
         // Cache suppliers for offline use
         if (loadedSuppliers.length > 0 && !response.fromCache) {
@@ -200,6 +204,15 @@ export const SupplierListScreen: React.FC = () => {
         />
       </View>
 
+      {/* Cached Data Banner */}
+      {showingCachedData && (
+        <View style={styles.cachedDataBanner}>
+          <Text style={styles.cachedDataText}>
+            📱 Viewing cached data (offline). Pull to refresh when online.
+          </Text>
+        </View>
+      )}
+
       {/* Sort Controls */}
       <View style={styles.sortContainer}>
         <SortButton 
@@ -269,6 +282,21 @@ const styles = StyleSheet.create({
   searchContainer: {
     padding: THEME.spacing.base,
     backgroundColor: THEME.colors.surface,
+  },
+  cachedDataBanner: {
+    backgroundColor: '#FFF3CD',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFA500',
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.base,
+    marginHorizontal: THEME.spacing.base,
+    marginBottom: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.sm,
+  },
+  cachedDataText: {
+    color: '#856404',
+    fontSize: THEME.typography.fontSize.sm,
+    fontWeight: THEME.typography.fontWeight.medium,
   },
   searchInput: {
     backgroundColor: THEME.colors.gray100,

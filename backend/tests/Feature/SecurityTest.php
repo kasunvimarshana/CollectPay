@@ -148,6 +148,87 @@ class SecurityTest extends TestCase
         // Note: Rate limiting configuration is not active by default in tests
     }
 
+    // ===== Logout Security Tests =====
+
+    public function test_logout_invalidates_token_immediately()
+    {
+        $user = User::factory()->create();
+        $token = auth('api')->login($user);
+
+        // Logout
+        $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->postJson('/api/logout');
+
+        // Token should be invalid immediately
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->getJson('/api/me');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_logout_creates_audit_log()
+    {
+        $user = User::factory()->create();
+        $token = auth('api')->login($user);
+
+        // Logout
+        $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->postJson('/api/logout');
+
+        // Verify audit log was created
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $user->id,
+            'event' => 'logout',
+            'auditable_type' => 'App\Models\User',
+            'auditable_id' => $user->id,
+        ]);
+    }
+
+    public function test_logout_records_ip_and_user_agent()
+    {
+        $user = User::factory()->create();
+        $token = auth('api')->login($user);
+
+        // Logout with specific headers
+        $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+            'User-Agent' => 'TestAgent/1.0',
+        ])->postJson('/api/logout');
+
+        // Verify IP and user agent were recorded
+        $auditLog = \App\Models\AuditLog::where('user_id', $user->id)
+            ->where('event', 'logout')
+            ->first();
+
+        $this->assertNotNull($auditLog);
+        $this->assertNotNull($auditLog->ip_address);
+        $this->assertNotNull($auditLog->user_agent);
+    }
+
+    public function test_concurrent_logout_requests_handled_gracefully()
+    {
+        $user = User::factory()->create();
+        $token = auth('api')->login($user);
+
+        // First logout should succeed
+        $response1 = $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->postJson('/api/logout');
+
+        $response1->assertStatus(200);
+
+        // Second logout with same token should handle gracefully
+        $response2 = $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->postJson('/api/logout');
+
+        // Should either succeed with "already logged out" or fail with 401
+        $this->assertContains($response2->status(), [200, 401]);
+    }
+
     // ===== Authorization Tests =====
 
     public function test_user_cannot_update_another_users_data()

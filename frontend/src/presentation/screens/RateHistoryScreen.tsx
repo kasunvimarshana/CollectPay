@@ -36,9 +36,7 @@ export const RateHistoryScreen: React.FC = () => {
     try {
       const response = await apiClient.get<any>(`/products/${productId}/rate-history`);
       if (response.success && response.data) {
-        const rateData = Array.isArray(response.data) 
-          ? response.data 
-          : (response.data.data && Array.isArray(response.data.data) ? response.data.data : []);
+        const rateData = Array.isArray(response.data?.rates) ? response.data.rates as Rate[] : [];
         setRates(rateData);
       }
     } catch (error) {

@@ -76,16 +76,19 @@ class ConflictResolutionService {
   /**
    * Validate data before sync attempt
    */
-  validateSyncData(data: any, entity: string): { valid: boolean; errors: string[] } {
+  validateSyncData(data: any, entity: string, action?: 'create' | 'update' | 'delete'): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // Common validations
-    if (!data.id && data.id !== 0) {
-      errors.push('Missing entity ID');
-    }
-
-    if (!data.version && data.version !== 0) {
-      errors.push('Missing version number');
+    // Common validations - only check ID and version for updates
+    if (action === 'update' || action === 'delete') {
+      if (!data.id && data.id !== 0) {
+        errors.push('Missing entity ID');
+      }
+      
+      // Version is required for updates (for optimistic locking)
+      if (action === 'update' && !data.version && data.version !== 0) {
+        errors.push('Missing version number for update');
+      }
     }
 
     // Entity-specific validations

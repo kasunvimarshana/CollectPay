@@ -3,13 +3,15 @@
  * Main dashboard for authenticated users
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,9 +24,42 @@ export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
+    // Show confirmation dialog
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoggingOut(true);
+              await logout();
+              // Navigation will be handled automatically by auth state change
+            } catch (error: any) {
+              // Show error alert if logout fails critically
+              Alert.alert(
+                'Logout Error',
+                'An error occurred during logout. Please try again.',
+                [{ text: 'OK' }]
+              );
+              console.error('Logout error:', error);
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const navigateTo = (screen: string) => {
@@ -151,13 +186,18 @@ export const HomeScreen: React.FC = () => {
         </View>
 
         <TouchableOpacity 
-          style={styles.logoutButton} 
+          style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]} 
           onPress={handleLogout}
+          disabled={isLoggingOut}
           accessibilityRole="button"
           accessibilityLabel="Logout"
           accessibilityHint="Log out of your account"
         >
-          <Text style={styles.logoutButtonText}>Logout</Text>
+          {isLoggingOut ? (
+            <ActivityIndicator color={THEME.colors.white} />
+          ) : (
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -228,6 +268,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: THEME.spacing.lg,
     marginBottom: THEME.spacing.xxxl,
+  },
+  logoutButtonDisabled: {
+    opacity: 0.6,
   },
   logoutButtonText: {
     color: THEME.colors.white,

@@ -114,7 +114,54 @@ class AuthenticationTest extends TestCase
         ])->postJson('/api/logout');
 
         $response->assertStatus(200)
-            ->assertJsonPath('success', true);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Logout successful');
+
+        // Verify audit log was created
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $user->id,
+            'event' => 'logout',
+            'auditable_type' => 'App\Models\User',
+            'auditable_id' => $user->id,
+        ]);
+    }
+
+    public function test_token_is_blacklisted_after_logout(): void
+    {
+        $user = User::factory()->create();
+        $token = auth('api')->login($user);
+
+        // Logout to blacklist the token
+        $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+        ])->postJson('/api/logout');
+
+        // Try to use the same token after logout
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+        ])->getJson('/api/me');
+
+        // Should be unauthorized because token is blacklisted
+        $response->assertStatus(401);
+    }
+
+    public function test_logout_with_already_blacklisted_token(): void
+    {
+        $user = User::factory()->create();
+        $token = auth('api')->login($user);
+
+        // First logout
+        $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+        ])->postJson('/api/logout');
+
+        // Try to logout again with the same token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+        ])->postJson('/api/logout');
+
+        // Should handle gracefully - either 200 (already logged out) or 401 (invalid token)
+        $this->assertContains($response->status(), [200, 401]);
     }
 
     public function test_user_can_refresh_token(): void

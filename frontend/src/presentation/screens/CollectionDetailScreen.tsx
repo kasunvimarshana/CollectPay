@@ -140,7 +140,7 @@ export const CollectionDetailScreen: React.FC = () => {
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total Amount:</Text>
           <Text style={styles.totalValue}>
-            ${typeof collection.total_amount === 'number' ? collection.total_amount.toFixed(2) : '0.00'}
+            {typeof collection.total_amount === 'number' || typeof collection.total_amount === 'string' ? (Number(collection.total_amount) || 0).toFixed(2) : '0.00'}
           </Text>
         </View>
 

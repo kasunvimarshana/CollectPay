@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Validates Requests Trait
- * 
+ *
  * Provides consistent validation across all controllers
  */
 trait ValidatesRequests
@@ -16,11 +16,6 @@ trait ValidatesRequests
     /**
      * Validate request data
      *
-     * @param  Request  $request
-     * @param  array  $rules
-     * @param  array  $messages
-     * @param  array  $customAttributes
-     * @return array
      * @throws ValidationException
      */
     protected function validateRequest(
@@ -45,10 +40,6 @@ trait ValidatesRequests
 
     /**
      * Validate pagination parameters
-     *
-     * @param  Request  $request
-     * @param  int  $maxPerPage
-     * @return array
      */
     protected function validatePagination(Request $request, int $maxPerPage = 100): array
     {
@@ -60,12 +51,6 @@ trait ValidatesRequests
 
     /**
      * Validate sorting parameters
-     *
-     * @param  Request  $request
-     * @param  array  $allowedFields
-     * @param  string  $defaultField
-     * @param  string  $defaultOrder
-     * @return array
      */
     protected function validateSorting(
         Request $request,
@@ -77,12 +62,12 @@ trait ValidatesRequests
         $sortOrder = $request->get('sort_order', $defaultOrder);
 
         // Validate sort field
-        if (!in_array($sortBy, $allowedFields)) {
+        if (! in_array($sortBy, $allowedFields)) {
             $sortBy = $defaultField;
         }
 
         // Validate sort order
-        if (!in_array(strtolower($sortOrder), ['asc', 'desc'])) {
+        if (! in_array(strtolower($sortOrder), ['asc', 'desc'])) {
             $sortOrder = $defaultOrder;
         }
 
@@ -94,9 +79,6 @@ trait ValidatesRequests
 
     /**
      * Validate date range parameters
-     *
-     * @param  Request  $request
-     * @return array
      */
     protected function validateDateRange(Request $request): array
     {
@@ -104,11 +86,11 @@ trait ValidatesRequests
         $endDate = $request->get('end_date');
 
         // Validate dates if provided
-        if ($startDate && !strtotime($startDate)) {
+        if ($startDate && ! strtotime($startDate)) {
             $startDate = null;
         }
 
-        if ($endDate && !strtotime($endDate)) {
+        if ($endDate && ! strtotime($endDate)) {
             $endDate = null;
         }
 
@@ -127,9 +109,6 @@ trait ValidatesRequests
 
     /**
      * Sanitize input string
-     *
-     * @param  string|null  $input
-     * @return string|null
      */
     protected function sanitizeInput(?string $input): ?string
     {
@@ -140,22 +119,18 @@ trait ValidatesRequests
         // Remove potentially harmful characters
         $sanitized = strip_tags($input);
         $sanitized = htmlspecialchars($sanitized, ENT_QUOTES, 'UTF-8');
-        
+
         return trim($sanitized);
     }
 
     /**
      * Validate and sanitize search query
-     *
-     * @param  Request  $request
-     * @param  int  $maxLength
-     * @return string|null
      */
     protected function validateSearch(Request $request, int $maxLength = 255): ?string
     {
         $search = $request->get('search');
 
-        if (!$search) {
+        if (! $search) {
             return null;
         }
 

@@ -28,6 +28,8 @@ interface ProductFormData {
   base_unit: string;
   supported_units: string;
   is_active: boolean;
+  version?: number; // Track version for optimistic locking
+  id?: number; // Track ID for updates
 }
 
 export const ProductFormScreen: React.FC = () => {
@@ -69,6 +71,8 @@ export const ProductFormScreen: React.FC = () => {
             ? product.supported_units.join(',') 
             : (product.supported_units || 'kg,g'),
           is_active: product.is_active ?? true,
+          version: product.version, // Capture version for optimistic locking
+          id: product.id, // Capture ID
         });
       }
     } catch (error) {
@@ -124,11 +128,21 @@ export const ProductFormScreen: React.FC = () => {
       };
 
       if (isEditMode) {
-        await apiClient.put(`/products/${productId}`, submitData);
-        Alert.alert('Success', 'Product updated successfully');
+        const response = await apiClient.put(`/products/${productId}`, submitData);
+        // Check if operation was queued for offline sync
+        if (response.queued) {
+          Alert.alert('Queued for Sync', 'Your changes will be synced when you\'re back online.');
+        } else {
+          Alert.alert('Success', 'Product updated successfully');
+        }
       } else {
-        await apiClient.post('/products', submitData);
-        Alert.alert('Success', 'Product created successfully');
+        const response = await apiClient.post('/products', submitData);
+        // Check if operation was queued for offline sync
+        if (response.queued) {
+          Alert.alert('Queued for Sync', 'Product will be created when you\'re back online.');
+        } else {
+          Alert.alert('Success', 'Product created successfully');
+        }
       }
 
       navigation.goBack();

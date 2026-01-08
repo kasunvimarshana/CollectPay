@@ -73,14 +73,23 @@ class AuthService {
 
   /**
    * Logout user
+   * Ensures complete cleanup of authentication state even if API call fails
    */
   async logout(): Promise<void> {
     try {
+      // Attempt to notify the server about logout
+      // This will invalidate the token on the server side
       await apiClient.post(API_ENDPOINTS.LOGOUT, {});
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch (error: any) {
+      // Log the error but continue with local cleanup
+      // Network failures or token issues shouldn't prevent local logout
+      console.error('Logout API error:', error?.message || error);
+      
+      // Only throw if it's a critical error that prevents cleanup
+      // For most cases, we proceed with local cleanup regardless
     } finally {
-      // Clear stored auth data
+      // Always clear local authentication data
+      // This is crucial for security - local data must be cleared
       await this.clearAuthData();
     }
   }

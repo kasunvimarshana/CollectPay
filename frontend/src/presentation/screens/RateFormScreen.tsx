@@ -29,6 +29,8 @@ interface RateFormData {
   effective_from: string;
   effective_to: string;
   is_active: boolean;
+  version?: number; // Track version for optimistic locking
+  id?: number; // Track ID for updates
 }
 
 export const RateFormScreen: React.FC = () => {
@@ -90,6 +92,8 @@ export const RateFormScreen: React.FC = () => {
           effective_from: rate.effective_from?.split('T')[0] || '',
           effective_to: rate.effective_to?.split('T')[0] || '',
           is_active: rate.is_active ?? true,
+          version: rate.version, // Capture version for optimistic locking
+          id: rate.id, // Capture ID
         });
         
         // Set selected product
@@ -160,14 +164,26 @@ export const RateFormScreen: React.FC = () => {
         effective_from: formData.effective_from,
         effective_to: formData.effective_to || null,
         is_active: formData.is_active,
+        ...(isEditMode && formData.version !== undefined ? { version: formData.version } : {}),
+        ...(isEditMode && formData.id !== undefined ? { id: formData.id } : {}),
       };
       
       if (isEditMode) {
-        await apiClient.put(`/rates/${rateId}`, submitData);
-        Alert.alert('Success', 'Rate updated successfully');
+        const response = await apiClient.put(`/rates/${rateId}`, submitData);
+        // Check if operation was queued for offline sync
+        if (response.queued) {
+          Alert.alert('Queued for Sync', 'Your changes will be synced when you\'re back online.');
+        } else {
+          Alert.alert('Success', 'Rate updated successfully');
+        }
       } else {
-        await apiClient.post('/rates', submitData);
-        Alert.alert('Success', 'Rate created successfully');
+        const response = await apiClient.post('/rates', submitData);
+        // Check if operation was queued for offline sync
+        if (response.queued) {
+          Alert.alert('Queued for Sync', 'Rate will be created when you\'re back online.');
+        } else {
+          Alert.alert('Success', 'Rate created successfully');
+        }
       }
       
       navigation.goBack();

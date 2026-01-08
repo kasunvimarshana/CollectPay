@@ -17,8 +17,17 @@ describe('AuthService', () => {
     id: 1,
     name: 'Test User',
     email: 'test@example.com',
-    role: 'admin',
-    permissions: ['view_suppliers', 'create_suppliers'],
+    role_id: 1,
+    is_active: true,
+    role: {
+      id: 1,
+      name: 'Admin',
+      display_name: 'Administrator',
+      description: 'System administrator with full access',
+      permissions: ['view_suppliers', 'create_suppliers'],
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   };
@@ -143,6 +152,28 @@ describe('AuthService', () => {
 
       await AuthService.logout();
 
+      expect(AsyncStorage.removeItem).toHaveBeenCalledWith(TOKEN_STORAGE_KEY);
+      expect(AsyncStorage.removeItem).toHaveBeenCalledWith(USER_STORAGE_KEY);
+    });
+
+    it('should handle token already blacklisted error', async () => {
+      const tokenBlacklistError = new Error('Token has been blacklisted');
+      (apiClient.post as jest.Mock).mockRejectedValue(tokenBlacklistError);
+
+      await AuthService.logout();
+
+      // Should still clear local data
+      expect(AsyncStorage.removeItem).toHaveBeenCalledWith(TOKEN_STORAGE_KEY);
+      expect(AsyncStorage.removeItem).toHaveBeenCalledWith(USER_STORAGE_KEY);
+    });
+
+    it('should handle unauthorized error gracefully', async () => {
+      const unauthorizedError = new Error('Unauthorized');
+      (apiClient.post as jest.Mock).mockRejectedValue(unauthorizedError);
+
+      await AuthService.logout();
+
+      // Should still clear local data even if already logged out on server
       expect(AsyncStorage.removeItem).toHaveBeenCalledWith(TOKEN_STORAGE_KEY);
       expect(AsyncStorage.removeItem).toHaveBeenCalledWith(USER_STORAGE_KEY);
     });

@@ -18,11 +18,12 @@ class RateSeeder extends Seeder
 
         if ($products->isEmpty()) {
             $this->command->warn('No active products found. Please run ProductSeeder first.');
+
             return;
         }
 
         $now = Carbon::now();
-        
+
         // Pre-calculate date instances for efficiency
         $months9Ago = $now->copy()->subMonths(9);
         $months8Ago = $now->copy()->subMonths(8);
@@ -30,7 +31,7 @@ class RateSeeder extends Seeder
         $months5Ago = $now->copy()->subMonths(5);
         $months4Ago = $now->copy()->subMonths(4);
         $months3Ago = $now->copy()->subMonths(3);
-        
+
         // Define rate data for each product with historical rates
         $rateData = [
             'Coconuts' => [

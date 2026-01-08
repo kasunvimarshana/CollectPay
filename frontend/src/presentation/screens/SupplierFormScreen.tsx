@@ -30,6 +30,8 @@ interface SupplierFormData {
   address: string;
   region: string;
   is_active: boolean;
+  version?: number; // Track version for optimistic locking
+  id?: number; // Track ID for updates
 }
 
 export const SupplierFormScreen: React.FC = () => {
@@ -73,6 +75,8 @@ export const SupplierFormScreen: React.FC = () => {
           address: supplier.address || '',
           region: supplier.region || '',
           is_active: supplier.is_active ?? true,
+          version: supplier.version, // Capture version for optimistic locking
+          id: supplier.id, // Capture ID
         });
       }
     } catch (error) {
@@ -133,11 +137,21 @@ export const SupplierFormScreen: React.FC = () => {
       setLoading(true);
       
       if (isEditMode) {
-        await apiClient.put(`/suppliers/${supplierId}`, formData);
-        Alert.alert('Success', 'Supplier updated successfully');
+        const response = await apiClient.put(`/suppliers/${supplierId}`, formData);
+        // Check if operation was queued for offline sync
+        if (response.queued) {
+          Alert.alert('Queued for Sync', 'Your changes will be synced when you\'re back online.');
+        } else {
+          Alert.alert('Success', 'Supplier updated successfully');
+        }
       } else {
-        await apiClient.post('/suppliers', formData);
-        Alert.alert('Success', 'Supplier created successfully');
+        const response = await apiClient.post('/suppliers', formData);
+        // Check if operation was queued for offline sync
+        if (response.queued) {
+          Alert.alert('Queued for Sync', 'Supplier will be created when you\'re back online.');
+        } else {
+          Alert.alert('Success', 'Supplier created successfully');
+        }
       }
       
       navigation.goBack();

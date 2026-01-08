@@ -106,15 +106,17 @@ describe('ConflictResolutionService', () => {
 
   describe('validateSyncData', () => {
     it('should validate common fields (id and version)', () => {
-      const invalidData1 = { version: 1 };
-      const result1 = ConflictResolutionService.validateSyncData(invalidData1, 'supplier');
+      // For update action, ID is required
+      const invalidData1 = { version: 1, name: 'Test', code: 'TEST' };
+      const result1 = ConflictResolutionService.validateSyncData(invalidData1, 'supplier', 'update');
       expect(result1.valid).toBe(false);
       expect(result1.errors).toContain('Missing entity ID');
 
-      const invalidData2 = { id: 1 };
-      const result2 = ConflictResolutionService.validateSyncData(invalidData2, 'supplier');
+      // For update action, version is required
+      const invalidData2 = { id: 1, name: 'Test', code: 'TEST' };
+      const result2 = ConflictResolutionService.validateSyncData(invalidData2, 'supplier', 'update');
       expect(result2.valid).toBe(false);
-      expect(result2.errors).toContain('Missing version number');
+      expect(result2.errors).toContain('Missing version number for update');
     });
 
     it('should validate collection entity', () => {

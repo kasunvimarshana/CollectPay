@@ -23,6 +23,7 @@ class CollectionSeeder extends Seeder
 
         if ($suppliers->isEmpty() || $products->isEmpty() || $users->isEmpty()) {
             $this->command->warn('Missing required data. Ensure SupplierSeeder, ProductSeeder, RoleSeeder, and user data are seeded first.');
+
             return;
         }
 
@@ -85,13 +86,13 @@ class CollectionSeeder extends Seeder
             $supplier = $suppliers->firstWhere('name', $data['supplier']);
             $product = $products->firstWhere('name', $data['product']);
 
-            if (!$supplier || !$product) {
+            if (! $supplier || ! $product) {
                 continue;
             }
 
             foreach ($data['collections'] as $collectionItem) {
                 $collectionDate = $collectionItem['date'];
-                
+
                 // Get the appropriate rate for the collection date
                 $rate = Rate::where('product_id', $product->id)
                     ->where('unit', $collectionItem['unit'])
@@ -103,8 +104,9 @@ class CollectionSeeder extends Seeder
                     ->orderBy('effective_from', 'desc')
                     ->first();
 
-                if (!$rate) {
+                if (! $rate) {
                     $this->command->warn("No rate found for {$product->name} on {$collectionDate->toDateString()}");
+
                     continue;
                 }
 

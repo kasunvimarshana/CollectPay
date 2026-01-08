@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'audit' => \App\Http\Middleware\AuditLogMiddleware::class,
             'check.version' => \App\Http\Middleware\CheckVersionConflict::class,
             'check.permission' => \App\Http\Middleware\CheckPermission::class,
+            'rate.limit' => \App\Http\Middleware\RateLimitMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

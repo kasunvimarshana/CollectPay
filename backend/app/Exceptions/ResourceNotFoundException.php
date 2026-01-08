@@ -6,7 +6,7 @@ use Exception;
 
 /**
  * Resource Not Found Exception
- * 
+ *
  * Used when a requested resource does not exist
  */
 class ResourceNotFoundException extends Exception
@@ -28,10 +28,7 @@ class ResourceNotFoundException extends Exception
     /**
      * Create a new resource not found exception
      *
-     * @param  string  $resourceType
      * @param  mixed  $resourceId
-     * @param  string|null  $message
-     * @param  \Exception|null  $previous
      */
     public function __construct(
         string $resourceType,
@@ -42,7 +39,7 @@ class ResourceNotFoundException extends Exception
         $this->resourceType = $resourceType;
         $this->resourceId = $resourceId;
 
-        $defaultMessage = $resourceId 
+        $defaultMessage = $resourceId
             ? "{$resourceType} with ID {$resourceId} not found"
             : "{$resourceType} not found";
 
@@ -51,8 +48,6 @@ class ResourceNotFoundException extends Exception
 
     /**
      * Get the resource type
-     *
-     * @return string
      */
     public function getResourceType(): string
     {

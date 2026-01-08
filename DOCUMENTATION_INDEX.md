@@ -2,212 +2,165 @@
 
 **Project:** Data Collection and Payment Management System  
 **Version:** 1.0.0  
-**Last Updated:** January 7, 2026  
-**Status:** ✅ PRODUCTION READY
+**Last Updated:** January 8, 2026  
+**Status:** ✅ PRODUCTION READY  
+**Documentation:** 124 files - Organized and Standardized
 
 ---
 
-## 📋 Quick Links
+## 📋 Quick Start
 
-### For New Users
-- [README](./README.md) - Start here for project overview and quick start
-- [Quick Start Guide](./QUICK_START_GUIDE.md) - Get up and running quickly
-- [User Manual](./USER_MANUAL.md) - Complete user guide
-
-### For Developers
-- [Architecture Overview](./frontend/ARCHITECTURE.md) - System architecture
-- [API Reference](./API_REFERENCE.md) - Complete API documentation
-- [Testing Guide](./TESTING.md) - How to run tests
-
-### For DevOps/Deployment
-- [Production Deployment Checklist](./PRODUCTION_DEPLOYMENT_CHECKLIST.md) - **NEW** Step-by-step deployment
-- [Deployment Guide](./DEPLOYMENT.md) - Detailed deployment instructions
-- [Environment Variables](./ENVIRONMENT_VARIABLES.md) - Configuration reference
-
-### For Troubleshooting
-- [Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md) - **NEW** Common issues and solutions
-- [Offline Functionality Guide](./OFFLINE_FUNCTIONALITY_GUIDE.md) - Offline features and sync
+### Essential Documents
+- **[README](./README.md)** - Project overview and quick start guide
+- **[Quick Start Guide](./documents/guides/QUICK_START_GUIDE.md)** - Get up and running in 5 minutes
+- **[User Manual](./documents/guides/USER_MANUAL.md)** - Complete user documentation
+- **[Troubleshooting Guide](./documents/guides/TROUBLESHOOTING_GUIDE.md)** - Common issues and solutions
 
 ---
 
-## 📊 Latest Review & Status
+## 📁 Organized Documentation Structure
 
-### **NEW** Comprehensive Review Documents (January 7, 2026)
+All project documentation has been organized into the `/documents` directory with clear categorization:
 
-1. **[Final Review and Stabilization Report](./FINAL_REVIEW_AND_STABILIZATION_REPORT.md)** ⭐ **START HERE**
-   - Executive summary of comprehensive review
-   - All 7 phases completed
-   - Zero critical issues found
-   - Production readiness sign-off
-   - **12.7 KB**
+### 1. Requirements (`/documents/requirements/`) - 4 files
+Core project requirements and specifications
+- PRD.md - Product Requirements Document
+- SRS.md - Software Requirements Specification  
+- ES.md - Executive Summary
+- ESS.md - Executive Summary Supplement
 
-2. **[Comprehensive Review Summary](./COMPREHENSIVE_REVIEW_SUMMARY.md)**
-   - Detailed review findings
-   - Security assessment
-   - Code quality metrics
-   - Production readiness checklist
-   - **10.7 KB**
+### 2. User Guides (`/documents/guides/`) - 13 files
+User-facing documentation and how-to guides
+- USER_MANUAL.md - Complete user manual
+- QUICK_START_GUIDE.md & QUICK_START.md - Setup guides
+- TROUBLESHOOTING_GUIDE.md - Problem resolution
+- REPORTS_USER_GUIDE.md - Reporting features
+- PRINT_PDF_USER_GUIDE.md - Print and PDF generation
+- SORTING_FILTERING_GUIDE.md - Data filtering
+- OFFLINE_FUNCTIONALITY_GUIDE.md - Offline features
+- SYNC_GUIDE.md - Synchronization guide
+- DATA_INTEGRITY_GUIDE.md - Data integrity principles
+- MANUAL_UI_TESTING_GUIDE.md - UI testing
+- SEARCHABLE_SELECTOR_VISUAL_GUIDE.md - Component usage
+- DOCUMENTATION_MAINTENANCE_GUIDE.md - Documentation maintenance best practices ⭐ NEW
 
-3. **[Production Deployment Checklist](./PRODUCTION_DEPLOYMENT_CHECKLIST.md)**
-   - Pre-deployment checklist
-   - Infrastructure setup
-   - Security hardening
-   - Monitoring configuration
-   - Rollback procedures
-   - **11 KB**
+### 3. API Documentation (`/documents/api/`) - 8 files
+Complete API reference and integration guides
+- API_REFERENCE.md - Complete API documentation (50+ endpoints)
+- SWAGGER_API_DOCUMENTATION.md - Swagger overview
+- SWAGGER_GUIDE.md - Interactive API documentation
+- SWAGGER_QUICK_REFERENCE.md - Quick API reference
+- SWAGGER_IMPLEMENTATION*.md - Implementation details and reports
 
-4. **[Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md)**
-   - Backend issues
-   - Frontend issues
-   - Database issues
-   - Authentication issues
-   - Sync & offline issues
-   - Performance issues
-   - Quick reference commands
-   - **14.4 KB**
+### 4. Architecture (`/documents/architecture/`) - 5 files
+System design and architecture documentation
+- THEME_SYSTEM.md - UI theming system
+- REFACTORING_BEFORE_AFTER.md - Code refactoring details
+- REFACTORING_SUMMARY.md - Refactoring overview
+- SCREEN_REFACTORING_SUMMARY.md - Screen refactoring
+- HEADER_FIX_SUMMARY.md - Header component fixes
 
----
+**Note:** Frontend architecture details in [frontend/ARCHITECTURE.md](./frontend/ARCHITECTURE.md)
 
-## 📚 Documentation Categories
+### 5. Implementation (`/documents/implementation/`) - 23 files
+Implementation reports, summaries, and feature completion status
+- IMPLEMENTATION_GUIDE.md - Implementation guide
+- IMPLEMENTATION_SUMMARY.md - Overall summary
+- IMPLEMENTATION_STATUS.md - Current status
+- IMPLEMENTATION_COMPLETE*.md - Completion reports
+- BACKEND_IMPLEMENTATION_COMPLETE.md - Backend status
+- FRONTEND_IMPLEMENTATION_COMPLETE.md - Frontend status
+- OFFLINE_IMPLEMENTATION_FINAL_REPORT.md - Offline features
+- REPORTING_IMPLEMENTATION_SUMMARY.md - Reporting features
+- Component-specific implementations (DateTimePicker, SearchableSelector, Theme, Security)
 
-### System Overview & Status
+### 6. Testing (`/documents/testing/`) - 16 files
+Testing strategies, reports, and verification documents
+- TESTING.md - Main testing guide
+- TESTING_SUMMARY.md & TESTING_INDEX.md - Testing overview
+- COMPREHENSIVE_TESTING*.md - Complete testing reports
+- END_TO_END_TESTING_REPORT.md - E2E testing
+- FRONTEND_TESTING*.md - Frontend testing
+- UI_TESTING_COMPLETE_REPORT.md - UI testing
+- EXECUTIVE_TESTING_SUMMARY.md - Executive summary
 
-| Document | Description | Size |
-|----------|-------------|------|
-| [README](./README.md) | Project overview, quick start, and system status | 23 KB |
-| [Final Review Report](./FINAL_REVIEW_AND_STABILIZATION_REPORT.md) | Latest comprehensive review results | 12.7 KB |
-| [Project Status](./PROJECT_STATUS.md) | Current project status and milestones | - |
-| [Final System Status](./FINAL_SYSTEM_STATUS.md) | Complete system details and verification | 17 KB |
+**Note:** Frontend testing details in [frontend/TESTING.md](./frontend/TESTING.md)
 
-### Getting Started
+### 7. Deployment (`/documents/deployment/`) - 8 files
+Production deployment and operations documentation
+- DEPLOYMENT.md & DEPLOYMENT_GUIDE.md - Deployment instructions
+- ENVIRONMENT_VARIABLES.md - Configuration reference
+- PRODUCTION_DEPLOYMENT_CHECKLIST.md - Deployment checklist ⭐
+- PRODUCTION_READINESS_REPORT.md - Readiness report
+- PRODUCTION_VERIFICATION_COMPLETE.md - Verification complete
+- FINAL_PRODUCTION_READINESS_VERIFICATION.md - Final verification
 
-| Document | Description | Size |
-|----------|-------------|------|
-| [Quick Start Guide](./QUICK_START_GUIDE.md) | Fast setup for development | - |
-| [Installation Guide](./INSTALLATION_GUIDE.md) | Detailed installation instructions | - |
-| [User Manual](./USER_MANUAL.md) | Complete user guide | - |
-
-### Requirements & Design
-
-| Document | Description | Size |
-|----------|-------------|------|
-| [Product Requirements Document (PRD)](./PRD.md) | Product specifications | - |
-| [Software Requirements Specification (SRS)](./SRS.md) | Technical requirements | - |
-| [Executive Summary (ES)](./ES.md) | Project overview | - |
-
-### Development & Architecture
-
-| Document | Description | Size |
-|----------|-------------|------|
-| [Frontend Architecture](./frontend/ARCHITECTURE.md) | Frontend architecture details | - |
-| [Backend Implementation](./BACKEND_IMPLEMENTATION_COMPLETE.md) | Backend structure and features | - |
-| [Data Integrity Guide](./DATA_INTEGRITY_GUIDE.md) | Data integrity and consistency | 12 KB |
-| [Theme System](./THEME_SYSTEM.md) | UI theming documentation | - |
-
-### API Documentation
-
-| Document | Description | Size |
-|----------|-------------|------|
-| [API Reference](./API_REFERENCE.md) | Complete API documentation | - |
-| [Swagger Guide](./SWAGGER_GUIDE.md) | Interactive API documentation | - |
-| [Swagger API Documentation](./SWAGGER_API_DOCUMENTATION.md) | API docs overview | - |
-
-### Feature Guides
-
-| Document | Description | Size |
-|----------|-------------|------|
-| [Offline Functionality Guide](./OFFLINE_FUNCTIONALITY_GUIDE.md) | Offline features and sync | 19 KB |
-| [Sync Guide](./SYNC_GUIDE.md) | Offline/online synchronization | - |
-| [Reports User Guide](./REPORTS_USER_GUIDE.md) | Using reporting features | 10 KB |
-| [Print & PDF User Guide](./PRINT_PDF_USER_GUIDE.md) | Print and PDF generation | 7 KB |
-| [Sorting & Filtering Guide](./SORTING_FILTERING_GUIDE.md) | Data filtering features | - |
-
-### Testing & Quality Assurance
-
-| Document | Description | Size |
-|----------|-------------|------|
-| [Testing Guide](./TESTING.md) | Testing strategies and execution | - |
-| [Comprehensive Testing Report](./COMPREHENSIVE_TESTING_REPORT.md) | Test results and coverage | - |
-| [Comprehensive Review Summary](./COMPREHENSIVE_REVIEW_SUMMARY.md) | **NEW** Complete review findings | 10.7 KB |
-| [Security Testing](./SECURITY_TESTING.md) | Security test results | - |
-
-### Deployment & Operations
-
-| Document | Description | Size |
-|----------|-------------|------|
-| [Production Deployment Checklist](./PRODUCTION_DEPLOYMENT_CHECKLIST.md) | **NEW** Step-by-step deployment | 11 KB |
-| [Deployment Guide](./DEPLOYMENT_GUIDE.md) | Production deployment instructions | - |
-| [Environment Variables](./ENVIRONMENT_VARIABLES.md) | Configuration reference | - |
-| [Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md) | **NEW** Common issues and solutions | 14.4 KB |
-
-### Implementation Details
-
-| Document | Description | Size |
-|----------|-------------|------|
-| [Implementation Summary](./IMPLEMENTATION_SUMMARY.md) | Implementation overview | - |
-| [Offline Implementation Report](./OFFLINE_IMPLEMENTATION_FINAL_REPORT.md) | Offline features implementation | 20 KB |
-| [Frontend Implementation](./FRONTEND_IMPLEMENTATION_COMPLETE.md) | Frontend features | - |
-| [Reporting Implementation](./REPORTING_IMPLEMENTATION_SUMMARY.md) | Reports feature implementation | - |
-
-### Verification & Completion
-
-| Document | Description | Size |
-|----------|-------------|------|
-| [Final Review Report](./FINAL_REVIEW_AND_STABILIZATION_REPORT.md) | **NEW** Comprehensive review | 12.7 KB |
-| [Comprehensive End-to-End Verification](./COMPREHENSIVE_END_TO_END_VERIFICATION.md) | Full system verification | 19 KB |
-| [Production Readiness Report](./PRODUCTION_READINESS_REPORT.md) | Production readiness checklist | - |
-| [System Verification Complete](./SYSTEM_VERIFICATION_COMPLETE.md) | Verification summary | - |
+### 8. Status Reports & Reviews (`/documents/reports/`) - 46 files
+Project status, reviews, verification, and completion reports
+- PROJECT_STATUS.md - Current project status
+- FINAL_STATUS.md & FINAL_SYSTEM_STATUS.md - System status
+- COMPREHENSIVE_END_TO_END_VERIFICATION.md - Full verification ⭐
+- FINAL_REVIEW_AND_STABILIZATION_REPORT.md - Final review ⭐
+- COMPREHENSIVE_REVIEW*.md - Multiple review reports
+- SYSTEM_VERIFICATION*.md - Verification reports
+- ENHANCEMENT*.md - Enhancement reports
+- STABILIZATION*.md - Stabilization reports
+- SECURITY_SUMMARY*.md - Security reports
+- CODE_QUALITY_IMPROVEMENTS_2026.md - Code quality
 
 ---
 
 ## 🎯 Documentation by Role
 
 ### For Project Managers
-1. [Final Review and Stabilization Report](./FINAL_REVIEW_AND_STABILIZATION_REPORT.md) ⭐
-2. [README](./README.md)
-3. [Project Status](./PROJECT_STATUS.md)
-4. [Production Readiness Report](./PRODUCTION_READINESS_REPORT.md)
+1. [README](./README.md) - Project overview
+2. [Final Review Report](./documents/reports/FINAL_REVIEW_AND_STABILIZATION_REPORT.md) ⭐
+3. [Project Status](./documents/reports/PROJECT_STATUS.md)
+4. [Production Readiness](./documents/deployment/PRODUCTION_READINESS_REPORT.md)
 
 ### For Developers
-1. [README](./README.md)
-2. [Architecture Overview](./frontend/ARCHITECTURE.md)
-3. [API Reference](./API_REFERENCE.md)
-4. [Testing Guide](./TESTING.md)
-5. [Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md) ⭐
+1. [README](./README.md) - Getting started
+2. [Frontend Architecture](./frontend/ARCHITECTURE.md) - System design
+3. [API Reference](./documents/api/API_REFERENCE.md) - API docs
+4. [Testing Guide](./documents/testing/TESTING.md) - Testing
+5. [Troubleshooting](./documents/guides/TROUBLESHOOTING_GUIDE.md)
 
 ### For QA Engineers
-1. [Testing Guide](./TESTING.md)
-2. [Comprehensive Review Summary](./COMPREHENSIVE_REVIEW_SUMMARY.md) ⭐
-3. [Comprehensive Testing Report](./COMPREHENSIVE_TESTING_REPORT.md)
-4. [Security Testing](./SECURITY_TESTING.md)
+1. [Testing Guide](./documents/testing/TESTING.md)
+2. [Comprehensive Testing Report](./documents/testing/COMPREHENSIVE_TESTING_REPORT.md)
+3. [Manual UI Testing Guide](./documents/guides/MANUAL_UI_TESTING_GUIDE.md)
+4. [E2E Testing Report](./documents/testing/END_TO_END_TESTING_REPORT.md)
 
 ### For DevOps/Infrastructure
-1. [Production Deployment Checklist](./PRODUCTION_DEPLOYMENT_CHECKLIST.md) ⭐
-2. [Deployment Guide](./DEPLOYMENT_GUIDE.md)
-3. [Environment Variables](./ENVIRONMENT_VARIABLES.md)
-4. [Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md) ⭐
+1. [Production Deployment Checklist](./documents/deployment/PRODUCTION_DEPLOYMENT_CHECKLIST.md) ⭐
+2. [Deployment Guide](./documents/deployment/DEPLOYMENT_GUIDE.md)
+3. [Environment Variables](./documents/deployment/ENVIRONMENT_VARIABLES.md)
+4. [Troubleshooting](./documents/guides/TROUBLESHOOTING_GUIDE.md)
 
 ### For End Users
-1. [User Manual](./USER_MANUAL.md)
-2. [Quick Start Guide](./QUICK_START_GUIDE.md)
-3. [Reports User Guide](./REPORTS_USER_GUIDE.md)
-4. [Print & PDF User Guide](./PRINT_PDF_USER_GUIDE.md)
+1. [User Manual](./documents/guides/USER_MANUAL.md)
+2. [Quick Start Guide](./documents/guides/QUICK_START_GUIDE.md)
+3. [Reports User Guide](./documents/guides/REPORTS_USER_GUIDE.md)
+4. [Print & PDF Guide](./documents/guides/PRINT_PDF_USER_GUIDE.md)
 
 ---
 
-## 🔥 Most Important Documents
-
-### Top 5 Documents to Read First
+## 🔥 Top 10 Most Important Documents
 
 1. **[README](./README.md)** - Start here
-2. **[Final Review and Stabilization Report](./FINAL_REVIEW_AND_STABILIZATION_REPORT.md)** - Latest status
-3. **[Production Deployment Checklist](./PRODUCTION_DEPLOYMENT_CHECKLIST.md)** - For deployment
-4. **[Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md)** - For issues
-5. **[API Reference](./API_REFERENCE.md)** - For integration
+2. **[Final Review and Stabilization Report](./documents/reports/FINAL_REVIEW_AND_STABILIZATION_REPORT.md)** ⭐
+3. **[Comprehensive End-to-End Verification](./documents/reports/COMPREHENSIVE_END_TO_END_VERIFICATION.md)** ⭐
+4. **[Production Deployment Checklist](./documents/deployment/PRODUCTION_DEPLOYMENT_CHECKLIST.md)** ⭐
+5. **[API Reference](./documents/api/API_REFERENCE.md)** - 50+ endpoints
+6. **[User Manual](./documents/guides/USER_MANUAL.md)** - Complete guide
+7. **[Testing Guide](./documents/testing/TESTING.md)** - Testing strategies
+8. **[Troubleshooting Guide](./documents/guides/TROUBLESHOOTING_GUIDE.md)** - Problem solving
+9. **[PRD](./documents/requirements/PRD.md)** - Requirements
+10. **[Frontend Architecture](./frontend/ARCHITECTURE.md)** - System design
 
 ---
 
-## 📈 System Metrics (January 7, 2026)
+## 📈 System Status (January 8, 2026)
 
 | Metric | Value | Status |
 |--------|-------|--------|
@@ -215,18 +168,22 @@
 | **Security Vulnerabilities** | 0 | ✅ |
 | **TypeScript Errors** | 0 | ✅ |
 | **API Endpoints** | 50+ documented | ✅ |
-| **Documentation Files** | 105 | ✅ |
+| **Documentation Files** | 124 organized | ✅ |
 | **Production Status** | Ready | ✅ |
 
 ---
 
-## 🆕 Recent Updates
+## 🔄 Recent Changes
 
-### January 7, 2026 - Comprehensive Review Complete
-- ✅ Added Final Review and Stabilization Report
-- ✅ Added Comprehensive Review Summary
-- ✅ Added Production Deployment Checklist
-- ✅ Added Troubleshooting Guide
+### January 8, 2026 - Documentation Organization
+- ✅ Organized 122+ documentation files into 8 structured categories
+- ✅ Created `/documents` directory with clear subdirectories
+- ✅ Removed duplicate files (README-01, README-02, PRD-01, SRS-01)
+- ✅ Standardized documentation structure
+- ✅ Maintained clean root directory (README.md + this index)
+- ✅ Updated all documentation references
+
+### January 7, 2026 - Production Ready
 - ✅ All 114 backend tests passing (100%)
 - ✅ Zero security vulnerabilities
 - ✅ Zero TypeScript errors
@@ -234,39 +191,60 @@
 
 ---
 
-## 📞 Support & Contact
+## 📂 Additional Documentation
 
-- **Repository:** https://github.com/kasunvimarshana/ledger
-- **Issue Tracker:** https://github.com/kasunvimarshana/ledger/issues
-- **Documentation:** See this index for all available documentation
+### Backend Documentation
+Located in `/backend` directory:
+- README.md - Backend setup and details
+- API_DOCUMENTATION.md - API implementation
+- DATABASE_SEEDERS.md - Database seeding
+- CHANGELOG.md - Backend changes
 
----
-
-## 📝 Notes
-
-- All documents are in Markdown format
-- Documents marked with ⭐ are newly created or recently updated
-- Documents marked with **NEW** were created on January 7, 2026
-- File sizes are approximate
-- Last comprehensive review: January 7, 2026
+### Frontend Documentation
+Located in `/frontend` directory:
+- README.md - Frontend setup
+- ARCHITECTURE.md - Frontend architecture ⭐
+- TESTING.md - Frontend testing
+- TESTING_IMPLEMENTATION.md - Test implementation
+- TESTING_QUICK_START.md - Quick testing
+- DATETIMEPICKER_GUIDE.md - Component guide
 
 ---
 
 ## 🔗 External Resources
 
-- **Swagger API Documentation:** http://localhost:8000/api/documentation (when backend is running)
-- **Laravel Documentation:** https://laravel.com/docs/11.x
-- **React Native Documentation:** https://reactnative.dev/docs/getting-started
-- **Expo Documentation:** https://docs.expo.dev/
+- **Swagger API Docs:** http://localhost:8000/api/documentation
+- **Laravel Docs:** https://laravel.com/docs/11.x
+- **React Native:** https://reactnative.dev/docs/getting-started
+- **Expo:** https://docs.expo.dev/
 
 ---
 
-**Last Updated:** January 7, 2026  
-**Total Documentation:** 105 files  
-**Status:** ✅ Complete and Up-to-Date
+## 📝 Documentation Standards
+
+### Naming Convention
+- All files use UPPERCASE_WITH_UNDERSCORES
+- Organized by category in subdirectories
+- No version numbers in filenames (use git)
+
+### File Organization
+- **Root:** README.md, DOCUMENTATION_INDEX.md only
+- **Organized docs:** `/documents` with 8 categories
+- **Component-specific:** In `backend/` and `frontend/` directories
+
+### Maintenance
+- Reviewed and updated with each major release
+- Outdated documents removed
+- Links validated regularly
 
 ---
 
-## Quick Navigation
+**Last Updated:** January 8, 2026  
+**Total Files:** 124 (122 in /documents + 2 in root)  
+**Status:** ✅ Organized and Maintainable
 
-[Back to Top](#documentation-index) | [README](./README.md) | [Final Review](./FINAL_REVIEW_AND_STABILIZATION_REPORT.md)
+---
+
+## Quick Links
+
+[🏠 Top](#documentation-index) | [📖 README](./README.md) | [⭐ Latest Review](./documents/reports/FINAL_REVIEW_AND_STABILIZATION_REPORT.md)

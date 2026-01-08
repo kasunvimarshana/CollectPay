@@ -20,6 +20,7 @@ class PaymentSeeder extends Seeder
 
         if ($suppliers->isEmpty() || $users->isEmpty()) {
             $this->command->warn('Missing required data. Ensure SupplierSeeder and user data are seeded first.');
+
             return;
         }
 
@@ -159,7 +160,7 @@ class PaymentSeeder extends Seeder
         foreach ($paymentData as $data) {
             $supplier = $suppliers->firstWhere('name', $data['supplier']);
 
-            if (!$supplier) {
+            if (! $supplier) {
                 continue;
             }
 

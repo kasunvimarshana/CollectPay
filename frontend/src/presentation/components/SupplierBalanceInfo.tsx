@@ -28,7 +28,7 @@ export const SupplierBalanceInfo: React.FC<SupplierBalanceInfoProps> = ({
   onViewPayments,
 }) => {
   const formatCurrency = (amount: number) => {
-    return `LKR ${amount.toFixed(2)}`;
+    return `${amount.toFixed(2)}`;
   };
 
   return (

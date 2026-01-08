@@ -11,12 +11,14 @@ use App\Http\Controllers\API\SupplierController;
 use App\Http\Controllers\API\UserController;
 use Illuminate\Support\Facades\Route;
 
-// Public routes
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Public routes with stricter rate limiting
+Route::middleware(['rate.limit:5,1'])->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
-// Protected routes with audit logging
-Route::middleware(['auth:api', 'audit'])->group(function () {
+// Protected routes with audit logging and rate limiting
+Route::middleware(['auth:api', 'audit', 'rate.limit:60,1'])->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
@@ -70,19 +72,21 @@ Route::middleware(['auth:api', 'audit'])->group(function () {
     Route::get('/products/{product}/current-rate', [ProductController::class, 'currentRate']);
     Route::get('/products/{product}/rate-history', [ProductController::class, 'rateHistory']);
 
-    // Report routes
-    Route::get('/reports/summary', [ReportController::class, 'summary']);
-    Route::get('/reports/supplier-balances', [ReportController::class, 'supplierBalances']);
-    Route::get('/reports/collections-summary', [ReportController::class, 'collectionsSummary']);
-    Route::get('/reports/payments-summary', [ReportController::class, 'paymentsSummary']);
-    Route::get('/reports/product-performance', [ReportController::class, 'productPerformance']);
-    Route::get('/reports/financial-summary', [ReportController::class, 'financialSummary']);
+    // Report routes with tighter rate limiting (resource intensive)
+    Route::middleware(['rate.limit:30,1'])->group(function () {
+        Route::get('/reports/summary', [ReportController::class, 'summary']);
+        Route::get('/reports/supplier-balances', [ReportController::class, 'supplierBalances']);
+        Route::get('/reports/collections-summary', [ReportController::class, 'collectionsSummary']);
+        Route::get('/reports/payments-summary', [ReportController::class, 'paymentsSummary']);
+        Route::get('/reports/product-performance', [ReportController::class, 'productPerformance']);
+        Route::get('/reports/financial-summary', [ReportController::class, 'financialSummary']);
 
-    // PDF Report routes
-    Route::get('/reports/summary/pdf', [ReportController::class, 'summaryPdf']);
-    Route::get('/reports/supplier-balances/pdf', [ReportController::class, 'supplierBalancesPdf']);
-    Route::get('/reports/collections-summary/pdf', [ReportController::class, 'collectionsSummaryPdf']);
-    Route::get('/reports/payments-summary/pdf', [ReportController::class, 'paymentsSummaryPdf']);
-    Route::get('/reports/product-performance/pdf', [ReportController::class, 'productPerformancePdf']);
-    Route::get('/reports/financial-summary/pdf', [ReportController::class, 'financialSummaryPdf']);
+        // PDF Report routes
+        Route::get('/reports/summary/pdf', [ReportController::class, 'summaryPdf']);
+        Route::get('/reports/supplier-balances/pdf', [ReportController::class, 'supplierBalancesPdf']);
+        Route::get('/reports/collections-summary/pdf', [ReportController::class, 'collectionsSummaryPdf']);
+        Route::get('/reports/payments-summary/pdf', [ReportController::class, 'paymentsSummaryPdf']);
+        Route::get('/reports/product-performance/pdf', [ReportController::class, 'productPerformancePdf']);
+        Route::get('/reports/financial-summary/pdf', [ReportController::class, 'financialSummaryPdf']);
+    });
 });

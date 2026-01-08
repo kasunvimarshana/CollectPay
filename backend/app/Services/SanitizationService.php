@@ -4,17 +4,13 @@ namespace App\Services;
 
 /**
  * Input Sanitization Service
- * 
+ *
  * Provides methods to sanitize and validate user inputs
  */
 class SanitizationService
 {
     /**
      * Sanitize string input
-     *
-     * @param  string|null  $input
-     * @param  bool  $allowHtml
-     * @return string|null
      */
     public static function sanitizeString(?string $input, bool $allowHtml = false): ?string
     {
@@ -29,7 +25,7 @@ class SanitizationService
             return null;
         }
 
-        if (!$allowHtml) {
+        if (! $allowHtml) {
             // Remove HTML tags
             $sanitized = strip_tags($sanitized);
         }
@@ -42,9 +38,6 @@ class SanitizationService
 
     /**
      * Sanitize email address
-     *
-     * @param  string|null  $email
-     * @return string|null
      */
     public static function sanitizeEmail(?string $email): ?string
     {
@@ -62,7 +55,6 @@ class SanitizationService
      * Sanitize integer input
      *
      * @param  mixed  $input
-     * @return int|null
      */
     public static function sanitizeInteger($input): ?int
     {
@@ -80,7 +72,6 @@ class SanitizationService
      * Sanitize float/decimal input
      *
      * @param  mixed  $input
-     * @return float|null
      */
     public static function sanitizeFloat($input): ?float
     {
@@ -98,7 +89,6 @@ class SanitizationService
      * Sanitize boolean input
      *
      * @param  mixed  $input
-     * @return bool|null
      */
     public static function sanitizeBoolean($input): ?bool
     {
@@ -117,9 +107,6 @@ class SanitizationService
 
     /**
      * Sanitize URL
-     *
-     * @param  string|null  $url
-     * @return string|null
      */
     public static function sanitizeUrl(?string $url): ?string
     {
@@ -135,9 +122,6 @@ class SanitizationService
 
     /**
      * Sanitize phone number
-     *
-     * @param  string|null  $phone
-     * @return string|null
      */
     public static function sanitizePhone(?string $phone): ?string
     {
@@ -150,18 +134,14 @@ class SanitizationService
 
         // Ensure only one plus sign at the beginning
         if (strpos($sanitized, '+') !== false) {
-            $sanitized = '+' . str_replace('+', '', $sanitized);
+            $sanitized = '+'.str_replace('+', '', $sanitized);
         }
 
-        return !empty($sanitized) ? $sanitized : null;
+        return ! empty($sanitized) ? $sanitized : null;
     }
 
     /**
      * Sanitize array input
-     *
-     * @param  array|null  $input
-     * @param  callable|null  $callback
-     * @return array|null
      */
     public static function sanitizeArray(?array $input, ?callable $callback = null): ?array
     {
@@ -173,14 +153,11 @@ class SanitizationService
             return array_map($callback, $input);
         }
 
-        return array_map(fn($item) => self::sanitizeString($item), $input);
+        return array_map(fn ($item) => self::sanitizeString($item), $input);
     }
 
     /**
      * Remove SQL injection patterns
-     *
-     * @param  string|null  $input
-     * @return string|null
      */
     public static function removeSqlInjection(?string $input): ?string
     {
@@ -203,9 +180,6 @@ class SanitizationService
 
     /**
      * Remove XSS patterns
-     *
-     * @param  string|null  $input
-     * @return string|null
      */
     public static function removeXss(?string $input): ?string
     {
@@ -231,7 +205,6 @@ class SanitizationService
      * Comprehensive input sanitization
      *
      * @param  mixed  $input
-     * @param  string  $type
      * @return mixed
      */
     public static function sanitize($input, string $type = 'string')

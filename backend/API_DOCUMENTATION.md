@@ -1,4 +1,9 @@
-# API Documentation
+# API Documentation - Quick Reference
+
+> **📚 For comprehensive API documentation, see:**
+> - [Complete API Reference](../documents/api/API_REFERENCE.md) - Full documentation with request/response examples
+> - [Swagger Documentation](http://localhost:8000/api/documentation) - Interactive API testing interface
+> - [Swagger Guide](../documents/api/SWAGGER_GUIDE.md) - How to use the interactive API docs
 
 Base URL: `http://localhost:8000/api`
 

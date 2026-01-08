@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { render, waitFor, act } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { render, waitFor, act, fireEvent } from '@testing-library/react-native';
+import { Text, Button } from 'react-native';
 import { AuthProvider, useAuth } from '../AuthContext';
 import AuthService from '../../../application/services/AuthService';
 
@@ -41,6 +41,18 @@ describe('AuthContext', () => {
         <Text testID="loading">{isLoading ? 'loading' : 'not-loading'}</Text>
         <Text testID="authenticated">{isAuthenticated ? 'authenticated' : 'not-authenticated'}</Text>
         <Text testID="user">{user ? user.name : 'no-user'}</Text>
+      </>
+    );
+  };
+
+  // Test component with logout functionality
+  const LogoutTestComponent = () => {
+    const { user, isAuthenticated, logout } = useAuth();
+    return (
+      <>
+        <Text testID="authenticated">{isAuthenticated ? 'authenticated' : 'not-authenticated'}</Text>
+        <Text testID="user">{user ? user.name : 'no-user'}</Text>
+        <Button testID="logout-button" title="Logout" onPress={logout} />
       </>
     );
   };
@@ -86,6 +98,72 @@ describe('AuthContext', () => {
 
     await waitFor(() => {
       expect(getByTestId('loading').props.children).toBe('not-loading');
+      expect(getByTestId('authenticated').props.children).toBe('not-authenticated');
+      expect(getByTestId('user').props.children).toBe('no-user');
+    });
+  });
+
+  it('should handle logout successfully', async () => {
+    (AuthService.isAuthenticated as jest.Mock).mockResolvedValue(true);
+    (AuthService.getStoredUser as jest.Mock).mockResolvedValue(mockUser);
+    (AuthService.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+    (AuthService.logout as jest.Mock).mockResolvedValue(undefined);
+
+    const { getByTestId } = render(
+      <AuthProvider>
+        <LogoutTestComponent />
+      </AuthProvider>
+    );
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(getByTestId('authenticated').props.children).toBe('authenticated');
+    });
+
+    // Trigger logout
+    await act(async () => {
+      fireEvent.press(getByTestId('logout-button'));
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    // Verify logout was called
+    expect(AuthService.logout).toHaveBeenCalled();
+
+    // Verify state was cleared
+    await waitFor(() => {
+      expect(getByTestId('authenticated').props.children).toBe('not-authenticated');
+      expect(getByTestId('user').props.children).toBe('no-user');
+    });
+  });
+
+  it('should handle logout error gracefully', async () => {
+    (AuthService.isAuthenticated as jest.Mock).mockResolvedValue(true);
+    (AuthService.getStoredUser as jest.Mock).mockResolvedValue(mockUser);
+    (AuthService.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+    (AuthService.logout as jest.Mock).mockRejectedValue(new Error('Network error'));
+
+    const { getByTestId } = render(
+      <AuthProvider>
+        <LogoutTestComponent />
+      </AuthProvider>
+    );
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(getByTestId('authenticated').props.children).toBe('authenticated');
+    });
+
+    // Trigger logout
+    await act(async () => {
+      fireEvent.press(getByTestId('logout-button'));
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    // Verify logout was called
+    expect(AuthService.logout).toHaveBeenCalled();
+
+    // Verify state was cleared even with error
+    await waitFor(() => {
       expect(getByTestId('authenticated').props.children).toBe('not-authenticated');
       expect(getByTestId('user').props.children).toBe('no-user');
     });

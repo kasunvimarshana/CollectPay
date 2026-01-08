@@ -28,7 +28,7 @@ class SeederTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         $this->assertDatabaseCount('roles', 4);
-        
+
         $this->assertDatabaseHas('roles', ['name' => 'admin']);
         $this->assertDatabaseHas('roles', ['name' => 'manager']);
         $this->assertDatabaseHas('roles', ['name' => 'collector']);
@@ -40,7 +40,7 @@ class SeederTest extends TestCase
         $this->seed(SupplierSeeder::class);
 
         $this->assertDatabaseCount('suppliers', 6);
-        
+
         $this->assertDatabaseHas('suppliers', [
             'name' => 'Green Valley Farms',
             'code' => 'SUP001',
@@ -59,7 +59,7 @@ class SeederTest extends TestCase
         $this->seed(ProductSeeder::class);
 
         $this->assertDatabaseCount('products', 8);
-        
+
         $this->assertDatabaseHas('products', [
             'name' => 'Coconuts',
             'code' => 'PROD001',
@@ -88,7 +88,7 @@ class SeederTest extends TestCase
         // Check that coconut has multiple rates
         $coconut = Product::where('name', 'Coconuts')->first();
         $coconutRates = Rate::where('product_id', $coconut->id)->get();
-        
+
         $this->assertGreaterThan(1, $coconutRates->count());
 
         // Check for active and inactive rates
@@ -99,7 +99,7 @@ class SeederTest extends TestCase
         $activeRate = Rate::where('product_id', $coconut->id)
             ->where('is_active', true)
             ->first();
-        
+
         $this->assertNotNull($activeRate->effective_from);
         $this->assertNull($activeRate->effective_to);
     }

@@ -130,7 +130,7 @@ export const PaymentDetailScreen: React.FC = () => {
 
         <View style={styles.amountRow}>
           <Text style={styles.amountLabel}>Amount:</Text>
-          <Text style={styles.amountValue}>${typeof payment.amount === 'number' ? payment.amount.toFixed(2) : '0.00'}</Text>
+          <Text style={styles.amountValue}>{typeof payment.amount === 'number' || typeof payment.amount === 'string' ? (Number(payment.amount) || 0).toFixed(2) : '0.00'}</Text>
         </View>
 
         {payment.reference_number && (

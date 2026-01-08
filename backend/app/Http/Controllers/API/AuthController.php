@@ -254,7 +254,7 @@ class AuthController extends Controller
      *     path="/logout",
      *     tags={"Authentication"},
      *     summary="Logout user",
-     *     description="Revoke the user's JWT token",
+     *     description="Revoke the user's JWT token and invalidate the session",
      *     operationId="logout",
      *     security={{"bearerAuth":{}}},
      *
@@ -277,17 +277,71 @@ class AuthController extends Controller
      *
      *             @OA\Property(property="message", type="string", example="Unauthenticated")
      *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error during logout",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="An error occurred during logout")
+     *         )
      *     )
      * )
      */
-    public function logout()
+    public function logout(Request $request)
     {
-        auth('api')->logout();
+        try {
+            $user = auth('api')->user();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Logout successful',
-        ]);
+            // Log the logout action for audit purposes
+            \App\Models\AuditLog::create([
+                'user_id' => $user->id,
+                'event' => 'logout',
+                'auditable_type' => 'App\Models\User',
+                'auditable_id' => $user->id,
+                'old_values' => null,
+                'new_values' => [
+                    'logout_at' => now()->toDateTimeString(),
+                ],
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            // Invalidate the token - this will add it to the blacklist
+            auth('api')->logout();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logout successful',
+            ]);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenBlacklistedException $e) {
+            // Token is already blacklisted (user already logged out)
+            return response()->json([
+                'success' => true,
+                'message' => 'Already logged out',
+            ], 200);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            // Token has expired
+            return response()->json([
+                'success' => true,
+                'message' => 'Session expired',
+            ], 200);
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Illuminate\Support\Facades\Log::error('Logout error: '.$e->getMessage(), [
+                'user_id' => auth('api')->id(),
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred during logout',
+            ], 500);
+        }
     }
 
     /**

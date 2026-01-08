@@ -192,21 +192,20 @@ class PerformanceMonitor {
 }
 
 // Export singleton instance
-export default new PerformanceMonitor();
+const performanceMonitor = new PerformanceMonitor();
+export default performanceMonitor;
 
 /**
  * React Hook for performance measurement
  */
 export function usePerformanceMonitor() {
-  const monitor = PerformanceMonitor;
-
   return {
-    start: (name: string, metadata?: Record<string, any>) => monitor.start(name, metadata),
-    end: (name: string) => monitor.end(name),
+    start: (name: string, metadata?: Record<string, any>) => performanceMonitor.start(name, metadata),
+    end: (name: string) => performanceMonitor.end(name),
     measure: <T,>(name: string, fn: () => Promise<T>, metadata?: Record<string, any>) => 
-      monitor.measure(name, fn, metadata),
+      performanceMonitor.measure(name, fn, metadata),
     measureSync: <T,>(name: string, fn: () => T, metadata?: Record<string, any>) => 
-      monitor.measureSync(name, fn, metadata),
-    getSummary: () => monitor.getSummary(),
+      performanceMonitor.measureSync(name, fn, metadata),
+    getSummary: () => performanceMonitor.getSummary(),
   };
 }

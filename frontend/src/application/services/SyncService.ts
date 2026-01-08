@@ -63,8 +63,8 @@ class SyncService {
     const data = JSON.parse(item.data);
     const endpoint = this.getEndpoint(item.entity);
     
-    // Validate data before sync
-    const validation = ConflictResolutionService.validateSyncData(data, item.entity);
+    // Validate data before sync - pass action for proper validation
+    const validation = ConflictResolutionService.validateSyncData(data, item.entity, item.action);
     if (!validation.valid) {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
     }

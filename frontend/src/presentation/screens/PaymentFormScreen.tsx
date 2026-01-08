@@ -29,6 +29,8 @@ interface PaymentFormData {
   reference_number: string;
   payment_method: string;
   notes: string;
+  version?: number; // Track version for optimistic locking
+  id?: number; // Track ID for updates
 }
 
 export const PaymentFormScreen: React.FC = () => {
@@ -81,6 +83,8 @@ export const PaymentFormScreen: React.FC = () => {
           reference_number: payment.reference_number || '',
           payment_method: payment.payment_method || 'cash',
           notes: payment.notes || '',
+          version: payment.version, // Capture version for optimistic locking
+          id: payment.id, // Capture ID
         });
       }
     } catch (error) {
@@ -153,14 +157,26 @@ export const PaymentFormScreen: React.FC = () => {
         reference_number: formData.reference_number || null,
         payment_method: formData.payment_method || null,
         notes: formData.notes || null,
+        ...(isEditMode && formData.version !== undefined ? { version: formData.version } : {}),
+        ...(isEditMode && formData.id !== undefined ? { id: formData.id } : {}),
       };
 
       if (isEditMode) {
-        await apiClient.put(`/payments/${paymentId}`, submitData);
-        Alert.alert('Success', 'Payment updated successfully');
+        const response = await apiClient.put(`/payments/${paymentId}`, submitData);
+        // Check if operation was queued for offline sync
+        if (response.queued) {
+          Alert.alert('Queued for Sync', 'Your changes will be synced when you\'re back online.');
+        } else {
+          Alert.alert('Success', 'Payment updated successfully');
+        }
       } else {
-        await apiClient.post('/payments', submitData);
-        Alert.alert('Success', 'Payment created successfully');
+        const response = await apiClient.post('/payments', submitData);
+        // Check if operation was queued for offline sync
+        if (response.queued) {
+          Alert.alert('Queued for Sync', 'Payment will be created when you\'re back online.');
+        } else {
+          Alert.alert('Success', 'Payment created successfully');
+        }
       }
 
       navigation.goBack();
@@ -218,7 +234,7 @@ export const PaymentFormScreen: React.FC = () => {
                 styles.balanceValue,
                 { color: supplierBalance >= 0 ? THEME.colors.success : THEME.colors.error }
               ]}>
-                ${supplierBalance.toFixed(2)}
+                {supplierBalance.toFixed(2)}
               </Text>
             </View>
           )}

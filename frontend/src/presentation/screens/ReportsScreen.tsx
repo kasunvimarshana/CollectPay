@@ -97,17 +97,17 @@ export const ReportsScreen: React.FC = () => {
       const response = await apiClient.get<any>('/reports/summary');
       
       setSummary({
-        totalSuppliers: response.data?.totalSuppliers || 0,
-        activeSuppliers: response.data?.activeSuppliers || 0,
-        totalProducts: response.data?.totalProducts || 0,
-        activeProducts: response.data?.activeProducts || 0,
-        totalCollections: response.data?.totalCollections || 0,
-        totalCollectionAmount: response.data?.totalCollectionAmount || 0,
-        totalPayments: response.data?.totalPayments || 0,
-        totalPaymentAmount: response.data?.totalPaymentAmount || 0,
-        outstandingBalance: response.data?.outstandingBalance || 0,
-        collectionsThisMonth: response.data?.collectionsThisMonth || 0,
-        paymentsThisMonth: response.data?.paymentsThisMonth || 0,
+        totalSuppliers: response?.totalSuppliers || 0,
+        activeSuppliers: response?.activeSuppliers || 0,
+        totalProducts: response?.totalProducts || 0,
+        activeProducts: response?.activeProducts || 0,
+        totalCollections: response?.totalCollections || 0,
+        totalCollectionAmount: response?.totalCollectionAmount || 0,
+        totalPayments: response?.totalPayments || 0,
+        totalPaymentAmount: response?.totalPaymentAmount || 0,
+        outstandingBalance: response?.outstandingBalance || 0,
+        collectionsThisMonth: response?.collectionsThisMonth || 0,
+        paymentsThisMonth: response?.paymentsThisMonth || 0,
       });
     } catch (error) {
       console.error('Error loading summary:', error);
@@ -118,7 +118,7 @@ export const ReportsScreen: React.FC = () => {
     try {
       // Use the new dedicated supplier balances endpoint
       const response = await apiClient.get<any>('/reports/supplier-balances?limit=5&sort=desc');
-      const balances = response.data || [];
+      const balances = response || [];
       
       setTopBalances(balances);
     } catch (error) {
@@ -315,16 +315,16 @@ export const ReportsScreen: React.FC = () => {
             <tbody>
               <tr>
                 <td><strong>Total Collections Amount</strong></td>
-                <td class="text-right">$${(summary?.totalCollectionAmount || 0).toFixed(2)}</td>
+                <td class="text-right">${(summary?.totalCollectionAmount || 0).toFixed(2)}</td>
               </tr>
               <tr>
                 <td><strong>Total Payments Amount</strong></td>
-                <td class="text-right text-success">$${(summary?.totalPaymentAmount || 0).toFixed(2)}</td>
+                <td class="text-right text-success">${(summary?.totalPaymentAmount || 0).toFixed(2)}</td>
               </tr>
               <tr style="background-color: #e9ecef;">
                 <td><strong>Outstanding Balance</strong></td>
                 <td class="text-right ${(summary?.outstandingBalance || 0) > 0 ? 'text-danger' : 'text-success'}">
-                  <strong>$${Math.abs(summary?.outstandingBalance || 0).toFixed(2)}</strong>
+                  <strong>${Math.abs(summary?.outstandingBalance || 0).toFixed(2)}</strong>
                 </td>
               </tr>
             </tbody>
@@ -348,10 +348,10 @@ export const ReportsScreen: React.FC = () => {
                 <tr>
                   <td>${balance.supplier_code}</td>
                   <td>${balance.supplier_name}</td>
-                  <td class="text-right">$${balance.total_collections.toFixed(2)}</td>
-                  <td class="text-right">$${balance.total_payments.toFixed(2)}</td>
+                  <td class="text-right">${balance.total_collections.toFixed(2)}</td>
+                  <td class="text-right">${balance.total_payments.toFixed(2)}</td>
                   <td class="text-right ${balance.balance > 0 ? 'text-danger' : 'text-success'}">
-                    $${Math.abs(balance.balance).toFixed(2)}
+                    ${Math.abs(balance.balance).toFixed(2)}
                   </td>
                 </tr>
               `).join('')}
@@ -599,13 +599,13 @@ export const ReportsScreen: React.FC = () => {
             <View style={styles.financialRow}>
               <Text style={styles.financialLabel}>Total Collections:</Text>
               <Text style={styles.financialValue}>
-                ${summary?.totalCollectionAmount.toFixed(2) || '0.00'}
+                {summary?.totalCollectionAmount.toFixed(2) || '0.00'}
               </Text>
             </View>
             <View style={styles.financialRow}>
               <Text style={styles.financialLabel}>Total Payments:</Text>
               <Text style={[styles.financialValue, styles.textGreen]}>
-                ${summary?.totalPaymentAmount.toFixed(2) || '0.00'}
+                {summary?.totalPaymentAmount.toFixed(2) || '0.00'}
               </Text>
             </View>
             <View style={styles.divider} />
@@ -614,7 +614,7 @@ export const ReportsScreen: React.FC = () => {
               <Text style={[styles.financialValueBold, 
                 (summary?.outstandingBalance || 0) > 0 ? styles.textRed : styles.textGreen
               ]}>
-                ${Math.abs(summary?.outstandingBalance || 0).toFixed(2)}
+                {Math.abs(summary?.outstandingBalance || 0).toFixed(2)}
               </Text>
             </View>
           </View>
@@ -653,17 +653,17 @@ export const ReportsScreen: React.FC = () => {
                 </View>
                 <View style={styles.balanceDetails}>
                   <Text style={styles.balanceDetailText}>
-                    Collections: ${typeof balance.total_collections === 'number' ? balance.total_collections.toFixed(2) : '0.00'}
+                    Collections: {typeof balance.total_collections === 'number' ? balance.total_collections.toFixed(2) : '0.00'}
                   </Text>
                   <Text style={styles.balanceDetailText}>
-                    Payments: ${typeof balance.total_payments === 'number' ? balance.total_payments.toFixed(2) : '0.00'}
+                    Payments: {typeof balance.total_payments === 'number' ? balance.total_payments.toFixed(2) : '0.00'}
                   </Text>
                 </View>
                 <Text style={[
                   styles.balanceAmount,
                   balance.balance > 0 ? styles.textRed : styles.textGreen
                 ]}>
-                  Balance: ${typeof balance.balance === 'number' ? Math.abs(balance.balance).toFixed(2) : '0.00'}
+                  Balance: {typeof balance.balance === 'number' ? Math.abs(balance.balance).toFixed(2) : '0.00'}
                 </Text>
               </View>
             ))
