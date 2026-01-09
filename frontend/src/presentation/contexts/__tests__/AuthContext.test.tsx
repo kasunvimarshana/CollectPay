@@ -71,6 +71,7 @@ describe('AuthContext', () => {
 
   it('should load stored user on mount', async () => {
     (AuthService.isAuthenticated as jest.Mock).mockResolvedValue(true);
+    (AuthService.validateAndRefreshToken as jest.Mock).mockResolvedValue(true);
     (AuthService.getStoredUser as jest.Mock).mockResolvedValue(mockUser);
     (AuthService.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
 
@@ -105,6 +106,7 @@ describe('AuthContext', () => {
 
   it('should handle logout successfully', async () => {
     (AuthService.isAuthenticated as jest.Mock).mockResolvedValue(true);
+    (AuthService.validateAndRefreshToken as jest.Mock).mockResolvedValue(true);
     (AuthService.getStoredUser as jest.Mock).mockResolvedValue(mockUser);
     (AuthService.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
     (AuthService.logout as jest.Mock).mockResolvedValue(undefined);
@@ -138,6 +140,7 @@ describe('AuthContext', () => {
 
   it('should handle logout error gracefully', async () => {
     (AuthService.isAuthenticated as jest.Mock).mockResolvedValue(true);
+    (AuthService.validateAndRefreshToken as jest.Mock).mockResolvedValue(true);
     (AuthService.getStoredUser as jest.Mock).mockResolvedValue(mockUser);
     (AuthService.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
     (AuthService.logout as jest.Mock).mockRejectedValue(new Error('Network error'));
