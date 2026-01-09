@@ -22,6 +22,7 @@ import LocalStorageService from '../../infrastructure/storage/LocalStorageServic
 import SyncService from '../../application/services/SyncService';
 import THEME from '../../core/constants/theme';
 import { useNetworkStatus } from '../../application/hooks/useNetworkStatus';
+import Logger from '../../core/utils/Logger';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -56,7 +57,7 @@ export const SettingsScreen: React.FC = () => {
       const count = await LocalStorageService.getPendingSyncCount();
       setPendingChanges(count);
     } catch (error) {
-      console.error('Error loading pending changes:', error);
+      Logger.error('Error loading pending changes', error);
     }
   };
 
@@ -90,7 +91,7 @@ export const SettingsScreen: React.FC = () => {
                 `Failed to clear database: ${error.message || 'Unknown error'}`,
                 [{ text: 'OK' }]
               );
-              console.error('Clear database error:', error);
+              Logger.error('Clear database error', error);
             } finally {
               setIsClearing(false);
             }
@@ -144,7 +145,7 @@ export const SettingsScreen: React.FC = () => {
         `Failed to sync data: ${errorMessage}`,
         [{ text: 'OK' }]
       );
-      console.error('Manual sync error:', error);
+      Logger.error('Manual sync error', error);
     } finally {
       setIsSyncing(false);
     }

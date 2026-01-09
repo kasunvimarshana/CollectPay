@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination, SortButton, ScreenHeader, SyncStatusIndicator } from '../components';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const CollectionListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -84,7 +85,7 @@ export const CollectionListScreen: React.FC = () => {
         setPerPage(paginatedData.per_page || 10);
       }
     } catch (error) {
-      console.error('Error loading collections:', error);
+      Logger.error('Error loading collections', error);
       Alert.alert('Error', 'Failed to load collections');
     } finally {
       setLoading(false);

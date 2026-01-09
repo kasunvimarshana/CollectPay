@@ -262,7 +262,7 @@ class LocalStorageService {
         try {
           return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
         } catch (error) {
-          console.error("Error parsing supplier data:", error);
+          Logger.error("Error parsing supplier data", error, DB_CONTEXT);
           return null;
         }
       })
@@ -310,7 +310,7 @@ class LocalStorageService {
         try {
           return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
         } catch (error) {
-          console.error("Error parsing product data:", error);
+          Logger.error("Error parsing product data", error, DB_CONTEXT);
           return null;
         }
       })
@@ -376,7 +376,7 @@ class LocalStorageService {
         try {
           return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
         } catch (error) {
-          console.error("Error parsing rate data:", error);
+          Logger.error("Error parsing rate data", error, DB_CONTEXT);
           return null;
         }
       })
@@ -427,7 +427,7 @@ class LocalStorageService {
         try {
           return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
         } catch (error) {
-          console.error("Error parsing collection data:", error);
+          Logger.error("Error parsing collection data", error, DB_CONTEXT);
           return null;
         }
       })
@@ -476,7 +476,7 @@ class LocalStorageService {
         try {
           return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
         } catch (error) {
-          console.error("Error parsing payment data:", error);
+          Logger.error("Error parsing payment data", error, DB_CONTEXT);
           return null;
         }
       })

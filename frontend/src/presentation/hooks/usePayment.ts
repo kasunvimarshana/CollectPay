@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Payment } from '../../domain/entities/Payment';
+import Logger from '../../core/utils/Logger';
 
 interface UsePaymentResult {
   payment: Payment | null;
@@ -35,7 +36,7 @@ export const usePayment = (paymentId: string | number | undefined): UsePaymentRe
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Error loading payment:', error);
+      Logger.error('Error loading payment', error);
       setError(error);
       Alert.alert('Error', 'Failed to load payment details');
     } finally {

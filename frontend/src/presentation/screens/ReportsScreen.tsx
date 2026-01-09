@@ -26,6 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { TOKEN_STORAGE_KEY, API_BASE_URL } from '../../core/constants/api';
 import { ScreenHeader, DateTimePicker } from '../components';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 interface ReportSummary {
   totalSuppliers: number;
@@ -84,7 +85,7 @@ export const ReportsScreen: React.FC = () => {
         loadTopBalances(),
       ]);
     } catch (error) {
-      console.error('Error loading reports:', error);
+      Logger.error('Error loading reports', error);
       Alert.alert('Error', 'Failed to load reports');
     } finally {
       setLoading(false);
@@ -110,7 +111,7 @@ export const ReportsScreen: React.FC = () => {
         paymentsThisMonth: response.data?.paymentsThisMonth || 0,
       });
     } catch (error) {
-      console.error('Error loading summary:', error);
+      Logger.error('Error loading summary', error);
     }
   };
 
@@ -122,7 +123,7 @@ export const ReportsScreen: React.FC = () => {
       
       setTopBalances(balances);
     } catch (error) {
-      console.error('Error loading top balances:', error);
+      Logger.error('Error loading top balances', error);
     }
   };
 
@@ -375,7 +376,7 @@ export const ReportsScreen: React.FC = () => {
         html,
       });
     } catch (error) {
-      console.error('Error printing report:', error);
+      Logger.error('Error printing report', error);
       Alert.alert('Error', 'Failed to print report');
     }
   };
@@ -398,7 +399,7 @@ export const ReportsScreen: React.FC = () => {
         Alert.alert('Success', `PDF saved to: ${uri}`);
       }
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      Logger.error('Error generating PDF', error);
       Alert.alert('Error', 'Failed to generate PDF');
     }
   };
@@ -424,7 +425,7 @@ export const ReportsScreen: React.FC = () => {
         ]
       );
     } catch (error) {
-      console.error('Error:', error);
+      Logger.error('Error', error);
     }
   };
 
@@ -477,7 +478,7 @@ export const ReportsScreen: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error downloading PDF from backend:', error);
+      Logger.error('Error downloading PDF from backend', error);
       Alert.alert('Error', 'Failed to download PDF from server');
     }
   };

@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Collection } from '../../domain/entities/Collection';
+import Logger from '../../core/utils/Logger';
 
 interface UseCollectionResult {
   collection: Collection | null;
@@ -35,7 +36,7 @@ export const useCollection = (collectionId: string | number | undefined): UseCol
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Error loading collection:', error);
+      Logger.error('Error loading collection', error);
       setError(error);
       Alert.alert('Error', 'Failed to load collection details');
     } finally {

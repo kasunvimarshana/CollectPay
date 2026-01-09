@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient, { ApiResponse } from '../../infrastructure/api/apiClient';
 import { API_ENDPOINTS, TOKEN_STORAGE_KEY, USER_STORAGE_KEY } from '../../core/constants/api';
 import { User } from '../../domain/entities/User';
+import Logger from '../../core/utils/Logger';
 
 export interface LoginCredentials {
   email: string;
@@ -83,7 +84,7 @@ class AuthService {
     } catch (error: any) {
       // Log the error but continue with local cleanup
       // Network failures or token issues shouldn't prevent local logout
-      console.error('Logout API error:', error?.message || error);
+      Logger.error('Logout API error', error?.message || error, 'AuthService');
       
       // Only throw if it's a critical error that prevents cleanup
       // For most cases, we proceed with local cleanup regardless
@@ -108,7 +109,7 @@ class AuthService {
 
       return null;
     } catch (error) {
-      console.error('Get current user error:', error);
+      Logger.error('Get current user error', error, 'AuthService');
       return null;
     }
   }
@@ -145,7 +146,7 @@ class AuthService {
       const userJson = await AsyncStorage.getItem(USER_STORAGE_KEY);
       return userJson ? JSON.parse(userJson) : null;
     } catch (error) {
-      console.error('Get stored user error:', error);
+      Logger.error('Get stored user error', error, 'AuthService');
       return null;
     }
   }

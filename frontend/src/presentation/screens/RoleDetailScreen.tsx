@@ -20,6 +20,7 @@ import { Role } from '../../domain/entities/Role';
 import { useAuth } from '../contexts/AuthContext';
 import { canUpdate, canDelete } from '../../core/utils/permissions';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const RoleDetailScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -42,7 +43,7 @@ export const RoleDetailScreen: React.FC = () => {
         setRole(response.data);
       }
     } catch (error) {
-      console.error('Error loading role:', error);
+      Logger.error('Error loading role', error);
       Alert.alert('Error', 'Failed to load role details');
     } finally {
       setLoading(false);
@@ -74,7 +75,7 @@ export const RoleDetailScreen: React.FC = () => {
       Alert.alert('Success', 'Role deleted successfully');
       navigation.goBack();
     } catch (error) {
-      console.error('Error deleting role:', error);
+      Logger.error('Error deleting role', error);
       Alert.alert('Error', 'Failed to delete role');
     }
   };

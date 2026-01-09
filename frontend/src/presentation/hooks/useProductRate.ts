@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import apiClient from "../../infrastructure/api/apiClient";
 import { Rate } from "../../domain/entities/Product";
+import Logger from '../../core/utils/Logger';
 
 interface UseProductRateResult {
   currentRate: Rate | null;
@@ -38,7 +39,7 @@ export const useProductRate = (
       }
     } catch (err) {
       const error = err as Error;
-      console.error("Error loading current rate:", error);
+      Logger.error("Error loading current rate", error, 'useProductRate');
       setError(error);
       // Don't show alert for rate loading errors - they're not critical
     } finally {

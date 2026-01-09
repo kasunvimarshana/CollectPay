@@ -299,7 +299,7 @@ class ApiClient {
       }
       return null;
     } catch (error) {
-      console.error("Error getting cached data:", error);
+      Logger.error("Error getting cached data", error, API_CONTEXT);
       return null;
     }
   }
