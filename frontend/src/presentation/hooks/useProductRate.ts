@@ -39,7 +39,7 @@ export const useProductRate = (
       }
     } catch (err) {
       const error = err as Error;
-      Logger.error("Error loading current rate", error);
+      Logger.error("Error loading current rate", error, 'useProductRate');
       setError(error);
       // Don't show alert for rate loading errors - they're not critical
     } finally {

@@ -41,7 +41,7 @@ class SyncService {
           await LocalStorageService.markSynced(item.id!);
           syncedCount++;
         } catch (error) {
-          Logger.error(`Failed to sync item ${item.id}`, error, 'SyncService');
+          Logger.error(`Failed to sync item ${item.id || 'unknown'}`, error, 'SyncService');
           failedCount++;
         }
       }
