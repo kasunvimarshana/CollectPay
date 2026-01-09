@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import SyncService from '../services/SyncService';
-import Logger from '../core/utils/Logger';
+import Logger from '../../core/utils/Logger';
 
 export interface NetworkStatus {
   isConnected: boolean;
