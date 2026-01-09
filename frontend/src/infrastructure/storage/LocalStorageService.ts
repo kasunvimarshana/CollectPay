@@ -498,6 +498,42 @@ class LocalStorageService {
       DELETE FROM payments;
     `);
   }
+
+  /**
+   * Clear all data including pending sync items
+   * This is a destructive operation that resets the entire local database
+   */
+  async clearAllData(): Promise<void> {
+    await this.ensureInitialized();
+    if (!this.db) throw new Error("Database initialization failed");
+
+    Logger.warn("Clearing all local database data", undefined, DB_CONTEXT);
+
+    await this.db.execAsync(`
+      DELETE FROM suppliers;
+      DELETE FROM products;
+      DELETE FROM rates;
+      DELETE FROM collections;
+      DELETE FROM payments;
+      DELETE FROM pending_sync;
+    `);
+
+    Logger.info("All local database data cleared", undefined, DB_CONTEXT);
+  }
+
+  /**
+   * Get count of pending sync items
+   */
+  async getPendingSyncCount(): Promise<number> {
+    await this.ensureInitialized();
+    if (!this.db) throw new Error("Database initialization failed");
+
+    const result = await this.db.getFirstAsync<{ count: number }>(
+      "SELECT COUNT(*) as count FROM pending_sync WHERE synced = 0"
+    );
+
+    return result?.count || 0;
+  }
 }
 
 export default new LocalStorageService();
