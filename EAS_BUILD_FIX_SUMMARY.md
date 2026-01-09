@@ -1,7 +1,7 @@
 # EAS Build Fix Summary - Quick Reference
 
-**Date**: January 8, 2026  
-**Issue**: EAS Android build EBADENGINE error  
+**Date**: January 9, 2026  
+**Issue**: EAS Android build EBADENGINE error - Node version incompatibility  
 **Status**: ✅ RESOLVED  
 
 ---
@@ -12,7 +12,12 @@ Expo EAS Android build failed with:
 ```
 npm ERR! code EBADENGINE
 npm ERR! engine Unsupported engine
+npm ERR! engine Not compatible with your version of node/npm: @react-native/assets-registry@0.81.5
+npm ERR! notsup Required: {"node":">= 20.19.4"}
+npm ERR! notsup Actual:   {"npm":"10.8.2","node":"v20.17.0"}
 ```
+
+**Root Cause**: The `@react-native/assets-registry@0.81.5` package requires Node >= 20.19.4, but the project was configured to use Node 20.17.0.
 
 ## Solution
 
@@ -26,15 +31,15 @@ npm ERR! engine Unsupported engine
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "node": "20.17.0"
+      "node": "20.19.4"
     },
     "preview": {
       "distribution": "internal",
-      "node": "20.17.0"
+      "node": "20.19.4"
     },
     "production": {
       "autoIncrement": true,
-      "node": "20.17.0"
+      "node": "20.19.4"
     }
   }
 }
@@ -45,6 +50,7 @@ npm ERR! engine Unsupported engine
 - Prevents version drift
 - Eliminates EBADENGINE errors
 - Ensures EAS compatibility
+- Meets React Native 0.81.5 requirements
 
 ### 2. Package.json Engines
 
@@ -69,10 +75,10 @@ npm ERR! engine Unsupported engine
 - `/backend/.nvmrc`
 
 ```
-20.17.0
+20.19.4
 ```
 
-✅ Ensures consistent local development environment across entire monorepo
+✅ Ensures consistent local development environment across entire monorepo and meets React Native dependency requirements
 
 **File**: `backend/package.json`
 
