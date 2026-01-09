@@ -27,7 +27,7 @@ export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const { isConnected } = useNetworkStatus();
+  const { networkStatus } = useNetworkStatus();
 
   const [isClearing, setIsClearing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -102,7 +102,7 @@ export const SettingsScreen: React.FC = () => {
   };
 
   const handleManualSync = async () => {
-    if (!isConnected) {
+    if (!networkStatus.isConnected) {
       Alert.alert(
         'No Internet Connection',
         'You need an internet connection to sync data with the server.',
@@ -180,10 +180,10 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.statusBadge}>
                 <View style={[
                   styles.statusDot, 
-                  { backgroundColor: isConnected ? THEME.colors.success : THEME.colors.error }
+                  { backgroundColor: networkStatus.isConnected ? THEME.colors.success : THEME.colors.error }
                 ]} />
                 <Text style={styles.infoValue}>
-                  {isConnected ? 'Online' : 'Offline'}
+                  {networkStatus.isConnected ? 'Online' : 'Offline'}
                 </Text>
               </View>
             </View>
@@ -210,10 +210,10 @@ export const SettingsScreen: React.FC = () => {
             style={[
               styles.actionButton, 
               styles.syncButton,
-              (isSyncing || !isConnected) && styles.actionButtonDisabled
+              (isSyncing || !networkStatus.isConnected) && styles.actionButtonDisabled
             ]}
             onPress={handleManualSync}
-            disabled={isSyncing || !isConnected}
+            disabled={isSyncing || !networkStatus.isConnected}
             accessibilityRole="button"
             accessibilityLabel="Manual sync"
             accessibilityHint="Synchronize local data with the server"

@@ -48,7 +48,18 @@ describe('SettingsScreen', () => {
       user: mockUser,
     });
     (useNetworkStatus as jest.Mock).mockReturnValue({
-      isConnected: true,
+      networkStatus: {
+        isConnected: true,
+        isInternetReachable: true,
+        type: 'wifi',
+        canSync: true,
+      },
+      syncStatus: {
+        isSyncing: false,
+        hasPendingChanges: false,
+        lastSyncTime: null,
+        syncError: null,
+      },
     });
     (LocalStorageService.getPendingSyncCount as jest.Mock).mockResolvedValue(0);
   });
@@ -98,7 +109,10 @@ describe('SettingsScreen', () => {
 
   describe('Sync Status Display', () => {
     it('should display online status when connected', async () => {
-      (useNetworkStatus as jest.Mock).mockReturnValue({ isConnected: true });
+      (useNetworkStatus as jest.Mock).mockReturnValue({
+        networkStatus: { isConnected: true, isInternetReachable: true, type: 'wifi', canSync: true },
+        syncStatus: { isSyncing: false, hasPendingChanges: false, lastSyncTime: null, syncError: null },
+      });
 
       const { getByText } = render(<SettingsScreen />);
 
@@ -108,7 +122,10 @@ describe('SettingsScreen', () => {
     });
 
     it('should display offline status when disconnected', async () => {
-      (useNetworkStatus as jest.Mock).mockReturnValue({ isConnected: false });
+      (useNetworkStatus as jest.Mock).mockReturnValue({
+        networkStatus: { isConnected: false, isInternetReachable: false, type: null, canSync: false },
+        syncStatus: { isSyncing: false, hasPendingChanges: false, lastSyncTime: null, syncError: null },
+      });
 
       const { getByText } = render(<SettingsScreen />);
 
@@ -186,8 +203,13 @@ describe('SettingsScreen', () => {
       });
     });
 
-    it('should not allow sync when offline', async () => {
-      (useNetworkStatus as jest.Mock).mockReturnValue({ isConnected: false });
+    it('should disable sync button when offline', async () => {
+      (useNetworkStatus as jest.Mock).mockReturnValue({
+        networkStatus: { isConnected: false, isInternetReachable: false, type: null, canSync: false },
+        syncStatus: { isSyncing: false, hasPendingChanges: false, lastSyncTime: null, syncError: null },
+      });
+      const mockFullSync = jest.fn();
+      (SyncService.fullSync as jest.Mock) = mockFullSync;
 
       const { getByText } = render(<SettingsScreen />);
 
@@ -195,12 +217,9 @@ describe('SettingsScreen', () => {
         const syncButton = getByText('Manual Sync');
         fireEvent.press(syncButton);
       });
-
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'No Internet Connection',
-        'You need an internet connection to sync data with the server.',
-        expect.any(Array)
-      );
+      
+      // The sync function should not be called when button is disabled
+      expect(mockFullSync).not.toHaveBeenCalled();
     });
 
     it('should handle sync exceptions', async () => {
