@@ -33,6 +33,7 @@ import { UserFormScreen } from '../screens/UserFormScreen';
 import { RoleListScreen } from '../screens/RoleListScreen';
 import { RoleDetailScreen } from '../screens/RoleDetailScreen';
 import { RoleFormScreen } from '../screens/RoleFormScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -95,6 +96,9 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="PaymentList" component={PaymentListScreen} />
             <Stack.Screen name="PaymentForm" component={PaymentFormScreen} />
             <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} />
+            
+            {/* Settings Screen */}
+            <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         ) : (
           <>

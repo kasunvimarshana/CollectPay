@@ -16,7 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
-import { canView } from '../../core/utils/permissions';
+import { canView, hasAnyRole, ROLES } from '../../core/utils/permissions';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 import THEME from '../../core/constants/theme';
 
@@ -183,6 +183,20 @@ export const HomeScreen: React.FC = () => {
             <Text style={styles.menuIcon}>📈</Text>
             <Text style={styles.menuText}>Reports</Text>
           </TouchableOpacity>
+
+          {/* Settings available to admin and manager */}
+          {hasAnyRole(user, [ROLES.ADMIN, ROLES.MANAGER]) && (
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigateTo('Settings')}
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+              accessibilityHint="Database and sync management"
+            >
+              <Text style={styles.menuIcon}>⚙️</Text>
+              <Text style={styles.menuText}>Settings</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <TouchableOpacity 
