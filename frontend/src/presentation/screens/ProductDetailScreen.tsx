@@ -26,6 +26,7 @@ import {
 } from '../components';
 import { useProduct, useProductRate } from '../hooks';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const ProductDetailScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -63,7 +64,7 @@ export const ProductDetailScreen: React.FC = () => {
       Alert.alert('Success', 'Product deleted successfully');
       navigation.goBack();
     } catch (error) {
-      console.error('Error deleting product:', error);
+      Logger.error('Error deleting product', error);
       Alert.alert('Error', 'Failed to delete product');
     }
   };

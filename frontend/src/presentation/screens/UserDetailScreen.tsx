@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { User } from '../../domain/entities/User';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const UserDetailScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -39,7 +40,7 @@ export const UserDetailScreen: React.FC = () => {
         setUser(response.data);
       }
     } catch (error) {
-      console.error('Error loading user:', error);
+      Logger.error('Error loading user', error);
       Alert.alert('Error', 'Failed to load user details');
     } finally {
       setLoading(false);
@@ -71,7 +72,7 @@ export const UserDetailScreen: React.FC = () => {
       Alert.alert('Success', 'User deleted successfully');
       navigation.goBack();
     } catch (error) {
-      console.error('Error deleting user:', error);
+      Logger.error('Error deleting user', error);
       Alert.alert('Error', 'Failed to delete user');
     }
   };

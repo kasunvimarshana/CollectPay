@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Supplier } from '../../domain/entities/Supplier';
+import Logger from '../../core/utils/Logger';
 
 interface UseSupplierResult {
   supplier: Supplier | null;
@@ -35,7 +36,7 @@ export const useSupplier = (supplierId: string | number | undefined): UseSupplie
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Error loading supplier:', error);
+      Logger.error('Error loading supplier', error);
       setError(error);
       Alert.alert('Error', 'Failed to load supplier details');
     } finally {

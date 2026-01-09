@@ -22,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination, SortButton, ScreenHeader } from '../components';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const RoleListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -83,7 +84,7 @@ export const RoleListScreen: React.FC = () => {
         setPerPage(paginatedData.per_page || 10);
       }
     } catch (error) {
-      console.error('Error loading roles:', error);
+      Logger.error('Error loading roles', error);
       Alert.alert('Error', 'Failed to load roles');
     } finally {
       setLoading(false);

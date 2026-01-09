@@ -10,6 +10,7 @@ import { AuthProvider } from './src/presentation/contexts/AuthContext';
 import { AppNavigator } from './src/presentation/navigation/AppNavigator';
 import SyncService from './src/application/services/SyncService';
 import LocalStorageService from './src/infrastructure/storage/LocalStorageService';
+import Logger from './src/core/utils/Logger';
 
 export default function App() {
   useEffect(() => {
@@ -18,9 +19,9 @@ export default function App() {
       try {
         await LocalStorageService.initialize();
         await SyncService.initialize();
-        console.log('Offline services initialized successfully');
+        Logger.info('Offline services initialized successfully', undefined, 'App');
       } catch (error) {
-        console.error('Failed to initialize offline services:', error);
+        Logger.error('Failed to initialize offline services', error, 'App');
       }
     };
 

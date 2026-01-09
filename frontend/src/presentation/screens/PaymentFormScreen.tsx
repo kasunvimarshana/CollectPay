@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { PaymentType } from '../../domain/entities/Payment';
 import { DateTimePicker, SearchableSelector, ScreenHeader } from '../components';
+import Logger from '../../core/utils/Logger';
 
 interface PaymentFormData {
   supplier_id: string;
@@ -88,7 +89,7 @@ export const PaymentFormScreen: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading payment:', error);
+      Logger.error('Error loading payment', error);
       Alert.alert('Error', 'Failed to load payment details');
       navigation.goBack();
     } finally {
@@ -103,7 +104,7 @@ export const PaymentFormScreen: React.FC = () => {
         setSupplierBalance((response.data as any).balance);
       }
     } catch (error) {
-      console.error('Error loading supplier balance:', error);
+      Logger.error('Error loading supplier balance', error);
       setSupplierBalance(null);
     }
   };
@@ -181,7 +182,7 @@ export const PaymentFormScreen: React.FC = () => {
 
       navigation.goBack();
     } catch (error: any) {
-      console.error('Error saving payment:', error);
+      Logger.error('Error saving payment', error);
       const message = error.response?.data?.message || 'Failed to save payment';
       Alert.alert('Error', message);
     } finally {

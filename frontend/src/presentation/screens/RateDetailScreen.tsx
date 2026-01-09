@@ -21,6 +21,7 @@ import apiClient from '../../infrastructure/api/apiClient';
 import { Rate } from '../../domain/entities/Product';
 import { useAuth } from '../contexts/AuthContext';
 import { canUpdate, canDelete } from '../../core/utils/permissions';
+import Logger from '../../core/utils/Logger';
 
 export const RateDetailScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -49,7 +50,7 @@ export const RateDetailScreen: React.FC = () => {
         setRate(response.data);
       }
     } catch (error) {
-      console.error('Error loading rate data:', error);
+      Logger.error('Error loading rate data', error);
       Alert.alert('Error', 'Failed to load rate details');
     } finally {
       setLoading(false);
@@ -81,7 +82,7 @@ export const RateDetailScreen: React.FC = () => {
               Alert.alert('Success', 'Rate deleted successfully');
               navigation.goBack();
             } catch (error: any) {
-              console.error('Error deleting rate:', error);
+              Logger.error('Error deleting rate', error);
               const message = error.response?.data?.message || 'Failed to delete rate';
               Alert.alert('Error', message);
             }

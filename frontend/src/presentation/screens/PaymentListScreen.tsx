@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination, SortButton, ScreenHeader, SyncStatusIndicator } from '../components';
 import THEME, { getPaymentTypeColor } from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const PaymentListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -84,7 +85,7 @@ export const PaymentListScreen: React.FC = () => {
         setPerPage(paginatedData.per_page || 10);
       }
     } catch (error) {
-      console.error('Error loading payments:', error);
+      Logger.error('Error loading payments', error);
       Alert.alert('Error', 'Failed to load payments');
     } finally {
       setLoading(false);

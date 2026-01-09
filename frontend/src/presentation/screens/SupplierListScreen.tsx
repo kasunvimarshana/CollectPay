@@ -24,6 +24,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination, SortButton, ScreenHeader, SyncStatusIndicator } from '../components';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const SupplierListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -95,12 +96,12 @@ export const SupplierListScreen: React.FC = () => {
           try {
             await LocalStorageService.cacheSuppliers(loadedSuppliers);
           } catch (cacheError) {
-            console.error('Failed to cache suppliers:', cacheError);
+            Logger.error('Failed to cache suppliers', cacheError);
           }
         }
       }
     } catch (error) {
-      console.error('Error loading suppliers:', error);
+      Logger.error('Error loading suppliers', error);
       Alert.alert('Error', 'Failed to load suppliers');
     } finally {
       setLoading(false);

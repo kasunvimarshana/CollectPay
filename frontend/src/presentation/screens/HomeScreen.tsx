@@ -19,6 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canView, hasAnyRole, ROLES } from '../../core/utils/permissions';
 import { SyncStatusIndicator } from '../components/SyncStatusIndicator';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -51,7 +52,7 @@ export const HomeScreen: React.FC = () => {
                 'An error occurred during logout. Please try again.',
                 [{ text: 'OK' }]
               );
-              console.error('Logout error:', error);
+              Logger.error('Logout error', error);
             } finally {
               setIsLoggingOut(false);
             }

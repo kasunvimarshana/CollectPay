@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Rate } from '../../domain/entities/Product';
+import Logger from '../../core/utils/Logger';
 
 interface UseRateResult {
   rate: Rate | null;
@@ -35,7 +36,7 @@ export const useRate = (rateId: string | number | undefined): UseRateResult => {
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Error loading rate:', error);
+      Logger.error('Error loading rate', error);
       setError(error);
       Alert.alert('Error', 'Failed to load rate details');
     } finally {

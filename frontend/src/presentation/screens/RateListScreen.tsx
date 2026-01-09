@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination, SortButton, ScreenHeader, SyncStatusIndicator } from '../components';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const RateListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -86,7 +87,7 @@ export const RateListScreen: React.FC = () => {
         setPerPage(paginatedData.per_page || 10);
       }
     } catch (error) {
-      console.error('Error loading rates:', error);
+      Logger.error('Error loading rates', error);
       Alert.alert('Error', 'Failed to load rates');
     } finally {
       setLoading(false);

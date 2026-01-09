@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Product } from '../../domain/entities/Product';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Logger from '../../core/utils/Logger';
 
 interface RateFormData {
   product_id: number | null;
@@ -74,7 +75,7 @@ export const RateFormScreen: React.FC = () => {
         setProducts(productData);
       }
     } catch (error) {
-      console.error('Error loading products:', error);
+      Logger.error('Error loading products', error);
       Alert.alert('Error', 'Failed to load products');
     }
   };
@@ -105,7 +106,7 @@ export const RateFormScreen: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error loading rate:', error);
+      Logger.error('Error loading rate', error);
       Alert.alert('Error', 'Failed to load rate details');
       navigation.goBack();
     } finally {
@@ -188,7 +189,7 @@ export const RateFormScreen: React.FC = () => {
       
       navigation.goBack();
     } catch (error: any) {
-      console.error('Error saving rate:', error);
+      Logger.error('Error saving rate', error);
       const message = error.response?.data?.message || 'Failed to save rate';
       Alert.alert('Error', message);
     } finally {

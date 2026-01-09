@@ -20,6 +20,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { SearchableSelector, ScreenHeader } from '../components';
+import Logger from '../../core/utils/Logger';
 
 export const UserFormScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -54,7 +55,7 @@ export const UserFormScreen: React.FC = () => {
         setIsActive(response.data.is_active);
       }
     } catch (error) {
-      console.error('Error loading user:', error);
+      Logger.error('Error loading user', error);
       Alert.alert('Error', 'Failed to load user');
     } finally {
       setLoading(false);
@@ -141,7 +142,7 @@ export const UserFormScreen: React.FC = () => {
       }
       navigation.goBack();
     } catch (error: any) {
-      console.error('Error saving user:', error);
+      Logger.error('Error saving user', error);
       const message = error.response?.data?.message || 'Failed to save user';
       Alert.alert('Error', message);
     } finally {

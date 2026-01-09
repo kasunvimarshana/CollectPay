@@ -18,6 +18,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Collection } from '../../domain/entities/Collection';
+import Logger from '../../core/utils/Logger';
 
 export const CollectionDetailScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -39,7 +40,7 @@ export const CollectionDetailScreen: React.FC = () => {
         setCollection(response.data as any);
       }
     } catch (error) {
-      console.error('Error loading collection:', error);
+      Logger.error('Error loading collection', error);
       Alert.alert('Error', 'Failed to load collection details');
     } finally {
       setLoading(false);
@@ -71,7 +72,7 @@ export const CollectionDetailScreen: React.FC = () => {
       Alert.alert('Success', 'Collection deleted successfully');
       navigation.goBack();
     } catch (error) {
-      console.error('Error deleting collection:', error);
+      Logger.error('Error deleting collection', error);
       Alert.alert('Error', 'Failed to delete collection');
     }
   };

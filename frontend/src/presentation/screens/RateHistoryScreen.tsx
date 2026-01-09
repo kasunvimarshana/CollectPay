@@ -18,6 +18,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Rate } from '../../domain/entities/Product';
+import Logger from '../../core/utils/Logger';
 
 export const RateHistoryScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -40,7 +41,7 @@ export const RateHistoryScreen: React.FC = () => {
         setRates(rateData);
       }
     } catch (error) {
-      console.error('Error loading rate history:', error);
+      Logger.error('Error loading rate history', error);
       Alert.alert('Error', 'Failed to load rate history');
     } finally {
       setLoading(false);

@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { ScreenHeader } from '../components';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 interface ProductFormData {
   name: string;
@@ -76,7 +77,7 @@ export const ProductFormScreen: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading product:', error);
+      Logger.error('Error loading product', error);
       Alert.alert('Error', 'Failed to load product details');
       navigation.goBack();
     } finally {
@@ -147,7 +148,7 @@ export const ProductFormScreen: React.FC = () => {
 
       navigation.goBack();
     } catch (error: any) {
-      console.error('Error saving product:', error);
+      Logger.error('Error saving product', error);
       const message = error.response?.data?.message || 'Failed to save product';
       Alert.alert('Error', message);
     } finally {

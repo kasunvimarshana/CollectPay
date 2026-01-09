@@ -26,6 +26,7 @@ import {
   DetailActionButtons,
 } from '../components';
 import { useSupplier, useSupplierBalance } from '../hooks';
+import Logger from '../../core/utils/Logger';
 
 export const SupplierDetailScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -63,7 +64,7 @@ export const SupplierDetailScreen: React.FC = () => {
       Alert.alert('Success', 'Supplier deleted successfully');
       navigation.goBack();
     } catch (error) {
-      console.error('Error deleting supplier:', error);
+      Logger.error('Error deleting supplier', error);
       Alert.alert('Error', 'Failed to delete supplier');
     }
   };

@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Product } from '../../domain/entities/Product';
+import Logger from '../../core/utils/Logger';
 
 interface UseProductResult {
   product: Product | null;
@@ -36,7 +37,7 @@ export const useProduct = (productId: string | undefined): UseProductResult => {
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Error loading product:', error);
+      Logger.error('Error loading product', error);
       setError(error);
       Alert.alert('Error', 'Failed to load product details');
     } finally {

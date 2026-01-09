@@ -18,6 +18,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Payment } from '../../domain/entities/Payment';
+import Logger from '../../core/utils/Logger';
 
 export const PaymentDetailScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -39,7 +40,7 @@ export const PaymentDetailScreen: React.FC = () => {
         setPayment(response.data as any);
       }
     } catch (error) {
-      console.error('Error loading payment:', error);
+      Logger.error('Error loading payment', error);
       Alert.alert('Error', 'Failed to load payment details');
     } finally {
       setLoading(false);
@@ -71,7 +72,7 @@ export const PaymentDetailScreen: React.FC = () => {
       Alert.alert('Success', 'Payment deleted successfully');
       navigation.goBack();
     } catch (error) {
-      console.error('Error deleting payment:', error);
+      Logger.error('Error deleting payment', error);
       Alert.alert('Error', 'Failed to delete payment');
     }
   };

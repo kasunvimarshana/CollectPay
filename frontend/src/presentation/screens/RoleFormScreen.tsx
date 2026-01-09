@@ -19,6 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { PERMISSIONS } from '../../core/utils/permissions';
+import Logger from '../../core/utils/Logger';
 
 // Utility function to format permission text for display
 const formatPermissionText = (permission: string): string => {
@@ -109,7 +110,7 @@ export const RoleFormScreen: React.FC = () => {
         setSelectedPermissions(permissions);
       }
     } catch (error) {
-      console.error('Error loading role:', error);
+      Logger.error('Error loading role', error);
       Alert.alert('Error', 'Failed to load role');
     } finally {
       setLoading(false);
@@ -193,7 +194,7 @@ export const RoleFormScreen: React.FC = () => {
       }
       navigation.goBack();
     } catch (error: any) {
-      console.error('Error saving role:', error);
+      Logger.error('Error saving role', error);
       const message = error.response?.data?.message || 'Failed to save role';
       Alert.alert('Error', message);
     } finally {

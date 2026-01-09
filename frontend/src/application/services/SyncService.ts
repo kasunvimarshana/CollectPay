@@ -7,6 +7,7 @@ import apiClient from '../../infrastructure/api/apiClient';
 import LocalStorageService, { PendingSync } from '../../infrastructure/storage/LocalStorageService';
 import ConflictResolutionService from './ConflictResolutionService';
 import { API_ENDPOINTS } from '../../core/constants/api';
+import Logger from '../../core/utils/Logger';
 
 class SyncService {
   private isSyncing = false;
@@ -40,7 +41,7 @@ class SyncService {
           await LocalStorageService.markSynced(item.id!);
           syncedCount++;
         } catch (error) {
-          console.error(`Failed to sync item ${item.id}:`, error);
+          Logger.error(`Failed to sync item ${item.id}`, error, 'SyncService');
           failedCount++;
         }
       }
@@ -210,7 +211,7 @@ class SyncService {
         }
       }
     } catch (error) {
-      console.error('Error fetching suppliers:', error);
+      Logger.error('Error fetching suppliers', error, 'SyncService');
       throw error;
     }
   }
@@ -231,7 +232,7 @@ class SyncService {
         }
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      Logger.error('Error fetching products', error, 'SyncService');
       throw error;
     }
   }
@@ -252,7 +253,7 @@ class SyncService {
         }
       }
     } catch (error) {
-      console.error('Error fetching rates:', error);
+      Logger.error('Error fetching rates', error, 'SyncService');
       throw error;
     }
   }
@@ -273,7 +274,7 @@ class SyncService {
         }
       }
     } catch (error) {
-      console.error('Error fetching collections:', error);
+      Logger.error('Error fetching collections', error, 'SyncService');
       throw error;
     }
   }
@@ -294,7 +295,7 @@ class SyncService {
         }
       }
     } catch (error) {
-      console.error('Error fetching payments:', error);
+      Logger.error('Error fetching payments', error, 'SyncService');
       throw error;
     }
   }

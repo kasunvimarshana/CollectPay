@@ -7,6 +7,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import AuthService from '../../application/services/AuthService';
 import { User } from '../../domain/entities/User';
 import { LoginCredentials, RegisterData } from '../../application/services/AuthService';
+import Logger from '../../core/utils/Logger';
 
 interface AuthContextData {
   user: User | null;
@@ -49,7 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Load stored user error:', error);
+      Logger.error('Load stored user error', error, 'AuthContext');
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AuthService.logout();
     } catch (error: any) {
       // Log error but don't throw - logout should always succeed locally
-      console.error('Logout error:', error?.message || error);
+      Logger.error('Logout error', error?.message || error, 'AuthContext');
     } finally {
       // Always clear the local state regardless of API success/failure
       // This ensures the user is logged out from the UI perspective
@@ -97,7 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(currentUser);
       }
     } catch (error) {
-      console.error('Refresh user error:', error);
+      Logger.error('Refresh user error', error, 'AuthContext');
     }
   };
 

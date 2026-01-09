@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Rate } from '../../domain/entities/Product';
 import { DateTimePicker, SearchableSelector, ScreenHeader } from '../components';
+import Logger from '../../core/utils/Logger';
 
 interface CollectionFormData {
   supplier_id: string;
@@ -87,7 +88,7 @@ export const CollectionFormScreen: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading collection:', error);
+      Logger.error('Error loading collection', error);
       Alert.alert('Error', 'Failed to load collection details');
       navigation.goBack();
     } finally {
@@ -105,7 +106,7 @@ export const CollectionFormScreen: React.FC = () => {
         Alert.alert('Warning', 'No current rate found for this product');
       }
     } catch (error) {
-      console.error('Error loading current rate:', error);
+      Logger.error('Error loading current rate', error);
       setCurrentRate(null);
     }
   };
@@ -196,7 +197,7 @@ export const CollectionFormScreen: React.FC = () => {
 
       navigation.goBack();
     } catch (error: any) {
-      console.error('Error saving collection:', error);
+      Logger.error('Error saving collection', error);
       const message = error.response?.data?.message || 'Failed to save collection';
       Alert.alert('Error', message);
     } finally {

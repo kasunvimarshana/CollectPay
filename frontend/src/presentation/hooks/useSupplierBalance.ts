@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import apiClient from '../../infrastructure/api/apiClient';
+import Logger from '../../core/utils/Logger';
 
 interface SupplierBalance {
   balance: number;
@@ -43,7 +44,7 @@ export const useSupplierBalance = (supplierId: string | number | undefined): Use
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Error loading supplier balance:', error);
+      Logger.error('Error loading supplier balance', error);
       setError(error);
       // Don't show alert for balance loading failures as it's not critical
     } finally {

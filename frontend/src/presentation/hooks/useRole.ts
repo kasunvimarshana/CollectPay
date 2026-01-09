@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Role } from '../../domain/entities/Role';
+import Logger from '../../core/utils/Logger';
 
 interface UseRoleResult {
   role: Role | null;
@@ -35,7 +36,7 @@ export const useRole = (roleId: string | number | undefined): UseRoleResult => {
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Error loading role:', error);
+      Logger.error('Error loading role', error);
       setError(error);
       Alert.alert('Error', 'Failed to load role details');
     } finally {

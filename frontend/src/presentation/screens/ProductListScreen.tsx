@@ -24,6 +24,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canCreate } from '../../core/utils/permissions';
 import { Pagination, SortButton, ScreenHeader } from '../components';
 import THEME from '../../core/constants/theme';
+import Logger from '../../core/utils/Logger';
 
 export const ProductListScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -89,12 +90,12 @@ export const ProductListScreen: React.FC = () => {
           try {
             await LocalStorageService.cacheProducts(loadedProducts);
           } catch (cacheError) {
-            console.error('Failed to cache products:', cacheError);
+            Logger.error('Failed to cache products', cacheError);
           }
         }
       }
     } catch (error) {
-      console.error('Error loading products:', error);
+      Logger.error('Error loading products', error);
       Alert.alert('Error', 'Failed to load products');
     } finally {
       setLoading(false);

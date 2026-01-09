@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import apiClient from '../../infrastructure/api/apiClient';
 import { User } from '../../domain/entities/User';
+import Logger from '../../core/utils/Logger';
 
 interface UseUserResult {
   user: User | null;
@@ -35,7 +36,7 @@ export const useUser = (userId: string | number | undefined): UseUserResult => {
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Error loading user:', error);
+      Logger.error('Error loading user', error);
       setError(error);
       Alert.alert('Error', 'Failed to load user details');
     } finally {

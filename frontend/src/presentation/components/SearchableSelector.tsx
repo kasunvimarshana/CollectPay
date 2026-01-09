@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import THEME from '../../core/constants/theme';
 import apiClient from '../../infrastructure/api/apiClient';
+import Logger from '../../core/utils/Logger';
 
 export interface SearchableSelectorOption {
   id: number | string;
@@ -100,7 +101,7 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
         setSelectedOption(response.data);
       }
     } catch (error) {
-      console.error('Error loading selected option:', error);
+      Logger.error('Error loading selected option', error);
     }
   };
 
@@ -139,7 +140,7 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
         }
       }
     } catch (error) {
-      console.error('Error loading options:', error);
+      Logger.error('Error loading options', error);
     } finally {
       setLoading(false);
     }

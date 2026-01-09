@@ -20,6 +20,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { ScreenHeader } from '../components';
+import Logger from '../../core/utils/Logger';
 
 interface SupplierFormData {
   name: string;
@@ -80,7 +81,7 @@ export const SupplierFormScreen: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading supplier:', error);
+      Logger.error('Error loading supplier', error);
       Alert.alert('Error', 'Failed to load supplier details');
       navigation.goBack();
     } finally {
@@ -156,7 +157,7 @@ export const SupplierFormScreen: React.FC = () => {
       
       navigation.goBack();
     } catch (error: any) {
-      console.error('Error saving supplier:', error);
+      Logger.error('Error saving supplier', error);
       const message = error.response?.data?.message || 'Failed to save supplier';
       Alert.alert('Error', message);
     } finally {
