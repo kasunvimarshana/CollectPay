@@ -25,7 +25,6 @@ class StoreProductRequest extends FormRequest
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:255|unique:products',
             'description' => 'nullable|string',
-            'category' => 'nullable|string|max:255',
             'units' => 'required|array',
             'units.*' => 'string|max:50',
             'is_active' => 'nullable|boolean',
