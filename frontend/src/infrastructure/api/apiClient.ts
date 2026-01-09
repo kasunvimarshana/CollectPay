@@ -13,6 +13,9 @@ import {
 import LocalStorageService from "../storage/LocalStorageService";
 import Logger from "../../core/utils/Logger";
 
+// Logging context constants
+const API_CONTEXT = 'API';
+
 // Cache indicator constant
 const CACHE_MESSAGE = "Data loaded from cache (offline)";
 
@@ -271,7 +274,7 @@ class ApiClient {
         Logger.sync(`Queued ${action} operation for ${entity}`, { endpoint, entity, action });
       }
     } catch (error) {
-      Logger.error("Failed to queue operation", error, 'API');
+      Logger.error("Failed to queue operation", error, API_CONTEXT);
     }
   }
 
