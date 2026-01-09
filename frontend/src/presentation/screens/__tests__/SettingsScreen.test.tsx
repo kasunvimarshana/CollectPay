@@ -161,7 +161,7 @@ describe('SettingsScreen', () => {
         success: true,
         message: 'Synced 5 items. 0 failed.',
       });
-      (SyncService.fullSync as jest.Mock) = mockFullSync;
+      (SyncService.fullSync as jest.Mock).mockImplementation(mockFullSync);
 
       const { getByText } = render(<SettingsScreen />);
 
@@ -185,7 +185,7 @@ describe('SettingsScreen', () => {
         success: false,
         message: 'Network error',
       });
-      (SyncService.fullSync as jest.Mock) = mockFullSync;
+      (SyncService.fullSync as jest.Mock).mockImplementation(mockFullSync);
 
       const { getByText } = render(<SettingsScreen />);
 
@@ -209,7 +209,7 @@ describe('SettingsScreen', () => {
         syncStatus: { isSyncing: false, hasPendingChanges: false, lastSyncTime: null, syncError: null },
       });
       const mockFullSync = jest.fn();
-      (SyncService.fullSync as jest.Mock) = mockFullSync;
+      (SyncService.fullSync as jest.Mock).mockImplementation(mockFullSync);
 
       const { getByText } = render(<SettingsScreen />);
 
@@ -224,7 +224,7 @@ describe('SettingsScreen', () => {
 
     it('should handle sync exceptions', async () => {
       const mockFullSync = jest.fn().mockRejectedValue(new Error('Timeout'));
-      (SyncService.fullSync as jest.Mock) = mockFullSync;
+      (SyncService.fullSync as jest.Mock).mockImplementation(mockFullSync);
 
       const { getByText } = render(<SettingsScreen />);
 
@@ -262,7 +262,7 @@ describe('SettingsScreen', () => {
 
     it('should clear database when confirmed', async () => {
       const mockClearAllData = jest.fn().mockResolvedValue(undefined);
-      (LocalStorageService.clearAllData as jest.Mock) = mockClearAllData;
+      (LocalStorageService.clearAllData as jest.Mock).mockImplementation(mockClearAllData);
 
       // Mock Alert.alert to automatically confirm
       (Alert.alert as jest.Mock).mockImplementation((title, message, buttons) => {
@@ -295,7 +295,7 @@ describe('SettingsScreen', () => {
       const mockClearAllData = jest
         .fn()
         .mockRejectedValue(new Error('Database locked'));
-      (LocalStorageService.clearAllData as jest.Mock) = mockClearAllData;
+      (LocalStorageService.clearAllData as jest.Mock).mockImplementation(mockClearAllData);
 
       // Mock Alert.alert to automatically confirm
       (Alert.alert as jest.Mock).mockImplementation((title, message, buttons) => {
