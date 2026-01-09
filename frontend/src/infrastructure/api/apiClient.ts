@@ -11,6 +11,10 @@ import {
   TOKEN_STORAGE_KEY,
 } from "../../core/constants/api";
 import LocalStorageService from "../storage/LocalStorageService";
+import Logger from "../../core/utils/Logger";
+
+// Logging context constants
+const API_CONTEXT = 'API';
 
 // Cache indicator constant
 const CACHE_MESSAGE = "Data loaded from cache (offline)";
@@ -267,10 +271,10 @@ class ApiClient {
 
       if (entity) {
         await LocalStorageService.addToSyncQueue(entity, action, data);
-        console.log(`Queued ${action} operation for ${entity}`);
+        Logger.sync(`Queued ${action} operation for ${entity}`, { endpoint, entity, action });
       }
     } catch (error) {
-      console.error("Failed to queue operation:", error);
+      Logger.error("Failed to queue operation", error, API_CONTEXT);
     }
   }
 

@@ -4,6 +4,8 @@
  * Server is always the authoritative source of truth
  */
 
+import Logger from '../../core/utils/Logger';
+
 export interface ConflictData {
   localVersion: number;
   serverVersion: number;
@@ -158,10 +160,7 @@ Conflict Resolution Strategy:
       reason: resolution.reason,
     };
 
-    console.log('[Conflict Resolution]', JSON.stringify(log, null, 2));
-
-    // In production, this should be sent to a logging service
-    // or stored locally for later review
+    Logger.warn('Conflict detected and resolved', log, 'CONFLICT');
   }
 
   /**

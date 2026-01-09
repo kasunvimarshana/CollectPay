@@ -4,6 +4,10 @@
  */
 
 import * as SQLite from "expo-sqlite";
+import Logger from "../../core/utils/Logger";
+
+// Logging context constant
+const DB_CONTEXT = 'DB';
 
 export interface PendingSync {
   id?: number;
@@ -46,9 +50,9 @@ class LocalStorageService {
       this.db = await SQLite.openDatabaseAsync("app.db");
       await this.createTables();
       this.isInitialized = true;
-      console.log("Database initialized successfully");
+      Logger.info("Database initialized successfully", undefined, DB_CONTEXT);
     } catch (error) {
-      console.error("Database initialization error:", error);
+      Logger.error("Database initialization error", error, DB_CONTEXT);
       this.db = null;
       this.isInitialized = false;
       this.initializationPromise = null;

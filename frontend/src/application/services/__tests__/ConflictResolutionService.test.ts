@@ -195,7 +195,7 @@ describe('ConflictResolutionService', () => {
 
   describe('logConflict', () => {
     it('should log conflict details', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
       const conflict: ConflictData = {
         localVersion: 1,
@@ -214,13 +214,12 @@ describe('ConflictResolutionService', () => {
 
       ConflictResolutionService.logConflict(conflict, resolution);
 
-      expect(consoleSpy).toHaveBeenCalled();
-      const logCall = consoleSpy.mock.calls[0];
-      expect(logCall[0]).toBe('[Conflict Resolution]');
-      expect(logCall[1]).toContain('supplier');
-      expect(logCall[1]).toContain('use_server');
+      expect(warnSpy).toHaveBeenCalled();
+      const logCall = warnSpy.mock.calls[0];
+      expect(logCall[0]).toContain('[WARN]');
+      expect(logCall[0]).toContain('[CONFLICT]');
 
-      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
     });
   });
 
