@@ -45,6 +45,7 @@ export const API_ENDPOINTS = {
 // API Request Timeout
 export const API_TIMEOUT = 30000; // 30 seconds
 
-// Token Storage Key
+// Token Storage Keys
 export const TOKEN_STORAGE_KEY = "@app_token";
+export const TOKEN_EXPIRY_STORAGE_KEY = "@app_token_expiry";
 export const USER_STORAGE_KEY = "@app_user";

@@ -32,6 +32,7 @@ export interface ApiResponse<T = any> {
 
 class ApiClient {
   private axiosInstance: AxiosInstance;
+  private onUnauthorized: (() => void) | null = null;
 
   constructor() {
     this.axiosInstance = axios.create({
@@ -44,6 +45,14 @@ class ApiClient {
     });
 
     this.setupInterceptors();
+  }
+
+  /**
+   * Set callback for unauthorized events
+   * This allows AuthContext to handle logout when token is invalid
+   */
+  setUnauthorizedCallback(callback: () => void): void {
+    this.onUnauthorized = callback;
   }
 
   /**
@@ -70,10 +79,17 @@ class ApiClient {
         return response;
       },
       async (error) => {
-        // Handle 401 Unauthorized - token expired
+        // Handle 401 Unauthorized - token expired or invalid
         if (error.response?.status === 401) {
+          Logger.warn('Received 401 Unauthorized response', undefined, API_CONTEXT);
+          
+          // Clear token from storage
           await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-          // You might want to trigger a logout event here
+          
+          // Trigger unauthorized callback if set (for global logout)
+          if (this.onUnauthorized) {
+            this.onUnauthorized();
+          }
         }
         return Promise.reject(error);
       }
