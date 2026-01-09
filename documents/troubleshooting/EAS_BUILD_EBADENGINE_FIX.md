@@ -8,40 +8,38 @@ When building the CollectPay Android app with Expo EAS Build, the build process 
 ```
 npm ERR! code EBADENGINE
 npm ERR! engine Unsupported engine
-npm ERR! engine Not compatible with your version of node/npm
+npm ERR! engine Not compatible with your version of node/npm: @react-native/assets-registry@0.81.5
+npm ERR! notsup Required: {"node":">= 20.19.4"}
+npm ERR! notsup Actual:   {"npm":"10.8.2","node":"v20.17.0"}
 ```
 
 ## Root Cause
 
-The issue was caused by overly restrictive Node.js version requirements in the `package.json` file:
+The issue was caused by incompatibility between the configured Node version and React Native dependency requirements:
 
-```json
-"engines": {
-  "node": ">=20.17.0 <24.0.0",
-  "npm": ">=10.0.0 <11.0.0"
-}
-```
-
-Combined with `engine-strict=true` in `.npmrc`, this configuration enforced strict version checking. EAS build servers for Expo SDK 54 use Node 20.x, but potentially versions earlier than 20.17.0, causing the build to fail.
+1. **Dependency Requirement**: `@react-native/assets-registry@0.81.5` requires Node >= 20.19.4
+2. **Configured Version**: The project was configured to use Node 20.17.0
+3. **Result**: EBADENGINE error during dependency installation on EAS build servers
 
 ## Solution
 
 ### Changes Made
 
-#### 1. Updated package.json engines (Initial Fix)
+#### 1. Updated .nvmrc Files
 
-Updated the minimum Node.js version requirement from `>=20.17.0` to `>=20.0.0`:
+Updated Node version across all .nvmrc files from 20.17.0 to 20.19.4:
 
-```json
-"engines": {
-  "node": ">=20.0.0 <24.0.0",
-  "npm": ">=10.0.0 <11.0.0"
-}
+- **Root**: `/.nvmrc`
+- **Frontend**: `/frontend/.nvmrc`
+- **Backend**: `/backend/.nvmrc`
+
+```
+20.19.4
 ```
 
-#### 2. Pinned Node Version in eas.json (Best Practice)
+#### 2. Updated eas.json (Best Practice)
 
-Added explicit Node version to all build profiles in `eas.json`:
+Updated explicit Node version in all build profiles in `frontend/eas.json`:
 
 ```json
 {
@@ -49,15 +47,15 @@ Added explicit Node version to all build profiles in `eas.json`:
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "node": "20.17.0"
+      "node": "20.19.4"
     },
     "preview": {
       "distribution": "internal",
-      "node": "20.17.0"
+      "node": "20.19.4"
     },
     "production": {
       "autoIncrement": true,
-      "node": "20.17.0"
+      "node": "20.19.4"
     }
   }
 }
@@ -65,22 +63,22 @@ Added explicit Node version to all build profiles in `eas.json`:
 
 ### Why This Works
 
-1. **EAS Compatibility**: EAS build images for Expo SDK 54 use Node 20.x by default
-2. **Broader Acceptance**: `>=20.0.0` accepts all Node 20.x versions
-3. **Maintains Safety**: Upper bound `<24.0.0` ensures compatibility with Expo SDK 54
-4. **Local Development**: `.nvmrc` still specifies 20.17.0 for recommended local setup
-5. **Deterministic Builds**: Explicit Node version in `eas.json` ensures EAS Build always uses 20.17.0
+1. **Dependency Compatibility**: Node 20.19.4 meets `@react-native/assets-registry@0.81.5` requirement (>= 20.19.4)
+2. **EAS Compatibility**: EAS build images support Node 20.19.4
+3. **Maintains Safety**: Still within valid range for Expo SDK 54
+4. **Local Development**: `.nvmrc` files specify 20.19.4 for consistent local setup
+5. **Deterministic Builds**: Explicit Node version in `eas.json` ensures EAS Build always uses 20.19.4
 6. **Prevents Drift**: Version pinning eliminates future EBADENGINE failures from version mismatches
 
 ## Validation Steps
 
 After implementing the fix:
 
-1. ✅ `npm ci --include=dev` runs successfully
+1. ✅ `npm ci --include=dev` runs successfully (810 packages, 0 vulnerabilities)
 2. ✅ TypeScript compilation passes (`npx tsc --noEmit`)
-3. ✅ All 810 dependencies install correctly
+3. ✅ All frontend tests pass (88/88 tests passing)
 4. ✅ 0 security vulnerabilities detected
-5. ✅ Local development environment remains compatible
+5. ✅ No EBADENGINE errors
 
 ## Prevention Best Practices
 
@@ -92,13 +90,13 @@ After implementing the fix:
 {
   "build": {
     "development": {
-      "node": "20.17.0"
+      "node": "20.19.4"
     },
     "preview": {
-      "node": "20.17.0"
+      "node": "20.19.4"
     },
     "production": {
-      "node": "20.17.0"
+      "node": "20.19.4"
     }
   }
 }
