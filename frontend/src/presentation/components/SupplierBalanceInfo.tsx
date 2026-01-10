@@ -28,7 +28,8 @@ export const SupplierBalanceInfo: React.FC<SupplierBalanceInfoProps> = ({
   onViewPayments,
 }) => {
   const formatCurrency = (amount: number) => {
-    return `${amount.toFixed(2)}`;
+    const value = (Number(amount) || 0).toFixed(2);
+    return `${value}`;
   };
 
   return (
