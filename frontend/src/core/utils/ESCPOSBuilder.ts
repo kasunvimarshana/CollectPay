@@ -3,6 +3,8 @@
  * Utility for generating ESC/POS commands for thermal printers
  */
 
+import { encode as base64Encode } from 'base-64';
+
 export enum TextAlignment {
   LEFT = 0,
   CENTER = 1,
@@ -224,15 +226,16 @@ export class ESCPOSBuilder {
   }
 
   /**
-   * Build and return as base64 string
+   * Build and return as base64 string using base-64 library
    */
   buildBase64(): string {
     const buffer = this.build();
-    let binary = '';
+    let binaryString = '';
     for (let i = 0; i < buffer.length; i++) {
-      binary += String.fromCharCode(buffer[i]);
+      binaryString += String.fromCharCode(buffer[i]);
     }
-    return btoa(binary);
+    // Use base-64 library for reliable encoding
+    return base64Encode(binaryString);
   }
 
   /**

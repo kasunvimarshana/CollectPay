@@ -23,9 +23,10 @@ import SyncService from '../../application/services/SyncService';
 import THEME from '../../core/constants/theme';
 import { useNetworkStatus } from '../../application/hooks/useNetworkStatus';
 import Logger from '../../core/utils/Logger';
+import { NavigationProp } from '../../types/navigation';
 
 export const SettingsScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { networkStatus } = useNetworkStatus();
@@ -239,7 +240,7 @@ export const SettingsScreen: React.FC = () => {
           
           <TouchableOpacity 
             style={[styles.actionButton, styles.printerButton]}
-            onPress={() => (navigation.navigate as any)('PrinterSettings')}
+            onPress={() => navigation.navigate('PrinterSettings')}
             accessibilityRole="button"
             accessibilityLabel="Printer settings"
             accessibilityHint="Configure Bluetooth thermal printer"

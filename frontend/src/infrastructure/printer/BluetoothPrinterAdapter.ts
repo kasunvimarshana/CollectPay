@@ -5,6 +5,7 @@
 
 import { BleManager, Device, Characteristic } from 'react-native-ble-plx';
 import { Platform, PermissionsAndroid } from 'react-native';
+import { encode as base64Encode } from 'base-64';
 import { PrinterDevice, PrinterConnectionStatus } from '../../domain/entities/Printer';
 import Logger from '../../core/utils/Logger';
 
@@ -249,14 +250,16 @@ export class BluetoothPrinterAdapter {
   }
 
   /**
-   * Convert Uint8Array to base64 string
+   * Convert Uint8Array to base64 string using base-64 library
    */
   private uint8ArrayToBase64(data: Uint8Array): string {
-    let binary = '';
+    // Convert Uint8Array to string
+    let binaryString = '';
     for (let i = 0; i < data.length; i++) {
-      binary += String.fromCharCode(data[i]);
+      binaryString += String.fromCharCode(data[i]);
     }
-    return btoa(binary);
+    // Use base-64 library for reliable encoding
+    return base64Encode(binaryString);
   }
 
   /**
