@@ -24,3 +24,4 @@ export { Input } from './Input';
 export { SupplierInfo } from './SupplierInfo';
 export { SupplierBalanceInfo } from './SupplierBalanceInfo';
 export { DetailActionButtons } from './DetailActionButtons';
+export { PrinterStatusIndicator } from './PrinterStatusIndicator';

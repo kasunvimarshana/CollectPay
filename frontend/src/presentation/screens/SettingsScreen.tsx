@@ -23,9 +23,10 @@ import SyncService from '../../application/services/SyncService';
 import THEME from '../../core/constants/theme';
 import { useNetworkStatus } from '../../application/hooks/useNetworkStatus';
 import Logger from '../../core/utils/Logger';
+import { NavigationProp } from '../../types/navigation';
 
 export const SettingsScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { networkStatus } = useNetworkStatus();
@@ -233,6 +234,25 @@ export const SettingsScreen: React.FC = () => {
           </Text>
         </View>
 
+        {/* Printer Settings Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Printer</Text>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.printerButton]}
+            onPress={() => navigation.navigate('PrinterSettings')}
+            accessibilityRole="button"
+            accessibilityLabel="Printer settings"
+            accessibilityHint="Configure Bluetooth thermal printer"
+          >
+            <Text style={styles.actionButtonIcon}>🖨️</Text>
+            <Text style={styles.actionButtonText}>Printer Settings</Text>
+          </TouchableOpacity>
+          <Text style={styles.actionDescription}>
+            Configure Bluetooth thermal printer for receipts and invoices
+          </Text>
+        </View>
+
         {/* Database Management Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Database Management</Text>
@@ -393,6 +413,9 @@ const styles = StyleSheet.create({
   },
   syncButton: {
     backgroundColor: THEME.colors.primary,
+  },
+  printerButton: {
+    backgroundColor: THEME.colors.info,
   },
   clearButton: {
     backgroundColor: THEME.colors.error,

@@ -34,6 +34,7 @@ import { RoleListScreen } from '../screens/RoleListScreen';
 import { RoleDetailScreen } from '../screens/RoleDetailScreen';
 import { RoleFormScreen } from '../screens/RoleFormScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { PrinterSettingsScreen } from '../screens/PrinterSettingsScreen';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -99,6 +100,7 @@ export const AppNavigator: React.FC = () => {
             
             {/* Settings Screen */}
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="PrinterSettings" component={PrinterSettingsScreen} />
           </>
         ) : (
           <>

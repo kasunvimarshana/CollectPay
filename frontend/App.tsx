@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './src/presentation/contexts/AuthContext';
 import { AppNavigator } from './src/presentation/navigation/AppNavigator';
 import SyncService from './src/application/services/SyncService';
+import PrintService from './src/application/services/PrintService';
 import LocalStorageService from './src/infrastructure/storage/LocalStorageService';
 import Logger from './src/core/utils/Logger';
 
@@ -19,9 +20,10 @@ export default function App() {
       try {
         await LocalStorageService.initialize();
         await SyncService.initialize();
-        Logger.info('Offline services initialized successfully', undefined, 'App');
+        await PrintService.getInstance().initialize();
+        Logger.info('Services initialized successfully', undefined, 'App');
       } catch (error) {
-        Logger.error('Failed to initialize offline services', error, 'App');
+        Logger.error('Failed to initialize services', error, 'App');
       }
     };
 

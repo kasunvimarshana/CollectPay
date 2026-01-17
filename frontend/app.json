@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.collectpay.app"
+      "bundleIdentifier": "com.collectpay.app",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app needs Bluetooth access to connect to thermal printers for printing receipts and invoices.",
+        "NSBluetoothPeripheralUsageDescription": "This app needs Bluetooth access to connect to thermal printers for printing receipts and invoices."
+      }
     },
     "android": {
       "package": "com.collectpay.app",
@@ -24,7 +28,14 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,6 +48,14 @@
           "android": {
             "usesCleartextTraffic": true
           }
+        }
+      ],
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to Bluetooth thermal printers"
         }
       ]
     ],
