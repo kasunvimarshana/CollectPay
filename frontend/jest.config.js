@@ -1,7 +1,7 @@
 module.exports = {
   preset: 'react-native',
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|@react-navigation|@unimodules|unimodules|sentry-expo|native-base|react-native-svg|@react-native-async-storage)/)'
+    'node_modules/(?!(react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|@react-navigation|@unimodules|unimodules|sentry-expo|native-base|react-native-svg|@react-native-async-storage|react-native-ble-plx)/)'
   ],
   testMatch: [
     '**/__tests__/**/*.(test|spec).(ts|tsx|js)',
