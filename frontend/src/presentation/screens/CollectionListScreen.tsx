@@ -25,6 +25,12 @@ import { Pagination, SortButton, ScreenHeader, SyncStatusIndicator } from '../co
 import THEME from '../../core/constants/theme';
 import Logger from '../../core/utils/Logger';
 
+interface BulkApplyRateResponse {
+  applied_count: number;
+  skipped_count: number;
+  results: Array<{ collection_id: number; status: string; message: string }>;
+}
+
 export const CollectionListScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -36,6 +42,9 @@ export const CollectionListScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkApplying, setBulkApplying] = useState(false);
   
   // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,58 +133,130 @@ export const CollectionListScreen: React.FC = () => {
     (navigation.navigate as any)('CollectionForm');
   };
 
-  const renderCollectionItem = ({ item }: { item: Collection }) => (
-    <TouchableOpacity
-      style={styles.collectionCard}
-      onPress={() => handleCollectionPress(item)}
-      accessibilityRole="button"
-      accessibilityLabel={`Collection from ${item.supplier?.name || 'Unknown Supplier'}, Product: ${item.product?.name || 'Unknown'}, Quantity: ${item.quantity} ${item.unit}, Amount: ${item.total_amount != null ? (Number(item.total_amount) || 0).toFixed(2) : 'Pending'}`}
-      accessibilityHint="Press to view collection details"
-    >
-      <View style={styles.collectionHeader}>
-        <Text style={styles.supplierName}>{String(item.supplier?.name || 'Unknown Supplier')}</Text>
-        <Text style={styles.date}>
-          {new Date(item.collection_date).toLocaleDateString()}
-        </Text>
-      </View>
-      
-      <View style={styles.collectionDetails}>
-        <Text style={styles.detailLabel}>Product:</Text>
-        <Text style={styles.detailValue}>{String(item.product?.name || 'Unknown')}</Text>
-      </View>
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    setSelectedIds(new Set());
+  };
 
-      <View style={styles.collectionDetails}>
-        <Text style={styles.detailLabel}>Quantity:</Text>
-        <Text style={styles.detailValue}>
-          {String(item.quantity)} {String(item.unit)}
-        </Text>
-      </View>
+  const toggleSelectItem = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
-      <View style={styles.collectionDetails}>
-        <Text style={styles.detailLabel}>Rate:</Text>
-        <Text style={[styles.detailValue, !item.rate_applied && styles.pendingText]}>
-          {item.rate_applied
-            ? `${String(item.rate_applied)} per ${String(item.unit)}`
-            : 'Pending'}
-        </Text>
-      </View>
+  const handleBulkApplyRates = () => {
+    if (selectedIds.size === 0) return;
+    Alert.alert(
+      'Bulk Apply Rates',
+      `Apply rates to ${selectedIds.size} selected collection${selectedIds.size > 1 ? 's' : ''}? Collections that already have a rate will be skipped.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Apply', onPress: confirmBulkApplyRates },
+      ]
+    );
+  };
 
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total Amount:</Text>
-        <Text style={[styles.totalValue, item.total_amount == null && styles.pendingTotalValue]}>
-          {item.total_amount != null
-            ? (Number(item.total_amount) || 0).toFixed(2)
-            : 'Pending'}
-        </Text>
-      </View>
+  const confirmBulkApplyRates = async () => {
+    try {
+      setBulkApplying(true);
+      const response = await apiClient.post('/collections/bulk-apply-rate', {
+        collection_ids: Array.from(selectedIds),
+      });
+      if (response.success) {
+        const { applied_count, skipped_count } = response.data as BulkApplyRateResponse;
+        Alert.alert(
+          'Done',
+          `Rates applied to ${applied_count} collection${applied_count !== 1 ? 's' : ''}${skipped_count > 0 ? `. ${skipped_count} skipped.` : '.'}`
+        );
+        setSelectionMode(false);
+        setSelectedIds(new Set());
+        await loadCollections();
+      }
+    } catch (error: any) {
+      Logger.error('Error bulk applying rates', error);
+      const message = error.response?.data?.message || 'Failed to apply rates';
+      Alert.alert('Error', message);
+    } finally {
+      setBulkApplying(false);
+    }
+  };
 
-      {item.notes && (
-        <View style={styles.notesContainer}>
-          <Text style={styles.notesText}>{String(item.notes)}</Text>
+  const handleLongPressItem = (item: Collection) => {
+    if (!selectionMode) {
+      setSelectionMode(true);
+      toggleSelectItem(item.id);
+    }
+  };
+
+  const renderCollectionItem = ({ item }: { item: Collection }) => {
+    const isSelected = selectedIds.has(item.id);
+    return (
+      <TouchableOpacity
+        style={[styles.collectionCard, isSelected && styles.collectionCardSelected]}
+        onPress={() => selectionMode ? toggleSelectItem(item.id) : handleCollectionPress(item)}
+        onLongPress={() => handleLongPressItem(item)}
+        accessibilityRole="button"
+        accessibilityLabel={`Collection from ${item.supplier?.name || 'Unknown Supplier'}, Product: ${item.product?.name || 'Unknown'}, Quantity: ${item.quantity} ${item.unit}, Amount: ${item.total_amount != null ? (Number(item.total_amount) || 0).toFixed(2) : 'Pending'}`}
+        accessibilityHint={selectionMode ? 'Press to toggle selection' : 'Press to view collection details, long press to select'}
+      >
+        {selectionMode && (
+          <View style={styles.checkboxContainer}>
+            <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+              {isSelected && <Text style={styles.checkboxTick}>✓</Text>}
+            </View>
+          </View>
+        )}
+        <View style={styles.collectionHeader}>
+          <Text style={styles.supplierName}>{String(item.supplier?.name || 'Unknown Supplier')}</Text>
+          <Text style={styles.date}>
+            {new Date(item.collection_date).toLocaleDateString()}
+          </Text>
         </View>
-      )}
-    </TouchableOpacity>
-  );
+
+        <View style={styles.collectionDetails}>
+          <Text style={styles.detailLabel}>Product:</Text>
+          <Text style={styles.detailValue}>{String(item.product?.name || 'Unknown')}</Text>
+        </View>
+
+        <View style={styles.collectionDetails}>
+          <Text style={styles.detailLabel}>Quantity:</Text>
+          <Text style={styles.detailValue}>
+            {String(item.quantity)} {String(item.unit)}
+          </Text>
+        </View>
+
+        <View style={styles.collectionDetails}>
+          <Text style={styles.detailLabel}>Rate:</Text>
+          <Text style={[styles.detailValue, !item.rate_applied && styles.pendingText]}>
+            {item.rate_applied
+              ? `${String(item.rate_applied)} per ${String(item.unit)}`
+              : 'Pending'}
+          </Text>
+        </View>
+
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Total Amount:</Text>
+          <Text style={[styles.totalValue, item.total_amount == null && styles.pendingTotalValue]}>
+            {item.total_amount != null
+              ? (Number(item.total_amount) || 0).toFixed(2)
+              : 'Pending'}
+          </Text>
+        </View>
+
+        {item.notes && (
+          <View style={styles.notesContainer}>
+            <Text style={styles.notesText}>{String(item.notes)}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -191,11 +272,42 @@ export const CollectionListScreen: React.FC = () => {
       <ScreenHeader
         title="Collections"
         variant="light"
-        showAddButton={canCreate(user, 'collections')}
+        showAddButton={!selectionMode && canCreate(user, 'collections')}
         onAddPress={handleAddCollection}
         addButtonText="+ Add Collection"
-        rightComponent={<SyncStatusIndicator showDetails={false} />}
+        rightComponent={
+          <View style={styles.headerActions}>
+            <SyncStatusIndicator showDetails={false} />
+            <TouchableOpacity
+              style={[styles.selectModeButton, selectionMode && styles.selectModeButtonActive]}
+              onPress={toggleSelectionMode}
+            >
+              <Text style={[styles.selectModeButtonText, selectionMode && styles.selectModeButtonTextActive]}>
+                {selectionMode ? 'Cancel' : 'Select'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        }
       />
+
+      {selectionMode && (
+        <View style={styles.selectionBar}>
+          <Text style={styles.selectionCount}>
+            {selectedIds.size} selected
+          </Text>
+          <TouchableOpacity
+            style={[styles.bulkApplyButton, (selectedIds.size === 0 || bulkApplying) && styles.buttonDisabled]}
+            onPress={handleBulkApplyRates}
+            disabled={selectedIds.size === 0 || bulkApplying}
+          >
+            {bulkApplying ? (
+              <ActivityIndicator color={THEME.colors.white} size="small" />
+            ) : (
+              <Text style={styles.bulkApplyButtonText}>Apply Rates</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.searchContainer}>
         <TextInput
@@ -393,5 +505,84 @@ const styles = StyleSheet.create({
     borderBottomColor: THEME.colors.border,
     justifyContent: 'flex-start',
     gap: 8,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectModeButton: {
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.base,
+    borderWidth: 1,
+    borderColor: THEME.colors.primary,
+  },
+  selectModeButtonActive: {
+    backgroundColor: THEME.colors.primary,
+  },
+  selectModeButtonText: {
+    fontSize: THEME.typography.fontSize.sm,
+    color: THEME.colors.primary,
+    fontWeight: THEME.typography.fontWeight.semibold,
+  },
+  selectModeButtonTextActive: {
+    color: THEME.colors.white,
+  },
+  selectionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    backgroundColor: THEME.colors.warning + '22',
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.warning,
+  },
+  selectionCount: {
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textPrimary,
+    fontWeight: THEME.typography.fontWeight.semibold,
+  },
+  bulkApplyButton: {
+    backgroundColor: THEME.colors.warning,
+    paddingHorizontal: THEME.spacing.base,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.base,
+    minWidth: 110,
+    alignItems: 'center',
+  },
+  bulkApplyButtonText: {
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.base,
+    fontWeight: THEME.typography.fontWeight.semibold,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  collectionCardSelected: {
+    borderWidth: 2,
+    borderColor: THEME.colors.primary,
+  },
+  checkboxContainer: {
+    marginBottom: THEME.spacing.sm,
+    alignItems: 'flex-end',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: THEME.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: THEME.colors.primary,
+  },
+  checkboxTick: {
+    color: THEME.colors.white,
+    fontSize: 13,
+    fontWeight: THEME.typography.fontWeight.bold,
   },
 });

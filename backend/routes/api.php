@@ -52,6 +52,7 @@ Route::middleware(['auth:api', 'audit', 'rate.limit:60,1'])->group(function () {
     // Collections with version conflict checking
     Route::get('/collections', [CollectionController::class, 'index']);
     Route::post('/collections', [CollectionController::class, 'store']);
+    Route::post('/collections/bulk-apply-rate', [CollectionController::class, 'bulkApplyRate']);
     Route::get('/collections/{collection}', [CollectionController::class, 'show']);
     Route::put('/collections/{collection}', [CollectionController::class, 'update'])->middleware('check.version');
     Route::delete('/collections/{collection}', [CollectionController::class, 'destroy']);

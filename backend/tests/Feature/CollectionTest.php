@@ -262,4 +262,148 @@ class CollectionTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    public function test_can_bulk_apply_rates_to_collections(): void
+    {
+        $collectionWithoutRate = Collection::factory()->create([
+            'supplier_id' => $this->supplier->id,
+            'product_id' => $this->product->id,
+            'rate_id' => null,
+            'rate_applied' => null,
+            'total_amount' => null,
+            'quantity' => 10.0,
+            'unit' => 'kg',
+            'collection_date' => now()->toDateString(),
+            'version' => 1,
+        ]);
+
+        $response = $this->withHeaders($this->authenticatedHeaders())
+            ->postJson('/api/collections/bulk-apply-rate', [
+                'collection_ids' => [$collectionWithoutRate->id],
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'applied_count',
+                'skipped_count',
+                'results' => [
+                    '*' => ['collection_id', 'status', 'message'],
+                ],
+            ])
+            ->assertJson([
+                'success' => true,
+                'applied_count' => 1,
+                'skipped_count' => 0,
+                'results' => [
+                    ['collection_id' => $collectionWithoutRate->id, 'status' => 'applied'],
+                ],
+            ]);
+
+        // Verify the rate was applied and total recalculated (10 * 250 = 2500)
+        $this->assertDatabaseHas('collections', [
+            'id' => $collectionWithoutRate->id,
+            'rate_id' => $this->rate->id,
+            'total_amount' => 2500.00,
+        ]);
+    }
+
+    public function test_bulk_apply_rate_skips_collections_that_already_have_rate(): void
+    {
+        $collectionWithRate = Collection::factory()->create([
+            'supplier_id' => $this->supplier->id,
+            'product_id' => $this->product->id,
+            'rate_id' => $this->rate->id,
+            'rate_applied' => 250.00,
+            'total_amount' => 5000.00,
+            'quantity' => 20.0,
+            'unit' => 'kg',
+            'collection_date' => now()->toDateString(),
+            'version' => 1,
+        ]);
+
+        $response = $this->withHeaders($this->authenticatedHeaders())
+            ->postJson('/api/collections/bulk-apply-rate', [
+                'collection_ids' => [$collectionWithRate->id],
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'applied_count' => 0,
+                'skipped_count' => 1,
+                'results' => [
+                    ['collection_id' => $collectionWithRate->id, 'status' => 'skipped'],
+                ],
+            ]);
+    }
+
+    public function test_bulk_apply_rate_handles_mixed_collections(): void
+    {
+        $collectionWithoutRate = Collection::factory()->create([
+            'supplier_id' => $this->supplier->id,
+            'product_id' => $this->product->id,
+            'rate_id' => null,
+            'rate_applied' => null,
+            'total_amount' => null,
+            'quantity' => 10.0,
+            'unit' => 'kg',
+            'collection_date' => now()->toDateString(),
+            'version' => 1,
+        ]);
+
+        $collectionWithRate = Collection::factory()->create([
+            'supplier_id' => $this->supplier->id,
+            'product_id' => $this->product->id,
+            'rate_id' => $this->rate->id,
+            'rate_applied' => 250.00,
+            'total_amount' => 5000.00,
+            'quantity' => 20.0,
+            'unit' => 'kg',
+            'collection_date' => now()->toDateString(),
+            'version' => 1,
+        ]);
+
+        $response = $this->withHeaders($this->authenticatedHeaders())
+            ->postJson('/api/collections/bulk-apply-rate', [
+                'collection_ids' => [$collectionWithoutRate->id, $collectionWithRate->id],
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'applied_count' => 1,
+                'skipped_count' => 1,
+            ]);
+    }
+
+    public function test_bulk_apply_rate_requires_collection_ids(): void
+    {
+        $response = $this->withHeaders($this->authenticatedHeaders())
+            ->postJson('/api/collections/bulk-apply-rate', []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['collection_ids']);
+    }
+
+    public function test_bulk_apply_rate_rejects_invalid_collection_ids(): void
+    {
+        $response = $this->withHeaders($this->authenticatedHeaders())
+            ->postJson('/api/collections/bulk-apply-rate', [
+                'collection_ids' => [99999],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['collection_ids.0']);
+    }
+
+    public function test_unauthenticated_user_cannot_bulk_apply_rates(): void
+    {
+        $response = $this->postJson('/api/collections/bulk-apply-rate', [
+            'collection_ids' => [1],
+        ]);
+
+        $response->assertStatus(401);
+    }
 }

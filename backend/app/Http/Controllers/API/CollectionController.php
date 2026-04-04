@@ -489,6 +489,138 @@ class CollectionController extends Controller
     }
 
     /**
+     * Apply rates to multiple collections in bulk
+     *
+     * @OA\Post(
+     *     path="/collections/bulk-apply-rate",
+     *     tags={"Collections"},
+     *     summary="Bulk apply rates to collections",
+     *     description="Apply current rates to a list of collections that are missing a rate. For each collection the rate is looked up automatically based on its product, date, and unit. Collections that already have a rate are skipped. Returns per-collection results.",
+     *     operationId="bulkApplyRateToCollections",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="List of collection IDs to process",
+     *
+     *         @OA\JsonContent(
+     *             required={"collection_ids"},
+     *
+     *             @OA\Property(
+     *                 property="collection_ids",
+     *                 type="array",
+     *
+     *                 @OA\Items(type="integer"),
+     *                 example={1,2,3},
+     *                 description="IDs of collections to apply rates to"
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Bulk operation completed",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Rates applied to 3 of 5 collections"),
+     *             @OA\Property(property="applied_count", type="integer", example=3),
+     *             @OA\Property(property="skipped_count", type="integer", example=2),
+     *             @OA\Property(
+     *                 property="results",
+     *                 type="array",
+     *
+     *                 @OA\Items(
+     *
+     *                     @OA\Property(property="collection_id", type="integer"),
+     *                     @OA\Property(property="status", type="string", enum={"applied","skipped","error"}),
+     *                     @OA\Property(property="message", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function bulkApplyRate(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'collection_ids' => 'required|array|min:1',
+            'collection_ids.*' => 'required|integer|exists:collections,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $results = [];
+        $appliedCount = 0;
+        $skippedCount = 0;
+
+        $collections = Collection::whereIn('id', $request->collection_ids)->get();
+
+        foreach ($collections as $collection) {
+            if ($collection->hasRate()) {
+                $results[] = [
+                    'collection_id' => $collection->id,
+                    'status' => 'skipped',
+                    'message' => 'Rate already applied',
+                ];
+                $skippedCount++;
+                continue;
+            }
+
+            try {
+                DB::transaction(function () use ($collection) {
+                    $product = Product::findOrFail($collection->product_id);
+                    $rate = $product->getCurrentRate($collection->collection_date, $collection->unit);
+
+                    if (! $rate) {
+                        throw new \Exception('No valid rate found');
+                    }
+
+                    $collection->rate_id = $rate->id;
+                    $collection->rate_applied = $rate->rate;
+                    $collection->total_amount = $collection->quantity * $rate->rate;
+                    $collection->version++;
+                    $collection->save();
+                });
+
+                $results[] = [
+                    'collection_id' => $collection->id,
+                    'status' => 'applied',
+                    'message' => 'Rate applied successfully',
+                ];
+                $appliedCount++;
+            } catch (\Exception $e) {
+                $message = $e->getMessage() === 'No valid rate found'
+                    ? 'No valid rate found for this collection\'s product, date, and unit'
+                    : 'Failed to apply rate';
+                $results[] = [
+                    'collection_id' => $collection->id,
+                    'status' => 'error',
+                    'message' => $message,
+                ];
+                $skippedCount++;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Rates applied to {$appliedCount} of " . count($request->collection_ids) . ' collections',
+            'applied_count' => $appliedCount,
+            'skipped_count' => $skippedCount,
+            'results' => $results,
+        ]);
+    }
+
+    /**
      * Remove the specified collection
      *
      * @OA\Delete(
