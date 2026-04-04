@@ -30,6 +30,7 @@ export const CollectionDetailScreen: React.FC = () => {
 
   const [collection, setCollection] = useState<Collection | null>(null);
   const [loading, setLoading] = useState(true);
+  const [applyingRate, setApplyingRate] = useState(false);
 
   useEffect(() => {
     loadCollection();
@@ -51,6 +52,37 @@ export const CollectionDetailScreen: React.FC = () => {
 
   const handleEdit = () => {
     (navigation.navigate as any)('CollectionForm', { collectionId });
+  };
+
+  const handleApplyRate = () => {
+    Alert.alert(
+      'Apply Rate',
+      'This will look up and apply the current rate for this collection\'s product and date. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Apply',
+          onPress: confirmApplyRate,
+        },
+      ]
+    );
+  };
+
+  const confirmApplyRate = async () => {
+    try {
+      setApplyingRate(true);
+      const response = await apiClient.post(`/collections/${collectionId}/apply-rate`, {});
+      if (response.success) {
+        setCollection(response.data as any);
+        Alert.alert('Success', 'Rate applied successfully');
+      }
+    } catch (error: any) {
+      Logger.error('Error applying rate', error);
+      const message = error.response?.data?.message || 'No valid rate found for this collection';
+      Alert.alert('Error', message);
+    } finally {
+      setApplyingRate(false);
+    }
   };
 
   const handleDelete = () => {
@@ -161,15 +193,19 @@ export const CollectionDetailScreen: React.FC = () => {
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Rate Applied:</Text>
-          <Text style={styles.detailValue}>
-            {String(collection.rate_applied)} per {String(collection.unit)}
+          <Text style={[styles.detailValue, !collection.rate_applied && styles.pendingText]}>
+            {collection.rate_applied
+              ? `${String(collection.rate_applied)} per ${String(collection.unit)}`
+              : 'Pending'}
           </Text>
         </View>
 
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total Amount:</Text>
-          <Text style={styles.totalValue}>
-            {typeof collection.total_amount === 'number' || typeof collection.total_amount === 'string' ? (Number(collection.total_amount) || 0).toFixed(2) : '0.00'}
+          <Text style={[styles.totalValue, !collection.total_amount && styles.pendingTotalValue]}>
+            {collection.total_amount != null
+              ? (Number(collection.total_amount) || 0).toFixed(2)
+              : 'Pending'}
           </Text>
         </View>
 
@@ -192,6 +228,20 @@ export const CollectionDetailScreen: React.FC = () => {
         <TouchableOpacity style={styles.printButton} onPress={handlePrint}>
           <Text style={styles.printButtonText}>🖨️ Print Invoice</Text>
         </TouchableOpacity>
+
+        {!collection.rate_applied && (
+          <TouchableOpacity
+            style={[styles.applyRateButton, applyingRate && styles.buttonDisabled]}
+            onPress={handleApplyRate}
+            disabled={applyingRate}
+          >
+            {applyingRate ? (
+              <ActivityIndicator color={THEME.colors.white} />
+            ) : (
+              <Text style={styles.applyRateButtonText}>Apply Rate</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
           <Text style={styles.editButtonText}>Edit Collection</Text>
@@ -313,6 +363,30 @@ const styles = StyleSheet.create({
     color: THEME.colors.white,
     fontSize: THEME.typography.fontSize.md,
     fontWeight: THEME.typography.fontWeight.semibold,
+  },
+  applyRateButton: {
+    flex: 1,
+    minWidth: '100%',
+    backgroundColor: THEME.colors.warning,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
+    alignItems: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
+  applyRateButtonText: {
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  pendingText: {
+    color: THEME.colors.warning,
+    fontStyle: 'italic',
+  },
+  pendingTotalValue: {
+    color: THEME.colors.warning,
   },
   deleteButton: {
     flex: 1,
