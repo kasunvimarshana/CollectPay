@@ -65,10 +65,23 @@ class Collection extends Model
     }
 
     /**
-     * Calculate total amount based on quantity and rate
+     * Check whether a rate has been applied to this collection
      */
-    public function calculateTotal(): float
+    public function hasRate(): bool
     {
-        return $this->quantity * $this->rate_applied;
+        return ! is_null($this->rate_id) && ! is_null($this->rate_applied);
+    }
+
+    /**
+     * Calculate total amount based on quantity and rate.
+     * Returns null when no rate has been assigned yet.
+     */
+    public function calculateTotal(): ?float
+    {
+        if (! $this->hasRate()) {
+            return null;
+        }
+
+        return (float) $this->quantity * (float) $this->rate_applied;
     }
 }

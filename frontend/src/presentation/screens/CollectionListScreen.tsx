@@ -129,7 +129,7 @@ export const CollectionListScreen: React.FC = () => {
       style={styles.collectionCard}
       onPress={() => handleCollectionPress(item)}
       accessibilityRole="button"
-      accessibilityLabel={`Collection from ${item.supplier?.name || 'Unknown Supplier'}, Product: ${item.product?.name || 'Unknown'}, Quantity: ${item.quantity} ${item.unit}, Amount: $${typeof item.total_amount === 'number' ? item.total_amount.toFixed(2) : '0.00'}`}
+      accessibilityLabel={`Collection from ${item.supplier?.name || 'Unknown Supplier'}, Product: ${item.product?.name || 'Unknown'}, Quantity: ${item.quantity} ${item.unit}, Amount: ${item.total_amount != null ? (Number(item.total_amount) || 0).toFixed(2) : 'Pending'}`}
       accessibilityHint="Press to view collection details"
     >
       <View style={styles.collectionHeader}>
@@ -153,15 +153,19 @@ export const CollectionListScreen: React.FC = () => {
 
       <View style={styles.collectionDetails}>
         <Text style={styles.detailLabel}>Rate:</Text>
-        <Text style={styles.detailValue}>
-          {String(item.rate_applied)} per {String(item.unit)}
+        <Text style={[styles.detailValue, !item.rate_applied && styles.pendingText]}>
+          {item.rate_applied
+            ? `${String(item.rate_applied)} per ${String(item.unit)}`
+            : 'Pending'}
         </Text>
       </View>
 
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>Total Amount:</Text>
-        <Text style={styles.totalValue}>
-          {typeof item.total_amount === 'number' || typeof item.total_amount === 'string' ? (Number(item.total_amount) || 0).toFixed(2) : '0.00'}
+        <Text style={[styles.totalValue, item.total_amount == null && styles.pendingTotalValue]}>
+          {item.total_amount != null
+            ? (Number(item.total_amount) || 0).toFixed(2)
+            : 'Pending'}
         </Text>
       </View>
 
@@ -342,6 +346,13 @@ const styles = StyleSheet.create({
     fontSize: THEME.typography.fontSize.md,
     fontWeight: THEME.typography.fontWeight.bold,
     color: THEME.colors.primary,
+  },
+  pendingText: {
+    color: THEME.colors.warning,
+    fontStyle: 'italic',
+  },
+  pendingTotalValue: {
+    color: THEME.colors.warning,
   },
   notesContainer: {
     marginTop: THEME.spacing.sm,

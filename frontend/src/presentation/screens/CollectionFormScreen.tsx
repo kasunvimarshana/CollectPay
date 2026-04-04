@@ -103,7 +103,6 @@ export const CollectionFormScreen: React.FC = () => {
         setCurrentRate(response.data.rate as Rate);
       } else {
         setCurrentRate(null);
-        Alert.alert('Warning', 'No current rate found for this product');
       }
     } catch (error) {
       Logger.error('Error loading current rate', error);
@@ -155,11 +154,6 @@ export const CollectionFormScreen: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateForm()) {
       Alert.alert('Validation Error', 'Please fix the errors in the form');
-      return;
-    }
-
-    if (!currentRate) {
-      Alert.alert('Error', 'No current rate available for the selected product');
       return;
     }
 
@@ -254,13 +248,19 @@ export const CollectionFormScreen: React.FC = () => {
           />
 
           {/* Current Rate Display */}
-          {currentRate && (
+          {currentRate ? (
             <View style={styles.rateInfo}>
               <Text style={styles.rateInfoText}>
                 Current Rate: {String(currentRate.rate)} per {String(currentRate.unit)}
               </Text>
             </View>
-          )}
+          ) : formData.product_id ? (
+            <View style={styles.rateInfoPending}>
+              <Text style={styles.rateInfoPendingText}>
+                No rate found for this product. The rate can be applied later.
+              </Text>
+            </View>
+          ) : null}
 
         {/* Collection Date */}
         <DateTimePicker
@@ -427,6 +427,19 @@ const styles = StyleSheet.create({
   rateInfoText: {
     fontSize: THEME.typography.fontSize.base,
     color: THEME.colors.success,
+    fontWeight: THEME.typography.fontWeight.semibold,
+  },
+  rateInfoPending: {
+    backgroundColor: THEME.colors.gray100,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.base,
+    marginBottom: THEME.spacing.base,
+    borderWidth: 1,
+    borderColor: THEME.colors.warning,
+  },
+  rateInfoPendingText: {
+    fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.warning,
     fontWeight: THEME.typography.fontWeight.semibold,
   },
   amountInfo: {

@@ -92,14 +92,14 @@ export class DocumentFormatter {
         .newLine()
         .leftRight('Product:', col.product?.name || 'N/A')
         .leftRight('Quantity:', `${col.quantity} ${col.unit}`)
-        .leftRight('Rate:', col.rate_applied.toFixed(2))
+        .leftRight('Rate:', col.rate_applied != null ? col.rate_applied.toFixed(2) : 'Pending')
         .divider();
 
       // Total
       builder
         .bold(true)
         .setTextSize(1)
-        .leftRight('TOTAL:', col.total_amount.toFixed(2))
+        .leftRight('TOTAL:', col.total_amount != null ? col.total_amount.toFixed(2) : 'Pending')
         .setTextSize(0)
         .bold(false)
         .divider();

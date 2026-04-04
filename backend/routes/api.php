@@ -55,6 +55,7 @@ Route::middleware(['auth:api', 'audit', 'rate.limit:60,1'])->group(function () {
     Route::get('/collections/{collection}', [CollectionController::class, 'show']);
     Route::put('/collections/{collection}', [CollectionController::class, 'update'])->middleware('check.version');
     Route::delete('/collections/{collection}', [CollectionController::class, 'destroy']);
+    Route::post('/collections/{collection}/apply-rate', [CollectionController::class, 'applyRate']);
 
     // Payments with version conflict checking
     Route::get('/payments', [PaymentController::class, 'index']);

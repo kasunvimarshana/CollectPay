@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Collection;
 use App\Models\Product;
+use App\Models\Rate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -178,27 +179,22 @@ class CollectionController extends Controller
                     throw new \Exception('User authentication required');
                 }
 
-                // Get the product and current rate
+                // Attempt to look up current rate; rate assignment is optional
                 $product = Product::findOrFail($request->product_id);
                 $rate = $product->getCurrentRate($request->collection_date, $request->unit);
 
-                if (! $rate) {
-                    throw new \Exception('No valid rate found for the specified date and unit');
-                }
+                $rateId = $rate ? $rate->id : null;
+                $rateApplied = $rate ? $rate->rate : null;
+                $totalAmount = ($rate && $request->quantity) ? $request->quantity * $rate->rate : null;
 
-                // Calculate total amount
-                $quantity = $request->quantity;
-                $rateApplied = $rate->rate;
-                $totalAmount = $quantity * $rateApplied;
-
-                // Create collection
+                // Create collection (rate fields may be null when no rate is available)
                 return Collection::create([
                     'supplier_id' => $request->supplier_id,
                     'product_id' => $request->product_id,
                     'user_id' => $userId,
-                    'rate_id' => $rate->id,
+                    'rate_id' => $rateId,
                     'collection_date' => $request->collection_date,
-                    'quantity' => $quantity,
+                    'quantity' => $request->quantity,
                     'unit' => $request->unit,
                     'rate_applied' => $rateApplied,
                     'total_amount' => $totalAmount,
@@ -349,7 +345,7 @@ class CollectionController extends Controller
 
         try {
             DB::transaction(function () use ($request, $collection) {
-                // If product, date, or unit changed, recalculate rate
+                // If product, date, or unit changed, attempt to re-lookup the rate
                 if ($request->hasAny(['product_id', 'collection_date', 'unit'])) {
                     $productId = $request->get('product_id', $collection->product_id);
                     $date = $request->get('collection_date', $collection->collection_date);
@@ -358,12 +354,10 @@ class CollectionController extends Controller
                     $product = Product::findOrFail($productId);
                     $rate = $product->getCurrentRate($date, $unit);
 
-                    if (! $rate) {
-                        throw new \Exception('No valid rate found for the specified date and unit');
+                    if ($rate) {
+                        $collection->rate_id = $rate->id;
+                        $collection->rate_applied = $rate->rate;
                     }
-
-                    $collection->rate_id = $rate->id;
-                    $collection->rate_applied = $rate->rate;
                 }
 
                 // Update quantity if provided
@@ -371,8 +365,10 @@ class CollectionController extends Controller
                     $collection->quantity = $request->quantity;
                 }
 
-                // Recalculate total amount
-                $collection->total_amount = $collection->quantity * $collection->rate_applied;
+                // Recalculate total amount only when a rate has been assigned
+                $collection->total_amount = $collection->hasRate()
+                    ? $collection->quantity * $collection->rate_applied
+                    : null;
 
                 // Update other fields
                 $collection->fill($request->only(['supplier_id', 'product_id', 'collection_date', 'unit', 'notes']));
@@ -387,6 +383,101 @@ class CollectionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Collection updated successfully',
+                'data' => $collection,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Apply a rate to an existing collection
+     *
+     * @OA\Post(
+     *     path="/collections/{id}/apply-rate",
+     *     tags={"Collections"},
+     *     summary="Apply rate to collection",
+     *     description="Apply a rate to a collection that was created without one, or update the existing rate. The rate is looked up automatically based on the collection date and unit unless a specific rate_id is provided.",
+     *     operationId="applyRateToCollection",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Collection ID",
+     *
+     *         @OA\Schema(type="integer")
+     *     ),
+     *
+     *     @OA\RequestBody(
+     *         required=false,
+     *         description="Optional rate override",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="rate_id", type="integer", nullable=true, example=1, description="Specific rate ID to apply. If omitted, the current rate is looked up automatically.")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Rate applied successfully",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Rate applied successfully"),
+     *             @OA\Property(property="data", type="object", description="Updated collection with rate and calculated total")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=422, description="No valid rate found"),
+     *     @OA\Response(response=404, description="Collection not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function applyRate(Request $request, Collection $collection)
+    {
+        $validator = Validator::make($request->all(), [
+            'rate_id' => 'nullable|exists:rates,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $collection) {
+                if ($request->filled('rate_id')) {
+                    $rate = Rate::findOrFail($request->rate_id);
+                } else {
+                    $product = Product::findOrFail($collection->product_id);
+                    $rate = $product->getCurrentRate($collection->collection_date, $collection->unit);
+                }
+
+                if (! $rate) {
+                    throw new \Exception('No valid rate found for this collection\'s product, date, and unit');
+                }
+
+                $collection->rate_id = $rate->id;
+                $collection->rate_applied = $rate->rate;
+                $collection->total_amount = $collection->quantity * $rate->rate;
+                $collection->version++;
+                $collection->save();
+            });
+
+            $collection->load(['supplier', 'product', 'user', 'rate']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Rate applied successfully',
                 'data' => $collection,
             ]);
         } catch (\Exception $e) {
