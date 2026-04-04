@@ -18,6 +18,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiClient from '../../infrastructure/api/apiClient';
 import { Collection } from '../../domain/entities/Collection';
+import { PrintJobType } from '../../domain/entities/Printer';
+import PrintService from '../../application/services/PrintService';
 import Logger from '../../core/utils/Logger';
 
 export const CollectionDetailScreen: React.FC = () => {
@@ -74,6 +76,32 @@ export const CollectionDetailScreen: React.FC = () => {
     } catch (error) {
       Logger.error('Error deleting collection', error);
       Alert.alert('Error', 'Failed to delete collection');
+    }
+  };
+
+  const handlePrint = async () => {
+    try {
+      if (!collection) return;
+      
+      const printService = PrintService.getInstance();
+      const success = await printService.print({
+        type: PrintJobType.INVOICE,
+        title: 'Collection Invoice',
+        data: {
+          collection,
+          type: 'collection',
+          companyName: 'CollectPay',
+        },
+      });
+
+      if (success) {
+        Alert.alert('Success', 'Invoice printed successfully');
+      } else {
+        Alert.alert('Queued', 'Print job queued. It will be printed when printer is available or saved as PDF.');
+      }
+    } catch (error) {
+      Logger.error('Print failed', error);
+      Alert.alert('Error', 'Failed to print invoice');
     }
   };
 
@@ -161,6 +189,10 @@ export const CollectionDetailScreen: React.FC = () => {
       </View>
 
       <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.printButton} onPress={handlePrint}>
+          <Text style={styles.printButtonText}>🖨️ Print Invoice</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
           <Text style={styles.editButtonText}>Edit Collection</Text>
         </TouchableOpacity>
@@ -254,6 +286,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: THEME.spacing.base,
     gap: 12,
+    flexWrap: 'wrap',
+  },
+  printButton: {
+    flex: 1,
+    minWidth: '100%',
+    backgroundColor: THEME.colors.info,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.borderRadius.base,
+    alignItems: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
+  printButtonText: {
+    color: THEME.colors.white,
+    fontSize: THEME.typography.fontSize.md,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   editButton: {
     flex: 1,
