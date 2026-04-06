@@ -48,11 +48,13 @@ class RateObserver
         DB::transaction(function () use ($rate) {
             Collection::where('rate_id', $rate->id)
                 ->where('is_finalized', false)
-                ->each(function (Collection $collection) use ($rate) {
-                    $collection->rate_applied = $rate->rate;
-                    $collection->total_amount = (float) $collection->quantity * (float) $rate->rate;
-                    $collection->version = ($collection->version ?? 0) + 1;
-                    $collection->saveQuietly();
+                ->chunk(100, function ($collections) use ($rate) {
+                    foreach ($collections as $collection) {
+                        $collection->rate_applied = $rate->rate;
+                        $collection->total_amount = (float) $collection->quantity * (float) $rate->rate;
+                        $collection->version = ($collection->version ?? 0) + 1;
+                        $collection->saveQuietly();
+                    }
                 });
         });
     }
