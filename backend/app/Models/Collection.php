@@ -22,6 +22,7 @@ class Collection extends Model
         'rate_applied',
         'total_amount',
         'notes',
+        'is_finalized',
         'version',
     ];
 
@@ -30,6 +31,7 @@ class Collection extends Model
         'quantity' => 'decimal:3',
         'rate_applied' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'is_finalized' => 'boolean',
     ];
 
     /**
