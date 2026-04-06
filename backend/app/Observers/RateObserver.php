@@ -2,7 +2,9 @@
 
 namespace App\Observers;
 
+use App\Models\Collection;
 use App\Models\Rate;
+use Illuminate\Support\Facades\DB;
 
 class RateObserver
 {
@@ -30,5 +32,30 @@ class RateObserver
             $rate->version = 1;
             $rate->saveQuietly(); // Save without triggering events
         }
+    }
+
+    /**
+     * Handle the Rate "updated" event.
+     * When the rate value changes, recalculate applied rate and total amount for
+     * all non-finalized collections that reference this rate.
+     */
+    public function updated(Rate $rate): void
+    {
+        if (! $rate->wasChanged('rate')) {
+            return;
+        }
+
+        DB::transaction(function () use ($rate) {
+            Collection::where('rate_id', $rate->id)
+                ->where('is_finalized', false)
+                ->chunk(100, function ($collections) use ($rate) {
+                    foreach ($collections as $collection) {
+                        $collection->rate_applied = $rate->rate;
+                        $collection->total_amount = (float) $collection->quantity * (float) $rate->rate;
+                        $collection->version = ($collection->version ?? 0) + 1;
+                        $collection->saveQuietly();
+                    }
+                });
+        });
     }
 }
