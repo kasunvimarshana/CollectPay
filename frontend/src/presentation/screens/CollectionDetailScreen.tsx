@@ -22,6 +22,9 @@ import { PrintJobType } from '../../domain/entities/Printer';
 import PrintService from '../../application/services/PrintService';
 import Logger from '../../core/utils/Logger';
 
+// Environment variables
+const APP_NAME = process.env.EXPO_PUBLIC_APP_NAME || 'CollectPay';
+
 export const CollectionDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -122,7 +125,7 @@ export const CollectionDetailScreen: React.FC = () => {
         data: {
           collection,
           type: 'collection',
-          companyName: 'CollectPay',
+          companyName: APP_NAME,
         },
       });
 

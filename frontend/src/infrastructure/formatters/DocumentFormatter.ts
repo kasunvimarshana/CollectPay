@@ -8,6 +8,9 @@ import { Collection } from '../../domain/entities/Collection';
 import { Payment } from '../../domain/entities/Payment';
 import { PrintJobType } from '../../domain/entities/Printer';
 
+// Environment variables
+const APP_NAME = process.env.EXPO_PUBLIC_APP_NAME || 'CollectPay';
+
 export interface InvoiceData {
   collection?: Collection;
   payment?: Payment;
@@ -54,7 +57,7 @@ export class DocumentFormatter {
     
     // Header
     builder
-      .title(data.companyName || 'CollectPay')
+      .title(data.companyName || APP_NAME)
       .centerText(data.companyAddress || '')
       .centerText(data.companyPhone || '')
       .newLine()
@@ -135,7 +138,7 @@ export class DocumentFormatter {
     
     // Header
     builder
-      .title(data.companyName || 'CollectPay')
+      .title(data.companyName || APP_NAME)
       .centerText(data.companyAddress || '')
       .centerText(data.companyPhone || '')
       .newLine()
@@ -215,7 +218,7 @@ export class DocumentFormatter {
     
     // Header
     builder
-      .title('CollectPay')
+      .title(APP_NAME)
       .subtitle('RECEIPT')
       .divider();
 
@@ -290,7 +293,7 @@ export class DocumentFormatter {
     
     // Header
     builder
-      .title('CollectPay')
+      .title(APP_NAME)
       .subtitle(data.title)
       .leftRight('Date:', data.date)
       .divider();

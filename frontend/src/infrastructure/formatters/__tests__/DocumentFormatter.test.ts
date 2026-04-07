@@ -6,6 +6,9 @@ import { DocumentFormatter, InvoiceData, ReceiptData, JobSummaryData } from '../
 import { Collection } from '../../../domain/entities/Collection';
 import { Payment } from '../../../domain/entities/Payment';
 
+// Environment variables
+const APP_NAME = process.env.EXPO_PUBLIC_APP_NAME || 'CollectPay';
+
 describe('DocumentFormatter', () => {
   describe('formatCollectionInvoice', () => {
     it('should format a collection invoice', () => {
@@ -43,7 +46,7 @@ describe('DocumentFormatter', () => {
       const invoiceData: InvoiceData = {
         collection: collection as Collection,
         type: 'collection',
-        companyName: 'CollectPay',
+        companyName: APP_NAME,
         companyAddress: '123 Business St',
         companyPhone: '555-1234',
       };
@@ -103,7 +106,7 @@ describe('DocumentFormatter', () => {
       const invoiceData: InvoiceData = {
         payment: payment as Payment,
         type: 'payment',
-        companyName: 'CollectPay',
+        companyName: APP_NAME,
       };
 
       const result = DocumentFormatter.formatPaymentReceipt(invoiceData);

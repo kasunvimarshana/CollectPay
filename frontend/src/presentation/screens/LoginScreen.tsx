@@ -19,6 +19,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import THEME from '../../core/constants/theme';
 
+// Environment variables
+const APP_NAME = process.env.EXPO_PUBLIC_APP_NAME || 'CollectPay';
+const APP_VERSION = process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0';
+
 export const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,7 +57,7 @@ export const LoginScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.content, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: insets.bottom + THEME.spacing.lg }]}>
-        <Text style={styles.title} accessibilityRole="header">CollectPay</Text>
+        <Text style={styles.title} accessibilityRole="header">{APP_NAME} ({APP_VERSION})</Text>
         <Text style={styles.subtitle}>Data Collection & Payment Management</Text>
 
         <View style={styles.form}>
