@@ -3,7 +3,7 @@
  * Monitors network connectivity and provides sync status
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import SyncService from '../services/SyncService';
 import Logger from '../../core/utils/Logger';
@@ -37,6 +37,17 @@ export const useNetworkStatus = () => {
     syncError: null,
   });
 
+  const networkStatusRef = useRef(networkStatus);
+  const syncStatusRef = useRef(syncStatus);
+
+  useEffect(() => {
+    networkStatusRef.current = networkStatus;
+  }, [networkStatus]);
+
+  useEffect(() => {
+    syncStatusRef.current = syncStatus;
+  }, [syncStatus]);
+
   useEffect(() => {
     // Subscribe to network state changes
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
@@ -50,19 +61,24 @@ export const useNetworkStatus = () => {
       });
 
       // Auto-sync when connection is restored
-      if (canSync && !syncStatus.isSyncing) {
+      if (canSync && !syncStatusRef.current.isSyncing) {
         checkAndSync();
       }
     });
 
     // Initial check
     NetInfo.fetch().then((state: NetInfoState) => {
+      const canSync = state.isConnected === true && state.isInternetReachable === true;
       setNetworkStatus({
         isConnected: state.isConnected ?? false,
         isInternetReachable: state.isInternetReachable,
         type: state.type,
-        canSync: state.isConnected === true && state.isInternetReachable === true,
+        canSync,
       });
+
+      if (canSync) {
+        checkAndSync();
+      }
     });
 
     return () => {
@@ -78,7 +94,7 @@ export const useNetworkStatus = () => {
       const hasPending = await SyncService.hasPendingChanges();
       setSyncStatus(prev => ({ ...prev, hasPendingChanges: hasPending }));
 
-      if (hasPending && networkStatus.canSync) {
+      if (hasPending && networkStatusRef.current.canSync) {
         await performSync();
       }
     } catch (error) {
@@ -101,21 +117,24 @@ export const useNetworkStatus = () => {
 
     try {
       const result = await SyncService.fullSync();
+      const pendingChanges = await SyncService.hasPendingChanges();
       
       setSyncStatus({
         isSyncing: false,
-        hasPendingChanges: false,
-        lastSyncTime: new Date(),
+        hasPendingChanges: pendingChanges,
+        lastSyncTime: result.success ? new Date() : syncStatus.lastSyncTime,
         syncError: result.success ? null : result.message,
       });
 
       return result;
     } catch (error: any) {
       const errorMessage = error.message || 'Sync failed';
+      const pendingChanges = await SyncService.hasPendingChanges();
       
       setSyncStatus(prev => ({
         ...prev,
         isSyncing: false,
+        hasPendingChanges: pendingChanges,
         syncError: errorMessage,
       }));
 

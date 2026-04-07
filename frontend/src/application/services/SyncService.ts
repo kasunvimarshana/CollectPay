@@ -51,7 +51,11 @@ class SyncService {
         await LocalStorageService.deleteSyncedItems();
       }
 
-      return { success: true, synced: syncedCount, failed: failedCount };
+      return {
+        success: failedCount === 0,
+        synced: syncedCount,
+        failed: failedCount,
+      };
     } finally {
       this.isSyncing = false;
     }
@@ -316,7 +320,7 @@ class SyncService {
       await this.fetchAndCachePayments();
 
       return {
-        success: true,
+        success: syncResult.success,
         message: `Synced ${syncResult.synced} items. ${syncResult.failed} failed.`,
       };
     } catch (error: any) {
