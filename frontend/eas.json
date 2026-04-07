@@ -9,27 +9,36 @@
       "distribution": "internal",
       "node": "20.19.4",
       "android": { "buildType": "apk" },
-      "envFile": ".env",
       "env": {
-        "EXPO_PUBLIC_ENV": "development"
+        "EXPO_PUBLIC_API_URL": "https://zenchura.com/api",
+        "EXPO_PUBLIC_APP_NAME": "R&S",
+        "EXPO_PUBLIC_APP_VERSION": "1.0.2",
+        "EXPO_PUBLIC_ENV": "development",
+        "NODE_ENV": "development"
       }
     },
     "preview": {
       "distribution": "internal",
       "node": "20.19.4",
       "android": { "buildType": "apk" },
-      "envFile": ".env",
       "env": {
-        "EXPO_PUBLIC_ENV": "preview"
+        "EXPO_PUBLIC_API_URL": "https://zenchura.com/api",
+        "EXPO_PUBLIC_APP_NAME": "R&S",
+        "EXPO_PUBLIC_APP_VERSION": "1.0.2",
+        "EXPO_PUBLIC_ENV": "preview",
+        "NODE_ENV": "production"
       }
     },
     "production": {
       "autoIncrement": true,
       "node": "20.19.4",
       "android": { "buildType": "apk" },
-      "envFile": ".env",
       "env": {
-        "EXPO_PUBLIC_ENV": "production"
+        "EXPO_PUBLIC_API_URL": "https://zenchura.com/api",
+        "EXPO_PUBLIC_APP_NAME": "R&S",
+        "EXPO_PUBLIC_APP_VERSION": "1.0.2",
+        "EXPO_PUBLIC_ENV": "production",
+        "NODE_ENV": "production"
       }
     }
   },
