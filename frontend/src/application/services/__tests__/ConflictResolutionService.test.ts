@@ -2,23 +2,26 @@
  * ConflictResolutionService Unit Tests
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConflictResolutionService, {
   ConflictData,
   ConflictResolution,
 } from '../ConflictResolutionService';
 
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+}));
+
 describe('ConflictResolutionService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset localStorage mock
-    global.localStorage = {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-      clear: jest.fn(),
-      key: jest.fn(),
-      length: 0,
-    };
+    (AsyncStorage.getItem as jest.Mock).mockClear();
+    (AsyncStorage.setItem as jest.Mock).mockClear();
+    (AsyncStorage.removeItem as jest.Mock).mockClear();
+    (AsyncStorage.clear as jest.Mock).mockClear();
   });
 
   describe('hasConflict', () => {
@@ -224,31 +227,40 @@ describe('ConflictResolutionService', () => {
   });
 
   describe('prepareSyncRequest', () => {
-    it('should add version and sync metadata', () => {
+    it('should add version and sync metadata', async () => {
       const localData = {
         id: 1,
         name: 'Test',
       };
 
-      const result = ConflictResolutionService.prepareSyncRequest(localData);
+      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+      (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await ConflictResolutionService.prepareSyncRequest(localData);
 
       expect(result.id).toBe(1);
       expect(result.name).toBe('Test');
       expect(result.version).toBe(1);
       expect(result.sync_timestamp).toBeDefined();
       expect(result.client_id).toBeDefined();
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith('client_id');
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('client_id', expect.any(String));
     });
 
-    it('should preserve existing version', () => {
+    it('should preserve existing version', async () => {
       const localData = {
         id: 1,
         name: 'Test',
         version: 5,
       };
 
-      const result = ConflictResolutionService.prepareSyncRequest(localData);
+      (AsyncStorage.getItem as jest.Mock).mockResolvedValue('existing_client_id');
+
+      const result = await ConflictResolutionService.prepareSyncRequest(localData);
 
       expect(result.version).toBe(5);
+      expect(result.client_id).toBe('existing_client_id');
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith('client_id');
     });
   });
 

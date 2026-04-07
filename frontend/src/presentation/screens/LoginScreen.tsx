@@ -21,6 +21,7 @@ import THEME from '../../core/constants/theme';
 
 // Environment variables
 const APP_NAME = process.env.EXPO_PUBLIC_APP_NAME || 'CollectPay';
+const APP_ENV = process.env.EXPO_PUBLIC_ENV || 'development';
 const APP_VERSION = process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0';
 
 export const LoginScreen: React.FC = () => {
@@ -57,9 +58,9 @@ export const LoginScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.content, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: insets.bottom + THEME.spacing.lg }]}>
-        <Text style={styles.title} accessibilityRole="header">{APP_NAME} ({APP_VERSION})</Text>
+        <Text style={styles.title} accessibilityRole="header">{APP_NAME}</Text>
         <Text style={styles.subtitle}>Data Collection & Payment Management</Text>
-
+        <Text style={styles.envText}>{`Version ${APP_VERSION} · ${APP_ENV}`}</Text>
         <View style={styles.form}>
           <TextInput
             style={styles.input}
@@ -141,6 +142,12 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: THEME.typography.fontSize.base,
+    color: THEME.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
+  envText: {
+    fontSize: THEME.typography.fontSize.sm,
     color: THEME.colors.textSecondary,
     textAlign: 'center',
     marginBottom: THEME.spacing.xxxl,

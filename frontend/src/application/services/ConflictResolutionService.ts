@@ -4,6 +4,7 @@
  * Server is always the authoritative source of truth
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Logger from '../../core/utils/Logger';
 
 export interface ConflictData {
@@ -166,25 +167,25 @@ Conflict Resolution Strategy:
   /**
    * Prepare sync request with version information
    */
-  prepareSyncRequest(localData: any): any {
+  async prepareSyncRequest(localData: any): Promise<any> {
     return {
       ...localData,
       version: localData.version || 1,
       sync_timestamp: Date.now(),
-      client_id: this.getClientId(),
+      client_id: await this.getClientId(),
     };
   }
 
   /**
    * Get unique client ID for tracking multi-device operations
    */
-  private getClientId(): string {
+  private async getClientId(): Promise<string> {
     // In a real app, this would be a persistent device identifier
-    // For now, generate or retrieve from storage
-    let clientId = localStorage.getItem('client_id');
+    // For now, generate or retrieve from AsyncStorage
+    let clientId = await AsyncStorage.getItem('client_id');
     if (!clientId) {
       clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('client_id', clientId);
+      await AsyncStorage.setItem('client_id', clientId);
     }
     return clientId;
   }

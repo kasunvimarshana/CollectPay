@@ -12,7 +12,7 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://zenchura.com/api",
         "EXPO_PUBLIC_APP_NAME": "R&S",
-        "EXPO_PUBLIC_APP_VERSION": "1.0.2",
+        "EXPO_PUBLIC_APP_VERSION": "1.0.3",
         "EXPO_PUBLIC_ENV": "development",
         "NODE_ENV": "development"
       }
@@ -24,7 +24,7 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://zenchura.com/api",
         "EXPO_PUBLIC_APP_NAME": "R&S",
-        "EXPO_PUBLIC_APP_VERSION": "1.0.2",
+        "EXPO_PUBLIC_APP_VERSION": "1.0.3",
         "EXPO_PUBLIC_ENV": "preview",
         "NODE_ENV": "production"
       }
@@ -36,7 +36,7 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://zenchura.com/api",
         "EXPO_PUBLIC_APP_NAME": "R&S",
-        "EXPO_PUBLIC_APP_VERSION": "1.0.2",
+        "EXPO_PUBLIC_APP_VERSION": "1.0.3",
         "EXPO_PUBLIC_ENV": "production",
         "NODE_ENV": "production"
       }

@@ -75,7 +75,7 @@ class SyncService {
     }
     
     // Prepare sync request with version info
-    const syncData = ConflictResolutionService.prepareSyncRequest(data);
+    const syncData = await ConflictResolutionService.prepareSyncRequest(data);
     
     try {
       let response;

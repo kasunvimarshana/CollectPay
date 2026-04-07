@@ -27,20 +27,20 @@ describe('DocumentFormatter', () => {
           phone: '1234567890',
           address: '123 Main St',
           is_active: true,
-          version: 1,
           created_at: '2024-01-01',
           updated_at: '2024-01-01',
-        },
+        } as any,
         product: {
           id: 1,
           name: 'Tea Leaves',
+          code: 'PRD001',
           description: 'Premium tea',
-          default_unit: 'kg',
+          base_unit: 'kg',
+          supported_units: ['kg'],
           is_active: true,
-          version: 1,
           created_at: '2024-01-01',
           updated_at: '2024-01-01',
-        },
+        } as any,
       };
 
       const invoiceData: InvoiceData = {
@@ -97,10 +97,9 @@ describe('DocumentFormatter', () => {
           phone: '1234567890',
           address: '123 Main St',
           is_active: true,
-          version: 1,
           created_at: '2024-01-01',
           updated_at: '2024-01-01',
-        },
+        } as any,
       };
 
       const invoiceData: InvoiceData = {
